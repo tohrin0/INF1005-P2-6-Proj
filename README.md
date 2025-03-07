@@ -14,14 +14,14 @@ This project is a flight booking website that allows users to search for flights
 - **MySQL**: Database management system for storing user and booking data.
 - **HTML/CSS/JavaScript**: Front-end technologies for building the user interface.
 - **API Integration**: Utilizes a flight schedule API for real-time flight data.
+- **Admin Dashboard**: Admins can CRUD flights, users, messages databases in the admin dashboard
 
 ## Installation
 1. Set up a web server (e.g., Apache) and configure it to serve the project directory.
 2. Create a MySQL database and import schema.sql.
-3. Update the `inc/config.php` file with your database connection details.
-4. Install dependencies using Composer by running `composer install` in the project root.
+3. Update the `inc/config.php` and `inc/db.php` files with your database/server connection details.
 
 ## Usage
-- Access the website through your web server's URL.
+- Access the website through the web server's URL.
 - Use the navigation to explore different pages, search for flights, and manage bookings.
 - Please take note that Five Server does not work properly with MySQL.
