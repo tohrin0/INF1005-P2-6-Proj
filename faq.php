@@ -2,38 +2,58 @@
 // FAQ Page for Flight Booking Website
 session_start();
 include 'inc/config.php';
+include 'inc/db.php';
 include 'inc/functions.php';
+
+// Fetch FAQ items from database
+try {
+    $stmt = $pdo->prepare("SELECT id, question, answer FROM faq ORDER BY display_order ASC");
+    $stmt->execute();
+    $faqs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    // Log error but don't display to users
+    error_log("Database error in FAQ page: " . $e->getMessage());
+    $faqs = []; // Empty array if database query fails
+}
+
 include 'templates/header.php';
 ?>
 
 <div class="container">
     <h1>Frequently Asked Questions (FAQ)</h1>
     
-    <div class="faq-item">
-        <h2>What is the flight booking process?</h2>
-        <p>The flight booking process involves searching for flights, selecting your preferred flight, entering passenger details, and making a payment.</p>
-    </div>
-
-    <div class="faq-item">
-        <h2>How can I change or cancel my booking?</h2>
-        <p>You can change or cancel your booking by logging into your account and navigating to the 'My Bookings' section. Please note that cancellation policies may apply.</p>
-    </div>
-
-    <div class="faq-item">
-        <h2>What payment methods are accepted?</h2>
-        <p>We accept various payment methods including credit cards, debit cards, and PayPal. Please check the payment page for more details.</p>
-    </div>
-
-    <div class="faq-item">
-        <h2>How do I contact customer support?</h2>
-        <p>You can contact our customer support team via the contact form on our website or by emailing support@flightbooking.com.</p>
-    </div>
-
-    <div class="faq-item">
-        <h2>Is my personal information safe?</h2>
-        <p>Yes, we take your privacy seriously. We use encryption and secure protocols to protect your personal information.</p>
-    </div>
+    <?php if (empty($faqs)): ?>
+        <p>No FAQ items found. Please check back later.</p>
+    <?php else: ?>
+        <?php foreach ($faqs as $faq): ?>
+            <div class="faq-item">
+                <h2><?php echo htmlspecialchars($faq['question']); ?></h2>
+                <p><?php echo htmlspecialchars($faq['answer']); ?></p>
+            </div>
+        <?php endforeach; ?>
+    <?php endif; ?>
 </div>
+
+<style>
+    .faq-item {
+        margin-bottom: 30px;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border-radius: 5px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .faq-item h2 {
+        color: #007bff;
+        margin-top: 0;
+        font-size: 1.3rem;
+    }
+    
+    .faq-item p {
+        margin-bottom: 0;
+        line-height: 1.6;
+    }
+</style>
 
 <?php
 include 'templates/footer.php';
