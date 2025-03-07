@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -70,6 +71,18 @@
             margin-left: auto;
             margin-right: 20px;
         }
+        
+        /* Admin link styling */
+        .admin-link {
+            background-color: #dc3545;
+            color: white !important;
+            border-radius: 4px;
+        }
+        
+        .admin-link:hover {
+            background-color: #c82333;
+            color: white !important;
+        }
     </style>
 </head>
 <body>
@@ -92,6 +105,9 @@
                     <li><a href="contact.php">Contact</a></li>
                     <li><a href="faq.php">FAQ</a></li>
                     <?php if (isset($_SESSION['user_id'])): ?>
+                        <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                            <li><a href="admin/dashboard.php" class="admin-link">Admin Dashboard</a></li>
+                        <?php endif; ?>
                         <li><a href="account.php">My Account</a></li>
                         <li><a href="logout.php">Logout</a></li>
                     <?php else: ?>

@@ -36,22 +36,23 @@ include 'templates/header.php';
 
 <style>
     .faq-item {
-        margin-bottom: 30px;
-        padding: 15px;
-        background-color: #f9f9f9;
-        border-radius: 5px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        background-color: #f8f9fa;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     
     .faq-item h2 {
         color: #007bff;
+        font-size: 1.2rem;
         margin-top: 0;
-        font-size: 1.3rem;
+        margin-bottom: 10px;
     }
     
     .faq-item p {
-        margin-bottom: 0;
         line-height: 1.6;
+        color: #333;
     }
 </style>
 
