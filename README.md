@@ -7,7 +7,6 @@ This project is a flight booking website that allows users to search for flights
 - **User Authentication**: Users can register, log in, and manage their accounts.
 - **Flight Search**: Users can search for available flights using the flight schedule API.
 - **Booking Management**: Users can book flights and view their booking history.
-- **Admin Dashboard**: Admins can manage users, bookings, and flight schedules.
 - **Responsive Design**: The website is designed to be mobile-friendly and accessible on all devices.
 
 ## Technologies Used
