@@ -1,49 +1,142 @@
+<?php
+session_start(); // Add session_start() at the beginning
+require_once 'inc/config.php';
+require_once 'inc/db.php';
+require_once 'inc/functions.php'; // Add this
+require_once 'inc/auth.php';
+
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+// After including db.php, add:
+if (!isset($pdo) || $pdo === null) {
+    die("Database connection failed. Check your db.php file and database settings.");
+}
+// Move this error variable declaration here
+$error = '';
+
+if (isset($_POST['username']) || isset($_POST['email'])) {
+    $username = trim($_POST['username']);
+    $email = trim($_POST['email']);
+    $password = trim($_POST['password']);
+    $confirm_password = trim($_POST['confirm_password']);
+
+    // Validate input
+    if (empty($username) || empty($email) || empty($password) || empty($confirm_password)) {
+        $error = "All fields are required.";
+    } elseif ($password !== $confirm_password) {
+        $error = "Passwords do not match.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Invalid email format.";
+    } else {
+        // Register user
+        if (registerUser($username, $password, $email)) {
+            header("Location: login.php?success=Registration successful. Please log in.");
+            exit;
+        } else {
+            $error = "Registration failed. Please try again.";
+        }
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <?php include "inc/head.inc.php"; ?>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+    <title>Register</title>
+    <style>
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        form div {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input[type="text"], 
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        .error {
+            color: #f44336;
+            margin-bottom: 15px;
+        }
+    </style>
 </head>
 <body>
-    <?php include "inc/nav.inc.php"; ?>
-    
-    <main class="container">
-        <h1>Member Registration</h1>
-        <p>
-            For existing members, please go to the
-            <a href="#">Sign In page</a>.
-        </p>
-        <form action="process_register.php" method="post">
-            <div class="mb-3">
-                <label for="fname" class="form-label">First Name:</label>
-                <input type="text" id="fname" name="fname" class="form-control" placeholder="Enter first name" maxlength="45">
+    <?php include 'templates/header.php'; ?>
+
+    <div class="container">
+        <h2>Register</h2>
+        <?php if (!empty($error)): ?>
+            <div class="error"><?php echo htmlspecialchars($error); ?></div>
+        <?php endif; ?>
+        
+        <!-- Add debugging output -->
+        <?php 
+        if (isset($_POST['username'])) {
+            echo "<!-- Form submitted with: " . 
+                "username=" . htmlspecialchars($username ?? '') . 
+                ", email=" . htmlspecialchars($email ?? '') . 
+                " -->";
+        }
+        ?>
+        
+        <form action="register.php" method="POST">
+            <input type="hidden" name="debug" value="1">
+            <div>
+                <label for="username">Username:</label>
+                <input type="text" name="username" id="username" required>
             </div>
-            <div class="mb-3">
-                <label for="lname" class="form-label">Last Name:</label>
-                <input type="text" id="lname" name="lname" class="form-control" placeholder="Enter last name" required maxlength="45">
+            <div>
+                <label for="email">Email:</label>
+                <input type="email" name="email" id="email" required>
             </div>
-            <div class="mb-3">
-                <label for="email" class="form-label">Email:</label>
-                <input type="email" id="email" name="email" class="form-control" placeholder="Enter email" required maxlength="45">
+            <div>
+                <label for="password">Password:</label>
+                <input type="password" name="password" id="password" required>
             </div>
-            <div class="mb-3">
-                <label for="pwd" class="form-label">Password:</label>
-                <input type="password" id="pwd" name="pwd" class="form-control" placeholder="Enter password" required>
+            <div>
+                <label for="confirm_password">Confirm Password:</label>
+                <input type="password" name="confirm_password" id="confirm_password" required>
             </div>
-            <div class="mb-3">
-                <label for="pwd_confirm" class="form-label">Confirm Password:</label>
-                <input type="password" id="pwd_confirm" name="pwd_confirm" class="form-control" placeholder="Confirm password" required>
-            </div>
-            <div class="mb-3 form-check">
-                <input type="checkbox" name="agree" id="agree" class="form-check-input" required>
-                <label class="form-check-label" for="agree">
-                    Agree to terms and conditions.
-                </label>
-            </div>
-            <div class="mb-3">
-                <button type="submit" class="btn btn-primary">Submit</button>
+            <div>
+                <button type="submit">Register</button>
             </div>
         </form>
-    </main>
-    <?php include "inc/footer.inc.php"; ?>
+        <p>Already have an account? <a href="login.php">Login here</a>.</p>
+    </div>
+
+    <?php include 'templates/footer.php'; ?>
 </body>
 </html>

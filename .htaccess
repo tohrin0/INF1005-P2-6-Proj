@@ -1,0 +1,21 @@
+# File: /flight-booking-website/.htaccess
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Redirect to the index.php for all requests
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php [QSA,L]
+
+    # Prevent access to sensitive files - MODIFIED to exclude .php
+    <FilesMatch "\.(ini|log|txt|md|json|xml)$">
+        Order Allow,Deny
+        Deny from all
+    </FilesMatch>
+
+    # Enable gzip compression
+    <IfModule mod_deflate.c>
+        AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+    </IfModule>
+</IfModule>
