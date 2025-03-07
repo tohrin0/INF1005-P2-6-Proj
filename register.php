@@ -33,7 +33,7 @@ if (isset($_POST['username']) || isset($_POST['email'])) {
             header("Location: login.php?success=Registration successful. Please log in.");
             exit;
         } else {
-            $error = "Registration failed. Please try again.";
+            $error = "Registration failed. Email or username may already exist.";
         }
     }
 }
@@ -44,97 +44,57 @@ if (isset($_POST['username']) || isset($_POST['email'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Flight Booking</title>
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/responsive.css">
-    <title>Register</title>
-    <style>
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        form div {
-            margin-bottom: 15px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        
-        input[type="text"], 
-        input[type="email"],
-        input[type="password"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        
-        button:hover {
-            background-color: #45a049;
-        }
-        
-        .error {
-            color: #f44336;
-            margin-bottom: 15px;
-        }
-    </style>
+    <link rel="stylesheet" href="assets/css/auth.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
+
 <body>
     <?php include 'templates/header.php'; ?>
 
     <div class="container">
-        <h2>Register</h2>
-        <?php if (!empty($error)): ?>
-            <div class="error"><?php echo htmlspecialchars($error); ?></div>
-        <?php endif; ?>
-        
-        <!-- Add debugging output -->
-        <?php 
-        if (isset($_POST['username'])) {
-            echo "<!-- Form submitted with: " . 
-                "username=" . htmlspecialchars($username ?? '') . 
-                ", email=" . htmlspecialchars($email ?? '') . 
-                " -->";
-        }
-        ?>
-        
-        <form action="register.php" method="POST">
-            <input type="hidden" name="debug" value="1">
-            <div>
-                <label for="username">Username:</label>
-                <input type="text" name="username" id="username" required>
+        <div class="auth-container">
+            <div class="auth-header">
+                <h1>Create Account</h1>
+                <p>Join us to start booking flights</p>
             </div>
-            <div>
-                <label for="email">Email:</label>
-                <input type="email" name="email" id="email" required>
-            </div>
-            <div>
-                <label for="password">Password:</label>
-                <input type="password" name="password" id="password" required>
-            </div>
-            <div>
-                <label for="confirm_password">Confirm Password:</label>
-                <input type="password" name="confirm_password" id="confirm_password" required>
-            </div>
-            <div>
-                <button type="submit">Register</button>
-            </div>
-        </form>
-        <p>Already have an account? <a href="login.php">Login here</a>.</p>
+
+            <?php if (!empty($error)): ?>
+                <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
+                </div>
+            <?php endif; ?>
+            
+            <form action="register.php" method="POST">
+                <input type="hidden" name="debug" value="1">
+                <div class="form-group">
+                    <label for="username"><i class="fas fa-user"></i> Username</label>
+                    <input type="text" name="username" id="username" placeholder="Choose a username" required>
+                </div>
+                <div class="form-group">
+                    <label for="email"><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" name="email" id="email" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" name="password" id="password" placeholder="Create a password" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirm_password"><i class="fas fa-lock"></i> Confirm Password</label>
+                    <input type="password" name="confirm_password" id="confirm_password" placeholder="Confirm your password" required>
+                </div>
+                <button type="submit" class="auth-btn">
+                    <i class="fas fa-user-plus"></i> Register
+                </button>
+                
+                <div class="auth-footer">
+                    <p>Already have an account? <a href="login.php">Log in</a></p>
+                </div>
+            </form>
+        </div>
     </div>
 
     <?php include 'templates/footer.php'; ?>

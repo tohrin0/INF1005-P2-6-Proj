@@ -12,7 +12,7 @@ define('DB_NAME', 'flight_booking');
 
 // API settings for AviationStack
 define('FLIGHT_API_URL', 'https://api.aviationstack.com/v1');
-define('FLIGHT_API_KEY', 'b1e954e7e3175e7f9bd74dea31b836d3');
+define('FLIGHT_API_KEY', '99900463c923f91eef25fdbe3300b650');
 
 // Site settings
 define('SITE_NAME', 'Flight Booking Website');

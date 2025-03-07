@@ -378,4 +378,27 @@ function updateFlightSeats($flightId, $bookedSeats = 1) {
         return false;
     }
 }
+
+/**
+ * Format flight duration from minutes to hours and minutes
+ *
+ * @param int $durationMinutes Duration in minutes
+ * @return string Formatted duration string (e.g. "2h 30m")
+ */
+function formatDuration($durationMinutes) {
+    if (!is_numeric($durationMinutes)) {
+        return "N/A";
+    }
+    
+    $hours = floor($durationMinutes / 60);
+    $minutes = $durationMinutes % 60;
+    
+    if ($hours > 0 && $minutes > 0) {
+        return $hours . "h " . $minutes . "m";
+    } elseif ($hours > 0) {
+        return $hours . "h";
+    } else {
+        return $minutes . "m";
+    }
+}
 ?>

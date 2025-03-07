@@ -35,128 +35,54 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 include 'templates/header.php';
 ?>
 
-<div class="container">
-    <div class="reset-password-form">
-        <h2>Reset Your Password</h2>
-        <p>Enter the email address associated with your account, and we'll send you a link to reset your password.</p>
-        
-        <?php if (!empty($message)): ?>
-            <div class="<?php echo $messageType === 'error' ? 'error-message' : 'success-message'; ?>">
-                <?php echo htmlspecialchars($message); ?>
-            </div>
-        <?php endif; ?>
-        
-        <form action="" method="POST">
-            <div class="form-group">
-                <label for="email">Email Address:</label>
-                <input type="email" id="email" name="email" placeholder="Enter your email" required>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Password - Flight Booking</title>
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/responsive.css">
+    <link rel="stylesheet" href="assets/css/auth.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="auth-container">
+            <div class="auth-header">
+                <h1>Reset Password</h1>
+                <p>Enter your email to receive a reset link</p>
             </div>
             
-            <div class="form-buttons">
-                <button type="submit" class="primary-button">Send Reset Link</button>
-            </div>
-        </form>
-        
-        <div class="form-footer">
-            <p>Remembered your password? <a href="login.php">Back to Login</a></p>
+            <?php if (!empty($message)): ?>
+                <div class="<?php echo $messageType === 'error' ? 'error-message' : 'success-message'; ?>">
+                    <i class="fas fa-<?php echo $messageType === 'error' ? 'exclamation-circle' : 'check-circle'; ?>"></i>
+                    <?php echo htmlspecialchars($message); ?>
+                </div>
+            <?php endif; ?>
+            
+            <form action="" method="POST">
+                <div class="form-group">
+                    <label for="email"><i class="fas fa-envelope"></i> Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                </div>
+                
+                <button type="submit" class="auth-btn">
+                    <i class="fas fa-paper-plane"></i> Send Reset Link
+                </button>
+                
+                <div class="auth-footer">
+                    <div class="auth-links">
+                        <a href="login.php"><i class="fas fa-arrow-left"></i> Back to Login</a>
+                        <a href="register.php">Create new account</a>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
-</div>
 
-<style>
-    .reset-password-form {
-        max-width: 500px;
-        margin: 40px auto;
-        padding: 30px;
-        background-color: #ffffff;
-        border-radius: 8px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    }
-    
-    .reset-password-form h2 {
-        margin-top: 0;
-        color: #333;
-        text-align: center;
-        margin-bottom: 20px;
-    }
-    
-    .reset-password-form p {
-        color: #666;
-        margin-bottom: 20px;
-        text-align: center;
-    }
-    
-    .form-group {
-        margin-bottom: 25px;
-    }
-    
-    .form-group label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: bold;
-        color: #555;
-    }
-    
-    .form-group input {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 16px;
-    }
-    
-    .form-buttons {
-        margin-top: 15px;
-    }
-    
-    .primary-button {
-        background-color: #4CAF50;
-        color: white;
-        padding: 12px 20px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 16px;
-        width: 100%;
-        transition: background-color 0.3s;
-    }
-    
-    .primary-button:hover {
-        background-color: #45a049;
-    }
-    
-    .error-message {
-        color: #f44336;
-        background-color: #fee;
-        padding: 12px;
-        border-radius: 4px;
-        margin-bottom: 20px;
-        border-left: 4px solid #f44336;
-    }
-    
-    .success-message {
-        color: #4CAF50;
-        background-color: #f1f9f1;
-        padding: 12px;
-        border-radius: 4px;
-        margin-bottom: 20px;
-        border-left: 4px solid #4CAF50;
-    }
-    
-    .form-footer {
-        margin-top: 25px;
-        text-align: center;
-        color: #666;
-    }
-    
-    .form-footer a {
-        color: #4CAF50;
-        text-decoration: none;
-    }
-    
-    .form-footer a:hover {
-        text-decoration: underline;
-    }
-</style>
-
-<?php include 'templates/footer.php'; ?>
+    <?php include 'templates/footer.php'; ?>
+</body>
+</html>

@@ -1,6 +1,7 @@
 \includes\header.php
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,12 +20,12 @@
             padding: 0;
             color: #333;
         }
-        
+
         .admin-wrapper {
             display: flex;
             min-height: 100vh;
         }
-        
+
         .admin-sidebar {
             width: 250px;
             background-color: #343a40;
@@ -37,7 +38,7 @@
             z-index: 100;
             transition: all 0.3s;
         }
-        
+
         .sidebar-brand {
             padding: 20px 25px;
             display: flex;
@@ -45,23 +46,23 @@
             background-color: #2c3136;
             border-bottom: 1px solid #454d55;
         }
-        
+
         .sidebar-brand img {
             height: 35px;
             margin-right: 10px;
         }
-        
+
         .sidebar-brand h2 {
             margin: 0;
             font-size: 18px;
             font-weight: 600;
             color: white;
         }
-        
+
         .sidebar-menu {
             padding: 20px 0;
         }
-        
+
         .menu-category {
             color: #adb5bd;
             font-size: 12px;
@@ -69,7 +70,7 @@
             padding: 15px 25px 10px;
             letter-spacing: 1px;
         }
-        
+
         .menu-item {
             display: flex;
             align-items: center;
@@ -79,25 +80,26 @@
             transition: all 0.3s;
             border-left: 3px solid transparent;
         }
-        
-        .menu-item:hover, .menu-item.active {
+
+        .menu-item:hover,
+        .menu-item.active {
             background-color: #2c3136;
             border-left-color: #007bff;
             color: white;
         }
-        
+
         .menu-item i {
             margin-right: 10px;
             width: 20px;
             text-align: center;
         }
-        
+
         .content-wrapper {
             flex: 1;
             margin-left: 250px;
             transition: all 0.3s;
         }
-        
+
         .admin-topbar {
             background-color: white;
             height: 60px;
@@ -110,12 +112,12 @@
             top: 0;
             z-index: 99;
         }
-        
+
         .topbar-left {
             display: flex;
             align-items: center;
         }
-        
+
         #sidebar-toggle {
             background: transparent;
             border: none;
@@ -124,18 +126,18 @@
             cursor: pointer;
             margin-right: 20px;
         }
-        
+
         .page-title {
             font-weight: 600;
             font-size: 18px;
             color: #343a40;
         }
-        
+
         .topbar-right {
             display: flex;
             align-items: center;
         }
-        
+
         .admin-user {
             display: flex;
             align-items: center;
@@ -143,7 +145,7 @@
             cursor: pointer;
             position: relative;
         }
-        
+
         .user-avatar {
             width: 32px;
             height: 32px;
@@ -155,22 +157,22 @@
             justify-content: center;
             margin-right: 8px;
         }
-        
+
         .user-info {
             display: flex;
             flex-direction: column;
         }
-        
+
         .user-name {
             font-weight: 600;
             font-size: 14px;
         }
-        
+
         .user-role {
             color: #6c757d;
             font-size: 12px;
         }
-        
+
         .dropdown {
             background: transparent;
             border: none;
@@ -178,7 +180,7 @@
             cursor: pointer;
             margin-left: 10px;
         }
-        
+
         .admin-user-dropdown {
             position: absolute;
             top: 100%;
@@ -190,11 +192,11 @@
             display: none;
             z-index: 1000;
         }
-        
+
         .admin-user:hover .admin-user-dropdown {
             display: block;
         }
-        
+
         .dropdown-item {
             padding: 10px 15px;
             display: flex;
@@ -203,16 +205,16 @@
             color: #343a40;
             transition: background-color 0.3s;
         }
-        
+
         .dropdown-item:hover {
             background-color: #f8f9fa;
         }
-        
+
         .dropdown-item i {
             margin-right: 10px;
             color: #6c757d;
         }
-        
+
         /* View site button */
         .view-site-btn {
             background-color: #28a745;
@@ -226,42 +228,42 @@
             margin-right: 15px;
             transition: background-color 0.3s;
         }
-        
+
         .view-site-btn:hover {
             background-color: #218838;
             color: white;
             text-decoration: none;
         }
-        
+
         .view-site-btn i {
             margin-right: 8px;
         }
-        
+
         /* Mobile responsive adjustments */
         @media (max-width: 992px) {
             .admin-sidebar {
                 left: -250px;
             }
-            
+
             .content-wrapper {
                 margin-left: 0;
             }
-            
+
             .sidebar-open .admin-sidebar {
                 left: 0;
             }
-            
+
             .sidebar-open .content-wrapper {
                 margin-left: 250px;
             }
         }
-        
+
         @media (max-width: 768px) {
             .sidebar-open .content-wrapper {
                 margin-left: 0;
                 position: relative;
             }
-            
+
             .sidebar-overlay {
                 position: fixed;
                 top: 0;
@@ -272,42 +274,43 @@
                 z-index: 99;
                 display: none;
             }
-            
+
             .sidebar-open .sidebar-overlay {
                 display: block;
             }
-            
+
             .view-site-btn {
                 padding: 6px 10px;
                 font-size: 12px;
             }
-            
+
             .view-site-btn span {
                 display: none;
             }
-            
+
             .view-site-btn i {
                 margin-right: 0;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="admin-wrapper">
         <div class="sidebar-overlay" id="sidebar-overlay"></div>
-        
+
         <div class="admin-sidebar">
             <div class="sidebar-brand">
                 <img src="../assets/images/logo.png" alt="Logo">
                 <h2>Admin Panel</h2>
             </div>
-            
+
             <div class="sidebar-menu">
                 <p class="menu-category">Main</p>
                 <a href="dashboard.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'dashboard.php' ? 'active' : ''; ?>">
                     <i class="fas fa-tachometer-alt"></i> Dashboard
                 </a>
-                
+
                 <p class="menu-category">Management</p>
                 <a href="bookings.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'bookings.php' ? 'active' : ''; ?>">
                     <i class="fas fa-ticket-alt"></i> Bookings
@@ -318,12 +321,14 @@
                 <a href="flights.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'flights.php' ? 'active' : ''; ?>">
                     <i class="fas fa-plane"></i> Flights
                 </a>
-                
+                <a href="messages.php" class="menu-item">
+                    <i class="fas fa-envelope"></i> Messages
+                </a>
                 <p class="menu-category">Configuration</p>
                 <a href="settings.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'settings.php' ? 'active' : ''; ?>">
                     <i class="fas fa-cog"></i> Settings
                 </a>
-                
+
                 <p class="menu-category">Other</p>
                 <a href="../index.php" class="menu-item">
                     <i class="fas fa-external-link-alt"></i> View Website
@@ -333,7 +338,7 @@
                 </a>
             </div>
         </div>
-        
+
         <div class="content-wrapper">
             <div class="admin-topbar">
                 <div class="topbar-left">
@@ -341,7 +346,7 @@
                         <i class="fas fa-bars"></i>
                     </button>
                     <h1 class="page-title">
-                        <?php 
+                        <?php
                         $current_page = basename($_SERVER['PHP_SELF']);
                         switch ($current_page) {
                             case 'dashboard.php':
@@ -365,7 +370,7 @@
                         ?>
                     </h1>
                 </div>
-                
+
                 <div class="topbar-right">
                     <a href="../index.php" class="view-site-btn">
                         <i class="fas fa-home"></i>
@@ -373,9 +378,9 @@
                     </a>
                     <div class="admin-user">
                         <div class="user-avatar">
-                            <?php 
+                            <?php
                             // Get first letter of admin username
-                            $firstLetter = isset($_SESSION['username']) ? strtoupper(substr($_SESSION['username'], 0, 1)) : 'A'; 
+                            $firstLetter = isset($_SESSION['username']) ? strtoupper(substr($_SESSION['username'], 0, 1)) : 'A';
                             echo $firstLetter;
                             ?>
                         </div>
@@ -386,7 +391,7 @@
                         <button class="dropdown">
                             <i class="fas fa-chevron-down"></i>
                         </button>
-                        
+
                         <div class="admin-user-dropdown">
                             <a href="../account.php" class="dropdown-item">
                                 <i class="fas fa-user"></i> My Profile
@@ -401,5 +406,5 @@
                     </div>
                 </div>
             </div>
-            
+
             <main class="admin-main">

@@ -11,28 +11,46 @@ class Booking {
         $this->db = $db ?? $pdo;
     }
 
-    public function createBooking($userId, $flightId, $passengerDetails) {
+    public function createBooking($userId, $flightId, $passengerDetails, $status = 'confirmed') {
+        // Add debug logging
+        error_log("Creating booking - userId: $userId, flightId: $flightId, status: $status");
+        error_log("Passenger details: " . json_encode($passengerDetails));
+        
         $this->userId = $userId;
         $this->flightId = $flightId;
-        $this->status = 'confirmed';
+        $this->status = $status;
         
         try {
             // Start transaction
             $this->db->beginTransaction();
             
             // Get flight details
-            $stmt = $this->db->prepare("SELECT price FROM flights WHERE id = ?");
+            $stmt = $this->db->prepare("SELECT price, available_seats FROM flights WHERE id = ?");
             $stmt->execute([$flightId]);
             $flight = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if (!$flight) {
-                return false;
+                error_log("Flight not found with ID: $flightId");
+                throw new Exception("Flight not found");
             }
+            
+            error_log("Flight found: " . json_encode($flight));
+            
+            // Check if enough seats are available
+            $numPassengers = $passengerDetails['passengers'] ?? 1;
+            
+            if ($flight['available_seats'] < $numPassengers) {
+                error_log("Not enough seats: available={$flight['available_seats']}, requested=$numPassengers");
+                throw new Exception("Not enough seats available");
+            }
+            
+            // Calculate total price
+            $totalPrice = $flight['price'] * $numPassengers;
             
             // Insert booking
             $stmt = $this->db->prepare(
-                "INSERT INTO bookings (user_id, flight_id, status, customer_name, customer_email, customer_phone, total_price) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?)"
+                "INSERT INTO bookings (user_id, flight_id, status, customer_name, customer_email, customer_phone, passengers, total_price) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
             );
             
             $result = $stmt->execute([
@@ -42,18 +60,37 @@ class Booking {
                 $passengerDetails['name'],
                 $passengerDetails['email'],
                 $passengerDetails['phone'],
-                $flight['price']
+                $numPassengers,
+                $totalPrice
             ]);
             
-            // Commit transaction
-            if ($result) {
-                $this->db->commit();
-                return $this->db->lastInsertId();
-            } else {
-                $this->db->rollBack();
-                return false;
+            if (!$result) {
+                error_log("Failed to insert booking");
+                throw new Exception("Failed to insert booking");
             }
-        } catch (PDOException $e) {
+            
+            $bookingId = $this->db->lastInsertId();
+            error_log("Booking created with ID: $bookingId");
+            
+            // Update available seats
+            $stmt = $this->db->prepare(
+                "UPDATE flights 
+                 SET available_seats = available_seats - ? 
+                 WHERE id = ? AND available_seats >= ?"
+            );
+            
+            $result = $stmt->execute([$numPassengers, $flightId, $numPassengers]);
+            
+            if (!$result) {
+                error_log("Failed to update available seats");
+                throw new Exception("Failed to update available seats");
+            }
+            
+            // Commit transaction
+            $this->db->commit();
+            return $bookingId;
+            
+        } catch (Exception $e) {
             $this->db->rollBack();
             error_log("Booking error: " . $e->getMessage());
             return false;

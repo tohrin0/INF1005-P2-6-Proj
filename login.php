@@ -35,98 +35,59 @@ if (isset($_POST['email']) || isset($_POST['login'])) {
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Flight Booking</title>
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/responsive.css">
-    <title>Login - Flight Booking</title>
-    <style>
-        .login-form {
-            max-width: 400px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-
-        input[type="email"],
-        input[type="password"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-
-        button[type="submit"] {
-            background-color: #4CAF50;
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            width: 100%;
-        }
-
-        button[type="submit"]:hover {
-            background-color: #45a049;
-        }
-
-        .error {
-            color: #f44336;
-            margin-bottom: 15px;
-        }
-
-        .register-link {
-            margin-top: 15px;
-            text-align: center;
-        }
-    </style>
+    <link rel="stylesheet" href="assets/css/auth.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 
 <body>
     <?php include 'templates/header.php'; ?>
 
     <div class="container">
-        <h1>Login</h1>
-        <div class="login-form">
+        <div class="auth-container">
+            <div class="auth-header">
+                <h1>Welcome Back</h1>
+                <p>Sign in to access your account</p>
+            </div>
+
             <?php if (!empty($error)): ?>
-                <div class="error"><?php echo htmlspecialchars($error); ?></div>
+                <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
+                </div>
             <?php endif; ?>
 
             <?php if (isset($_GET['success'])): ?>
-                <div class="success"><?php echo htmlspecialchars($_GET['success']); ?></div>
+                <div class="success-message">
+                    <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($_GET['success']); ?>
+                </div>
             <?php endif; ?>
 
             <form method="POST" action="login.php">
                 <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required>
+                    <label for="email"><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
                 </div>
                 
                 <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required>
+                    <label for="password"><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
                 </div>
                 
-                <button type="submit" name="login">Login</button>
+                <button type="submit" name="login" class="auth-btn">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
                 
-                <div class="register-link">
-                    <p>Don't have an account? <a href="register.php">Register here</a></p>
-                    <p><a href="reset-password.php">Forgot your password?</a></p>
+                <div class="auth-footer">
+                    <div class="auth-links">
+                        <a href="reset-password.php">Forgot password?</a>
+                        <a href="register.php">Create new account</a>
+                    </div>
                 </div>
             </form>
         </div>
@@ -134,5 +95,4 @@ if (isset($_POST['email']) || isset($_POST['login'])) {
 
     <?php include 'templates/footer.php'; ?>
 </body>
-
 </html>

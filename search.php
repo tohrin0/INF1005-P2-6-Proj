@@ -1,12 +1,10 @@
 <?php
-
+session_start();
 require_once 'inc/config.php';
 require_once 'inc/db.php';
 require_once 'inc/functions.php';
 require_once 'inc/auth.php';
 require_once 'inc/api.php';
-
-session_start();
 
 $flights = [];
 $error = '';
@@ -25,7 +23,7 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') 
         try {
             $apiClient = new ApiClient();
             $flights = $apiClient->searchFlights($departure, $arrival, $date);
-
+            
             if (empty($flights)) {
                 $error = 'No flights found for your search criteria.';
             }
@@ -41,7 +39,7 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') 
         $flights = $apiClient->getAvailableFlights();
         
         if (empty($flights)) {
-            $error = 'No flights available at this time.';
+            $error = 'No available flights found. Please try a different search.';
         }
     } catch (Exception $e) {
         $error = 'An error occurred while loading flights: ' . $e->getMessage();
@@ -83,6 +81,27 @@ $commonAirports = [
     ['name' => 'São Paulo–Guarulhos International Airport', 'code' => 'GRU']
 ];
 
+// Add formatDuration function if it doesn't exist
+if (!function_exists('formatDuration')) {
+    function formatDuration($durationMinutes) {
+        if (!is_numeric($durationMinutes)) {
+            return "N/A";
+        }
+        
+        $hours = floor($durationMinutes / 60);
+        $minutes = $durationMinutes % 60;
+        
+        if ($hours > 0 && $minutes > 0) {
+            return $hours . "h " . $minutes . "m";
+        } elseif ($hours > 0) {
+            return $hours . "h";
+        } else {
+            return $minutes . "m";
+        }
+    }
+}
+
+include 'templates/header.php';
 ?>
 
 <!DOCTYPE html>
@@ -97,30 +116,29 @@ $commonAirports = [
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <style>
         .search-form {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+            background-color: #f8f9fa;
+            padding: 25px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
         }
         
         .form-row {
             display: flex;
             flex-wrap: wrap;
-            margin-bottom: 15px;
-            gap: 10px;
+            gap: 20px;
         }
         
         .form-group {
             flex: 1;
             min-width: 200px;
+            margin-bottom: 15px;
         }
         
         .form-group label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+            margin-bottom: 8px;
+            font-weight: 600;
         }
         
         .form-group input, .form-group select {
@@ -133,7 +151,7 @@ $commonAirports = [
         button[type="submit"] {
             background-color: #4CAF50;
             color: white;
-            padding: 12px 20px;
+            padding: 12px 25px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
@@ -145,216 +163,192 @@ $commonAirports = [
         }
         
         .error {
-            color: #f44336;
-            margin-bottom: 15px;
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
         }
         
-        .flights-grid {
-            margin-top: 30px;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 20px;
+        .no-results {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
         }
         
-        .flight-card {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-            background-color: #fff;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-        }
-        
-        .flight-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        .flight-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
+        .flight-results-title {
+            margin-bottom: 20px;
             padding-bottom: 10px;
             border-bottom: 1px solid #eee;
         }
         
+        .flights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .flight-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid #eaeaea;
+        }
+        
+        .flight-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .flight-header {
+            padding: 15px;
+            background-color: #f8f9fa;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
         .flight-number {
             font-weight: bold;
-            font-size: 1.2em;
+            color: #2c3e50;
         }
         
         .flight-airline {
-            color: #555;
-        }
-        
-        /* Adjust the duration display for header positioning */
-        .duration-display {
-            color: #555;
-            font-size: 0.9em;
-            padding: 0 10px;
-            text-align: center;
-            border-left: 1px solid #eee;
-            border-right: 1px solid #eee;
+            color: #7f8c8d;
         }
         
         .flight-details {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 15px;
+            padding: 15px;
         }
         
         .route-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .departure, .arrival {
             flex: 1;
         }
         
         .time {
+            font-size: 1.5rem;
             font-weight: bold;
-            font-size: 1.1em;
+            margin-bottom: 5px;
         }
         
         .airport {
-            margin-top: 5px;
-            color: #555;
-        }
-        
-        .flight-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #eee;
-        }
-        
-        .price {
-            font-weight: bold;
-            font-size: 1.2em;
-            color: #4CAF50;
-        }
-        
-        .seats {
-            color: #555;
-        }
-        
-        .book-btn {
-            display: block;
-            width: 100%;
-            background-color: #2196F3;
-            color: white;
-            text-align: center;
-            padding: 10px;
-            border: none;
-            border-radius: 4px;
-            margin-top: 10px;
-            cursor: pointer;
-            text-decoration: none;
-        }
-        
-        .book-btn:hover {
-            background-color: #0b7dda;
-        }
-        
-        .no-results {
-            text-align: center;
-            padding: 20px;
-            margin-top: 20px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
+            color: #7f8c8d;
         }
         
         .duration-display {
-            color: #555;
-            font-size: 0.9em;
-            margin-top: 5px;
-            text-align: center;
-        }
-        
-        /* Custom autocomplete styles */
-        .ui-autocomplete {
-            max-height: 300px;
-            overflow-y: auto;
-            overflow-x: hidden;
-            z-index: 9999 !important;
-        }
-        
-        .ui-menu-item {
-            padding: 5px 10px;
-            font-size: 14px;
-        }
-        
-        .ui-menu-item .ui-menu-item-wrapper.ui-state-active {
-            background: #f0f0f0 !important;
-            border: none !important;
-            color: #333 !important;
-        }
-        
-        /* Input selection toggle */
-        .input-toggle {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 15px;
-        }
-        
-        .toggle-btn {
-            padding: 8px 15px;
-            margin: 0 5px;
-            border: 1px solid #ddd;
-            background-color: #f8f9fa;
+            background-color: #e8f4fd;
+            color: #0078d4;
+            padding: 3px 8px;
             border-radius: 4px;
-            cursor: pointer;
+            font-size: 0.8rem;
         }
         
-        .toggle-btn.active {
-            background-color: #007bff;
+        .flight-meta {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-top: 1px solid #eaeaea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .price {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #27ae60;
+        }
+        
+        .seats {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .book-btn {
+            background-color: #4CAF50;
             color: white;
-            border-color: #007bff;
+            padding: 8px 15px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 500;
+            transition: background-color 0.3s;
         }
         
-        .airport-select {
-            width: 100%;
+        .book-btn:hover {
+            background-color: #45a049;
+            color: white;
         }
-
-        .flight-results-title {
-            margin-top: 30px;
-            margin-bottom: 15px;
-            text-align: center;
-            font-size: 1.5em;
-            color: #333;
+        
+        .sold-out {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        /* Separator between departure and arrival */
+        .route-separator {
+            display: flex;
+            align-items: center;
+            margin: 0 15px;
+        }
+        
+        .route-line {
+            flex-grow: 1;
+            height: 2px;
+            background: #ddd;
+            position: relative;
+        }
+        
+        .route-icon {
+            margin: 0 10px;
+            color: #7f8c8d;
+            font-size: 1.2rem;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .flights-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .form-group {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
-    <?php include 'templates/header.php'; ?>
-
     <div class="container">
-        <h1>Search Flights</h1>
         <div class="search-form">
-            <div class="input-toggle">
-                <button type="button" class="toggle-btn active" data-input-type="text">Enter City/Airport Name</button>
-                <button type="button" class="toggle-btn" data-input-type="select">Select from List</button>
-            </div>
-            
             <form method="POST" action="search.php">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="departure">Departure</label>
-                        <input type="text" id="departure" name="departure" class="airport-input" placeholder="Departure city or airport" value="<?php echo htmlspecialchars($departure ?? ''); ?>" required>
-                        <select id="departure_select" name="departure" class="airport-select" style="display:none;">
-                            <?php foreach ($commonAirports as $airport): ?>
-                                <option value="<?php echo htmlspecialchars($airport['code']); ?>"><?php echo htmlspecialchars($airport['name']); ?> (<?php echo htmlspecialchars($airport['code']); ?>)</option>
-                            <?php endforeach; ?>
-                        </select>
+                        <label for="departure">From</label>
+                        <input type="text" id="departure" name="departure" placeholder="City or Airport" value="<?php echo htmlspecialchars($departure ?? ''); ?>" required>
                     </div>
                     
                     <div class="form-group">
-                        <label for="arrival">Arrival</label>
-                        <input type="text" id="arrival" name="arrival" class="airport-input" placeholder="Arrival city or airport" value="<?php echo htmlspecialchars($arrival ?? ''); ?>" required>
-                        <select id="arrival_select" name="arrival" class="airport-select" style="display:none;">
-                            <?php foreach ($commonAirports as $airport): ?>
-                                <option value="<?php echo htmlspecialchars($airport['code']); ?>"><?php echo htmlspecialchars($airport['name']); ?> (<?php echo htmlspecialchars($airport['code']); ?>)</option>
-                            <?php endforeach; ?>
-                        </select>
+                        <label for="arrival">To</label>
+                        <input type="text" id="arrival" name="arrival" placeholder="City or Airport" value="<?php echo htmlspecialchars($arrival ?? ''); ?>" required>
                     </div>
                     
                     <div class="form-group">
@@ -384,97 +378,74 @@ $commonAirports = [
                     <div class="flight-card">
                         <div class="flight-header">
                             <div class="flight-number"><?php echo htmlspecialchars($flight['flight_number']); ?></div>
-                            <div class="duration-display">
-                                <?php 
-                                    $duration = isset($flight['duration']) ? $flight['duration'] : 0;
-                                    $hours = floor($duration / 60);
-                                    $minutes = $duration % 60;
-                                    echo $hours . 'h ' . $minutes . 'm';
-                                ?>
-                            </div>
-                            <div class="flight-airline"><?php echo htmlspecialchars($flight['airline'] ?? 'Airline'); ?></div>
+                            <div class="flight-airline"><?php echo htmlspecialchars($flight['airline']); ?></div>
+                            <?php if (isset($flight['duration'])): ?>
+                                <div class="duration-display"><?php echo formatDuration($flight['duration']); ?></div>
+                            <?php endif; ?>
                         </div>
-                        
                         <div class="flight-details">
                             <div class="route-info">
-                                <div class="time"><?php echo htmlspecialchars($flight['departure_time'] ?? ''); ?></div>
-                                <div class="airport"><?php echo htmlspecialchars($flight['departure']); ?></div>
-                            </div>
-                            
-                            <div class="route-info">
-                                <div class="time"><?php echo htmlspecialchars($flight['arrival_time'] ?? ''); ?></div>
-                                <div class="airport"><?php echo htmlspecialchars($flight['arrival']); ?></div>
+                                <div class="departure">
+                                    <div class="time"><?php echo htmlspecialchars(date('H:i', strtotime($flight['time']))); ?></div>
+                                    <div class="airport"><?php echo htmlspecialchars($flight['departure']); ?></div>
+                                </div>
+                                
+                                <div class="route-separator">
+                                    <div class="route-line"></div>
+                                    <div class="route-icon"><i class="fas fa-plane"></i></div>
+                                    <div class="route-line"></div>
+                                </div>
+                                
+                                <div class="arrival">
+                                    <?php 
+                                    $arrivalTime = strtotime($flight['time']) + ($flight['duration'] * 60);
+                                    ?>
+                                    <div class="time"><?php echo date('H:i', $arrivalTime); ?></div>
+                                    <div class="airport"><?php echo htmlspecialchars($flight['arrival']); ?></div>
+                                </div>
                             </div>
                         </div>
-                        
                         <div class="flight-meta">
-                            <div class="price"><?php echo htmlspecialchars('$' . number_format($flight['price'], 2)); ?></div>
-                            <div class="seats"><?php echo htmlspecialchars($flight['available_seats'] ?? ''); ?> seats left</div>
+                            <div class="price">$<?php echo htmlspecialchars(number_format($flight['price'], 2)); ?></div>
+                            <?php if (isset($flight['available_seats']) && $flight['available_seats'] > 0): ?>
+                                <div class="seats"><?php echo htmlspecialchars($flight['available_seats']); ?> seats left</div>
+                                <!-- Instead of passing flight ID, link to booking.php -->
+                                <a href="booking.php" class="book-btn">Book Now</a>
+                            <?php else: ?>
+                                <div class="sold-out">Sold Out</div>
+                            <?php endif; ?>
                         </div>
-                        
-                        <a href="booking.php?flight_id=<?php echo htmlspecialchars($flight['id']); ?>" class="book-btn">Book Now</a>
                     </div>
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
     </div>
 
-    <?php include 'templates/footer.php'; ?>
-    
     <!-- Add jQuery and jQuery UI -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
     
     <script>
-        // Set minimum date to today
-        document.addEventListener('DOMContentLoaded', function() {
-            const dateInput = document.getElementById('date');
-            if (dateInput) {
-                const today = new Date().toISOString().split('T')[0];
-                dateInput.setAttribute('min', today);
-                
-                // Initialize with today's date if no date is set
-                if (!dateInput.value) {
-                    dateInput.value = today;
-                }
-            }
+    // Autocomplete for departure and arrival fields
+    $(function() {
+        var airports = <?php echo json_encode($commonAirports); ?>;
+        var airportNames = airports.map(function(airport) {
+            return airport.name + " (" + airport.code + ")";
         });
         
-        // Initialize airport autocomplete and toggle functionality
-        $(document).ready(function() {
-            // Prepare data for autocomplete
-            const airports = <?php echo json_encode($commonAirports); ?>;
-            const airportNames = airports.map(airport => airport.name + " (" + airport.code + ")");
-            
-            // Initialize autocomplete for departure and arrival inputs
-            $(".airport-input").autocomplete({
-                source: airportNames,
-                minLength: 2,
-                select: function(event, ui) {
-                    // Extract the IATA code from the selection
-                    const match = ui.item.value.match(/\(([^)]+)\)/);
-                    if (match && match[1]) {
-                        // For API use, we'll store both name and code
-                        $(this).attr('data-code', match[1]);
-                    }
-                }
-            });
-            
-            // Toggle between text input and select dropdown
-            $(".toggle-btn").click(function() {
-                const inputType = $(this).data("input-type");
-                $(".toggle-btn").removeClass("active");
-                $(this).addClass("active");
-                
-                if (inputType === "text") {
-                    $(".airport-input").show();
-                    $(".airport-select").hide();
-                } else {
-                    $(".airport-input").hide();
-                    $(".airport-select").show();
-                }
-            });
+        $("#departure, #arrival").autocomplete({
+            source: airportNames,
+            minLength: 2
         });
+        
+        // Add plane icon to route
+        $(".route-info").append('<i class="fas fa-plane" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);"></i>');
+    });
     </script>
+    
+    <!-- Add Font Awesome -->
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </body>
 </html>
+
+<?php include 'templates/footer.php'; ?>
