@@ -5,6 +5,7 @@ require_once 'inc/db.php';
 require_once 'inc/functions.php';
 require_once 'inc/auth.php';
 require_once 'classes/Booking.php';
+require_once 'classes/Payment.php';
 require_once 'classes/ApiClient.php';
 
 if (!isLoggedIn()) {
@@ -26,7 +27,7 @@ if (isset($_POST['pay_booking']) && isset($_POST['booking_id'])) {
     $stmt = $pdo->prepare(
         "SELECT b.*, f.flight_number, f.departure, f.arrival, f.date, f.time 
          FROM bookings b
-         LEFT JOIN flights f ON b.flight_id = f.id
+         JOIN flights f ON b.flight_id = f.id
          WHERE b.id = ? AND b.user_id = ?"
     );
     $stmt->execute([$bookingId, $userId]);
@@ -55,16 +56,10 @@ if (isset($_POST['pay_booking']) && isset($_POST['booking_id'])) {
     try {
         $apiClient = new ApiClient();
         if (isset($booking['flight_number']) && !empty($booking['flight_number'])) {
-            $params = [
-                'flight_iata' => $booking['flight_number'],
-                'flight_date' => $booking['date']
-            ];
-            
-            $realTimeFlight = $apiClient->getFlightStatus($params);
-            
-            if (!empty($realTimeFlight)) {
-                $flightStatus = $realTimeFlight[0]; // Get first match
-            }
+            $flightStatus = $apiClient->getFlightStatus([
+                'flight_number' => $booking['flight_number'],
+                'date' => $booking['date']
+            ]);
         }
     } catch (Exception $e) {
         // Just log the error but continue
@@ -89,40 +84,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
     $expiryDate = $_POST['expiry_date'] ?? '';
     $cvv = $_POST['cvv'] ?? '';
     
-    if (empty($paymentMethod) || empty($cardNumber) || empty($cardName) || empty($expiryDate) || empty($cvv)) {
-        $error = "Please fill in all payment details.";
-    } else {
+    // Validate card data
+    $isValid = true;
+    $error = '';
+    
+    // Validate card number - must be 16 digits and start with 4 (Visa) or 5 (Mastercard)
+    if (empty($cardNumber) || !preg_match('/^(4|5)\d{15}$/', $cardNumber)) {
+        $isValid = false;
+        $error = "Please enter a valid Visa or Mastercard card number";
+    }
+    
+    // Validate expiry date - must be in MM/YY format and not expired
+    if ($isValid && (empty($expiryDate) || !preg_match('/^(0[1-9]|1[0-2])\/([0-9]{2})$/', $expiryDate, $matches))) {
+        $isValid = false;
+        $error = "Please enter a valid expiry date (MM/YY)";
+    } else if ($isValid) {
+        // Extract month and year from expiry date
+        $expMonth = intval($matches[1]);
+        $expYear = intval('20' . $matches[2]);
+        
+        // Get current date for comparison
+        $currentMonth = intval(date('m'));
+        $currentYear = intval(date('Y'));
+        
+        // Check if card is expired
+        if (($expYear < $currentYear) || ($expYear == $currentYear && $expMonth < $currentMonth)) {
+            $isValid = false;
+            $error = "The card has expired";
+        }
+        
+        // Check for unreasonably far future dates
+        if ($expYear > 2035) {
+            $isValid = false;
+            $error = "Please enter a valid expiry date";
+        }
+    }
+    
+    // Validate CVV - must be 3 digits
+    if ($isValid && (empty($cvv) || !preg_match('/^[0-9]{3}$/', $cvv))) {
+        $isValid = false;
+        $error = "Please enter a valid 3-digit CVV code";
+    }
+    
+    // Validate cardholder name - must not be empty
+    if ($isValid && empty($cardName)) {
+        $isValid = false;
+        $error = "Please enter the cardholder name";
+    }
+    
+    // If all validation passes, process payment and update booking status
+    if ($isValid) {
         try {
-            // Start transaction
-            $pdo->beginTransaction();
+            // Create Payment object
+            $payment = new Payment();
             
-            // Update booking status to "confirmed"
-            $updateStmt = $pdo->prepare("UPDATE bookings SET status = 'confirmed' WHERE id = ? AND user_id = ?");
-            if (!$updateStmt->execute([$bookingId, $userId])) {
-                throw new Exception("Failed to update booking status");
+            // Process payment 
+            $result = $payment->processPayment($userId, $bookingData['total_price'], $paymentMethod);
+            
+            if ($result['success']) {
+                // Update booking status to confirmed
+                $booking = new Booking();
+                $updateResult = $booking->updateBookingStatus($bookingId, 'confirmed');
+                
+                if ($updateResult) {
+                    // Redirect to my bookings page with success message
+                    $_SESSION['payment_success'] = true;
+                    header('Location: my-bookings.php?success=payment');
+                    exit();
+                } else {
+                    $error = "Payment was processed but booking status could not be updated";
+                }
+            } else {
+                $error = "Payment processing failed";
             }
-            
-            // Create dummy transaction ID for payment record
-            $transactionId = 'TX' . time() . rand(1000, 9999);
-            
-            // Record payment (if you have a payments table)
-            // For now, we'll just simulate a successful payment
-            
-            // Commit transaction
-            $pdo->commit();
-            
-            // Clear booking data from session
-            unset($_SESSION['booking_id']);
-            unset($_SESSION['booking_data']);
-            
-            // Redirect to confirmation page
-            header("Location: confirmation.php?booking_id=" . $bookingId);
-            exit;
         } catch (Exception $e) {
-            // Roll back transaction on error
-            $pdo->rollBack();
-            $error = "Payment processing failed: " . $e->getMessage();
-            error_log("Payment error: " . $e->getMessage());
+            $error = "An error occurred during payment processing: " . $e->getMessage();
         }
     }
 }
@@ -142,51 +178,27 @@ include 'templates/header.php';
         <div class="booking-details">
             <div class="flight-info">
                 <h3>Flight Details</h3>
-                <p><strong>Flight Number:</strong> <?php echo htmlspecialchars($bookingData['flight_number'] ?? 'N/A'); ?></p>
-                <p><strong>From:</strong> <?php echo htmlspecialchars($bookingData['departure'] ?? 'N/A'); ?></p>
-                <p><strong>To:</strong> <?php echo htmlspecialchars($bookingData['arrival'] ?? 'N/A'); ?></p>
-                <p><strong>Date:</strong> <?php echo htmlspecialchars($bookingData['date'] ?? 'N/A'); ?></p>
-                <p><strong>Time:</strong> <?php echo htmlspecialchars($bookingData['time'] ?? 'N/A'); ?></p>
+                <p><strong>Flight Number:</strong> <?php echo htmlspecialchars($bookingData['flight_number']); ?></p>
+                <p><strong>From:</strong> <?php echo htmlspecialchars($bookingData['departure']); ?></p>
+                <p><strong>To:</strong> <?php echo htmlspecialchars($bookingData['arrival']); ?></p>
+                <p><strong>Date:</strong> <?php echo htmlspecialchars(date('F j, Y', strtotime($bookingData['date']))); ?></p>
+                <p><strong>Time:</strong> <?php echo htmlspecialchars(date('h:i A', strtotime($bookingData['time']))); ?></p>
                 
                 <?php if ($flightStatus): ?>
                 <div class="real-time-info">
                     <h4>Real-Time Flight Status</h4>
-                    <p><span class="status-badge <?php echo strtolower($flightStatus['flight_status']); ?>">
-                        <?php echo ucfirst(htmlspecialchars($flightStatus['flight_status'] ?? 'scheduled')); ?>
-                    </span></p>
-                    
-                    <?php if (isset($flightStatus['departure']['terminal'])): ?>
-                    <p><strong>Departure Terminal:</strong> <?php echo htmlspecialchars($flightStatus['departure']['terminal']); ?></p>
-                    <?php endif; ?>
-                    
-                    <?php if (isset($flightStatus['departure']['gate'])): ?>
-                    <p><strong>Departure Gate:</strong> <?php echo htmlspecialchars($flightStatus['departure']['gate']); ?></p>
-                    <?php endif; ?>
-                    
-                    <?php if (isset($flightStatus['departure']['delay']) && $flightStatus['departure']['delay'] > 0): ?>
-                    <p class="delay-warning"><strong>Departure Delay:</strong> <?php echo htmlspecialchars($flightStatus['departure']['delay']); ?> minutes</p>
-                    <?php endif; ?>
-                    
-                    <?php if (isset($flightStatus['arrival']['terminal'])): ?>
-                    <p><strong>Arrival Terminal:</strong> <?php echo htmlspecialchars($flightStatus['arrival']['terminal']); ?></p>
-                    <?php endif; ?>
-                    
-                    <?php if (isset($flightStatus['arrival']['gate'])): ?>
-                    <p><strong>Arrival Gate:</strong> <?php echo htmlspecialchars($flightStatus['arrival']['gate']); ?></p>
-                    <?php endif; ?>
-                    
-                    <?php if (isset($flightStatus['airline']['name'])): ?>
-                    <p><strong>Airline:</strong> <?php echo htmlspecialchars($flightStatus['airline']['name']); ?></p>
+                    <p><strong>Status:</strong> <?php echo htmlspecialchars(ucfirst($flightStatus['status'] ?? 'Scheduled')); ?></p>
+                    <?php if (isset($flightStatus['delay']) && $flightStatus['delay'] > 0): ?>
+                    <p class="delay"><strong>Delay:</strong> <?php echo htmlspecialchars($flightStatus['delay']); ?> minutes</p>
                     <?php endif; ?>
                 </div>
                 <?php endif; ?>
             </div>
+            
             <div class="price-info">
-                <h3>Payment Details</h3>
-                <p><strong>Customer:</strong> <?php echo htmlspecialchars($bookingData['customer_name'] ?? 'N/A'); ?></p>
-                <div class="total-price">
-                    <strong>Total Amount:</strong> $<?php echo htmlspecialchars(number_format($bookingData['total_price'], 2)); ?>
-                </div>
+                <h3>Price Details</h3>
+                <p><strong>Passenger:</strong> <?php echo htmlspecialchars($bookingData['customer_name']); ?></p>
+                <p class="total-price"><strong>Total Amount:</strong> $<?php echo htmlspecialchars(number_format($bookingData['total_price'], 2)); ?></p>
             </div>
         </div>
     </div>
@@ -199,34 +211,31 @@ include 'templates/header.php';
                     <input type="radio" id="credit-card" name="payment_method" value="credit_card" checked>
                     <label for="credit-card">Credit Card</label>
                 </div>
-                <div class="payment-method">
-                    <input type="radio" id="debit-card" name="payment_method" value="debit_card">
-                    <label for="debit-card">Debit Card</label>
-                </div>
             </div>
             
             <div class="form-group">
-                <label for="card-number">Card Number</label>
-                <input type="text" id="card-number" name="card_number" placeholder="1234 5678 9012 3456" required>
+                <label for="card_number">Card Number</label>
+                <input type="text" id="card_number" name="card_number" placeholder="e.g., 4111222233334444" required maxlength="16">
+                <small>Visa (starts with 4) or MasterCard (starts with 5)</small>
             </div>
             
             <div class="form-group">
-                <label for="card-name">Name on Card</label>
-                <input type="text" id="card-name" name="card_name" placeholder="John Smith" required>
+                <label for="card_name">Cardholder Name</label>
+                <input type="text" id="card_name" name="card_name" placeholder="Name on card" required>
             </div>
             
             <div class="form-row">
                 <div class="form-group half">
-                    <label for="expiry-date">Expiry Date</label>
-                    <input type="text" id="expiry-date" name="expiry_date" placeholder="MM/YY" required>
+                    <label for="expiry_date">Expiry Date</label>
+                    <input type="text" id="expiry_date" name="expiry_date" placeholder="MM/YY" required maxlength="5">
                 </div>
                 <div class="form-group half">
                     <label for="cvv">CVV</label>
-                    <input type="text" id="cvv" name="cvv" placeholder="123" required>
+                    <input type="password" id="cvv" name="cvv" placeholder="3 digits" required maxlength="3">
                 </div>
             </div>
             
-            <button type="submit" name="process_payment" class="btn-primary">Pay $<?php echo htmlspecialchars(number_format($bookingData['total_price'], 2)); ?></button>
+            <button type="submit" name="process_payment" class="btn-primary">Complete Payment</button>
         </form>
     </div>
 </div>
@@ -311,18 +320,28 @@ include 'templates/header.php';
         padding: 10px;
         border: 1px solid #ddd;
         border-radius: 4px;
+        font-size: 16px;
+    }
+    
+    .form-group small {
+        color: #6c757d;
+        font-size: 0.85em;
+        margin-top: 5px;
+        display: block;
     }
     
     .btn-primary {
+        display: block;
+        width: 100%;
+        padding: 12px;
         background-color: #4CAF50;
         color: white;
-        padding: 12px 20px;
         border: none;
         border-radius: 4px;
-        cursor: pointer;
         font-size: 16px;
-        width: 100%;
-        margin-top: 20px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s;
     }
     
     .btn-primary:hover {
@@ -332,48 +351,48 @@ include 'templates/header.php';
     .alert-danger {
         background-color: #f8d7da;
         color: #721c24;
-        border: 1px solid #f5c6cb;
         padding: 15px;
-        margin-bottom: 20px;
         border-radius: 4px;
+        margin-bottom: 20px;
+        border: 1px solid #f5c6cb;
     }
 </style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const cardNumber = document.getElementById('card-number');
-        const expiryDate = document.getElementById('expiry-date');
-        const cvv = document.getElementById('cvv');
-        
-        if (cardNumber) {
-            cardNumber.addEventListener('input', function(e) {
-                // Format card number with spaces every 4 digits
-                let value = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-                let formattedValue = '';
-                for (let i = 0; i < value.length; i++) {
-                    if (i > 0 && i % 4 === 0) {
-                        formattedValue += ' ';
-                    }
-                    formattedValue += value[i];
-                }
-                e.target.value = formattedValue.substring(0, 19); // Limit to 16 digits plus 3 spaces
-            });
-        }
-        
-        if (expiryDate) {
-            expiryDate.addEventListener('input', function(e) {
-                // Format expiry date as MM/YY
+        // Format card number with spaces for readability
+        const cardInput = document.getElementById('card_number');
+        if (cardInput) {
+            cardInput.addEventListener('input', function(e) {
+                // Remove all non-digits
                 let value = e.target.value.replace(/\D/g, '');
-                if (value.length > 2) {
-                    value = value.substring(0, 2) + '/' + value.substring(2, 4);
-                }
+                
+                // Limit to 16 digits
+                value = value.substring(0, 16);
+                
                 e.target.value = value;
             });
         }
         
-        if (cvv) {
-            cvv.addEventListener('input', function(e) {
-                // Limit CVV to 3 or 4 digits
+        // Format expiry date input
+        const expiryInput = document.getElementById('expiry_date');
+        if (expiryInput) {
+            expiryInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                
+                // Add slash after month
+                if (value.length > 2) {
+                    value = value.substring(0, 2) + '/' + value.substring(2, 4);
+                }
+                
+                e.target.value = value;
+            });
+        }
+        
+        // Ensure CVV is only digits
+        const cvvInput = document.getElementById('cvv');
+        if (cvvInput) {
+            cvvInput.addEventListener('input', function(e) {
                 e.target.value = e.target.value.replace(/\D/g, '').substring(0, 3);
             });
         }
