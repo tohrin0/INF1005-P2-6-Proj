@@ -310,4 +310,19 @@ class ApiClient
 
         return $flights;
     }
+
+    public function getFlightById($flightId)
+    {
+        // For API IDs or database IDs, search through available flights
+        $flights = $this->getAvailableFlights();
+        
+        foreach ($flights as $flight) {
+            if ($flight['id'] == $flightId) {
+                return $flight;
+            }
+        }
+        
+        // Return null if not found
+        return null;
+    }
 }

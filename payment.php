@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Update booking status to "confirmed"
             $updateStmt = $pdo->prepare("UPDATE bookings SET status = 'confirmed' WHERE id = ? AND user_id = ?");
             if (!$updateStmt->execute([$bookingId, $userId])) {
-                throw new Exception("Failed to update booking status.");
+                throw new Exception("Failed to update booking status");
             }
             
             // Create dummy transaction ID for payment record
@@ -56,31 +56,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Record payment
             $paymentStmt = $pdo->prepare("
-                INSERT INTO payments (booking_id, amount, payment_method, transaction_id, status)
+                INSERT INTO payments (booking_id, amount, payment_method, transaction_id, status) 
                 VALUES (?, ?, ?, ?, 'completed')
             ");
             
             if (!$paymentStmt->execute([
-                $bookingId,
-                $bookingData['total_price'],
-                $paymentMethod,
+                $bookingId, 
+                $bookingData['total_price'], 
+                $paymentMethod, 
                 $transactionId
             ])) {
-                throw new Exception("Failed to record payment.");
-            }
-            
-            // Update available seats
-            $updateSeatsStmt = $pdo->prepare("
-                UPDATE flights 
-                SET available_seats = available_seats - ? 
-                WHERE id = ?
-            ");
-            
-            if (!$updateSeatsStmt->execute([
-                $bookingData['passenger_details']['passengers'],
-                $flightId
-            ])) {
-                throw new Exception("Failed to update available seats.");
+                throw new Exception("Failed to record payment");
             }
             
             // Commit transaction
@@ -111,70 +97,67 @@ include 'templates/header.php';
     
     <?php if (!empty($error)): ?>
         <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
-    <?php else: ?>
-        <div class="payment-summary">
-            <h2>Booking Summary</h2>
-            <?php if ($flight): ?>
-                <div class="booking-details">
-                    <div class="flight-info">
-                        <h3>Flight Details</h3>
-                        <p><strong>Flight Number:</strong> <?php echo htmlspecialchars($flight['flight_number']); ?></p>
-                        <p><strong>From:</strong> <?php echo htmlspecialchars($flight['departure']); ?></p>
-                        <p><strong>To:</strong> <?php echo htmlspecialchars($flight['arrival']); ?></p>
-                        <p><strong>Date:</strong> <?php echo htmlspecialchars($flight['date']); ?></p>
-                        <p><strong>Time:</strong> <?php echo htmlspecialchars($flight['time']); ?></p>
-                    </div>
-                    
-                    <div class="price-info">
-                        <h3>Price Details</h3>
-                        <p><strong>Price per passenger:</strong> $<?php echo number_format($flight['price'], 2); ?></p>
-                        <p><strong>Passengers:</strong> <?php echo $bookingData['passenger_details']['passengers']; ?></p>
-                        <div class="total-price">
-                            <span class="label">Total:</span>
-                            <span class="price">$<?php echo number_format($bookingData['total_price'], 2); ?></span>
-                        </div>
-                    </div>
-                </div>
-            <?php endif; ?>
-        </div>
-        
-        <div class="payment-form-container">
-            <h2>Payment Details</h2>
-            <form action="payment.php" method="POST" id="payment-form">
-                <div class="payment-methods">
-                    <div class="payment-method">
-                        <input type="radio" id="credit-card" name="payment_method" value="credit_card" checked>
-                        <label for="credit-card">Credit Card</label>
-                    </div>
-                </div>
-                
-                <div id="credit-card-form">
-                    <div class="form-group">
-                        <label for="card-name">Name on Card</label>
-                        <input type="text" id="card-name" name="card_name" placeholder="John Smith" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="card-number">Card Number</label>
-                        <input type="text" id="card-number" name="card_number" placeholder="1234 5678 9012 3456" maxlength="19" required>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group half">
-                            <label for="expiry-date">Expiry Date</label>
-                            <input type="text" id="expiry-date" name="expiry_date" placeholder="MM/YY" maxlength="5" required>
-                        </div>
-                        <div class="form-group half">
-                            <label for="cvv">CVV</label>
-                            <input type="text" id="cvv" name="cvv" placeholder="123" maxlength="3" required>
-                        </div>
-                    </div>
-                </div>
-                
-                <button type="submit" class="btn-primary">Complete Payment</button>
-            </form>
-        </div>
     <?php endif; ?>
+    
+    <div class="payment-summary">
+        <h2>Booking Summary</h2>
+        <?php if ($flight): ?>
+            <div class="booking-details">
+                <div class="flight-info">
+                    <p><strong>Flight Number:</strong> <?php echo htmlspecialchars($flight['flight_number']); ?></p>
+                    <p><strong>From:</strong> <?php echo htmlspecialchars($flight['departure']); ?></p>
+                    <p><strong>To:</strong> <?php echo htmlspecialchars($flight['arrival']); ?></p>
+                    <p><strong>Date:</strong> <?php echo htmlspecialchars(date('F j, Y', strtotime($flight['date']))); ?></p>
+                    <p><strong>Time:</strong> <?php echo htmlspecialchars(date('h:i A', strtotime($flight['time']))); ?></p>
+                </div>
+                <div class="price-info">
+                    <p><strong>Price per passenger:</strong> $<?php echo htmlspecialchars($flight['price']); ?></p>
+                    <div class="total-price">
+                        <strong>Total Amount:</strong> $<?php echo htmlspecialchars($bookingData['total_price']); ?>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+    </div>
+    
+    <div class="payment-form-container">
+        <h2>Payment Details</h2>
+        <form id="payment-form" method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
+            <div class="payment-methods">
+                <div class="payment-method">
+                    <input type="radio" id="credit-card" name="payment_method" value="credit_card" checked>
+                    <label for="credit-card">Credit Card</label>
+                </div>
+                <div class="payment-method">
+                    <input type="radio" id="debit-card" name="payment_method" value="debit_card">
+                    <label for="debit-card">Debit Card</label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="card-name">Name on Card:</label>
+                <input type="text" id="card-name" name="card_name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="card-number">Card Number:</label>
+                <input type="text" id="card-number" name="card_number" placeholder="1234 5678 9012 3456" required>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group half">
+                    <label for="expiry-date">Expiry Date:</label>
+                    <input type="text" id="expiry-date" name="expiry_date" placeholder="MM/YY" required>
+                </div>
+                <div class="form-group half">
+                    <label for="cvv">CVV:</label>
+                    <input type="text" id="cvv" name="cvv" placeholder="123" required>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-primary">Complete Payment</button>
+        </form>
+    </div>
 </div>
 
 <style>
@@ -281,67 +264,43 @@ include 'templates/header.php';
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('payment-form');
         const cardNumber = document.getElementById('card-number');
         const expiryDate = document.getElementById('expiry-date');
         const cvv = document.getElementById('cvv');
         
-        // Format card number with spaces
-        cardNumber.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            let formattedValue = '';
-            
-            for (let i = 0; i < value.length; i++) {
-                if (i > 0 && i % 4 === 0) {
-                    formattedValue += ' ';
+        if (cardNumber) {
+            cardNumber.addEventListener('input', function(e) {
+                // Format card number with spaces every 4 digits
+                let value = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+                let formattedValue = '';
+                for (let i = 0; i < value.length; i++) {
+                    if (i > 0 && i % 4 === 0) {
+                        formattedValue += ' ';
+                    }
+                    formattedValue += value[i];
                 }
-                formattedValue += value[i];
-            }
-            
-            e.target.value = formattedValue;
-        });
+                e.target.value = formattedValue.substring(0, 19); // Limit to 16 digits + 3 spaces
+            });
+        }
         
-        // Format expiry date with slash
-        expiryDate.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            
-            if (value.length > 2) {
-                value = value.substring(0, 2) + '/' + value.substring(2, 4);
-            }
-            
-            e.target.value = value;
-        });
+        if (expiryDate) {
+            expiryDate.addEventListener('input', function(e) {
+                // Format expiry date as MM/YY
+                let value = e.target.value.replace(/[^0-9]/gi, '');
+                if (value.length > 2) {
+                    value = value.substring(0, 2) + '/' + value.substring(2, 4);
+                }
+                e.target.value = value;
+            });
+        }
         
-        // Basic form validation
-        form.addEventListener('submit', function(e) {
-            const cardValue = cardNumber.value.replace(/\s/g, '');
-            const expiryValue = expiryDate.value;
-            const cvvValue = cvv.value;
-            
-            let isValid = true;
-            
-            // Validate card number (16 digits)
-            if (!/^\d{16}$/.test(cardValue)) {
-                alert('Please enter a valid 16-digit card number.');
-                isValid = false;
-            }
-            
-            // Validate expiry date (MM/YY format)
-            if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiryValue)) {
-                alert('Please enter a valid expiry date in MM/YY format.');
-                isValid = false;
-            }
-            
-            // Validate CVV (3 digits)
-            if (!/^\d{3}$/.test(cvvValue)) {
-                alert('Please enter a valid 3-digit CVV.');
-                isValid = false;
-            }
-            
-            if (!isValid) {
-                e.preventDefault();
-            }
-        });
+        if (cvv) {
+            cvv.addEventListener('input', function(e) {
+                // Only allow numbers and limit to 3-4 digits
+                let value = e.target.value.replace(/[^0-9]/gi, '');
+                e.target.value = value.substring(0, 4);
+            });
+        }
     });
 </script>
 

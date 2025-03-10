@@ -37,22 +37,22 @@ CREATE TABLE flights (
     UNIQUE KEY (flight_number, date)
 );
 
--- Bookings table
-CREATE TABLE bookings (
+-- Bookings table - 
+CREATE TABLE IF NOT EXISTS bookings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    flight_id INT NOT NULL,
-    booking_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-    status ENUM('pending', 'confirmed', 'canceled') DEFAULT 'pending',
+    flight_id VARCHAR(50) NOT NULL, -- Changed to VARCHAR as it's from API
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
     customer_name VARCHAR(100) NOT NULL,
     customer_email VARCHAR(100) NOT NULL,
     customer_phone VARCHAR(20) NOT NULL,
     passengers INT NOT NULL DEFAULT 1,
     total_price DECIMAL(10, 2) NOT NULL,
+    booking_date DATETIME DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (flight_id) REFERENCES flights(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+
 );
 
 -- Payments table
