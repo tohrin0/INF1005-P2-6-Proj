@@ -325,4 +325,26 @@ class ApiClient
         // Return null if not found
         return null;
     }
+
+    public function getFlightStatus($params = []) {
+        $params['access_key'] = $this->apiKey;
+        
+        // Build API URL
+        $url = $this->apiUrl . '/flights?' . http_build_query($params);
+        error_log("API Request URL for flight status: " . $url);
+
+        try {
+            $response = $this->makeRequest($url);
+            
+            if (empty($response['data'])) {
+                error_log("No flight status data returned from API");
+                return [];
+            }
+            
+            return $response['data'];
+        } catch (Exception $e) {
+            error_log("Error getting flight status: " . $e->getMessage());
+            return [];
+        }
+    }
 }

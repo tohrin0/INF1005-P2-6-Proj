@@ -4,6 +4,7 @@ require_once 'inc/config.php';
 require_once 'inc/db.php';
 require_once 'inc/functions.php';
 require_once 'inc/auth.php';
+require_once 'classes/ApiClient.php';
 
 if (!isLoggedIn()) {
     header('Location: login.php');
@@ -13,6 +14,7 @@ if (!isLoggedIn()) {
 $user_id = $_SESSION['user_id'];
 $booking_id = $_GET['booking_id'] ?? null;
 $booking = null;
+$flightStatus = null;
 
 if (!$booking_id) {
     header('Location: index.php');
@@ -32,6 +34,26 @@ try {
     
     if (!$booking) {
         throw new Exception("Booking not found or you don't have permission to view it.");
+    }
+    
+    // Get real-time flight data from AviationStack API
+    try {
+        $apiClient = new ApiClient();
+        if (isset($booking['flight_number']) && !empty($booking['flight_number'])) {
+            $params = [
+                'flight_iata' => $booking['flight_number'],
+                'flight_date' => $booking['flight_date']
+            ];
+            
+            $realTimeFlight = $apiClient->getFlightStatus($params);
+            
+            if (!empty($realTimeFlight)) {
+                $flightStatus = $realTimeFlight[0]; // Get first match
+            }
+        }
+    } catch (Exception $e) {
+        // Just log the error but continue
+        error_log("Error fetching real-time flight data for confirmation page: " . $e->getMessage());
     }
     
 } catch (Exception $e) {
@@ -98,6 +120,92 @@ include 'templates/header.php';
                             <span class="value"><?php echo htmlspecialchars($booking['arrival']); ?></span>
                         </div>
                     </div>
+                    
+                    <?php if ($flightStatus): ?>
+                    <div class="real-time-info">
+                        <h3>Real-Time Flight Status</h3>
+                        
+                        <div class="flight-detail-row">
+                            <div class="flight-detail">
+                                <span class="label">Current Status:</span>
+                                <span class="value status-badge <?php echo htmlspecialchars(strtolower($flightStatus['flight_status'])); ?>">
+                                    <?php echo htmlspecialchars(ucfirst($flightStatus['flight_status'])); ?>
+                                </span>
+                            </div>
+                            <?php if (isset($flightStatus['airline']['name'])): ?>
+                            <div class="flight-detail">
+                                <span class="label">Airline:</span>
+                                <span class="value"><?php echo htmlspecialchars($flightStatus['airline']['name']); ?></span>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <?php if (isset($flightStatus['departure']) && 
+                            (!empty($flightStatus['departure']['terminal']) || !empty($flightStatus['departure']['gate']))): ?>
+                        <div class="flight-detail-row">
+                            <div class="flight-detail">
+                                <span class="label">Departure Details:</span>
+                                <span class="value">
+                                    <?php 
+                                    $details = [];
+                                    if (!empty($flightStatus['departure']['terminal'])) 
+                                        $details[] = "Terminal: " . htmlspecialchars($flightStatus['departure']['terminal']);
+                                    if (!empty($flightStatus['departure']['gate'])) 
+                                        $details[] = "Gate: " . htmlspecialchars($flightStatus['departure']['gate']);
+                                    echo implode(' | ', $details);
+                                    ?>
+                                </span>
+                            </div>
+                            <?php if (!empty($flightStatus['departure']['delay']) && $flightStatus['departure']['delay'] > 0): ?>
+                            <div class="flight-detail">
+                                <span class="label">Departure Delay:</span>
+                                <span class="value delay"><?php echo htmlspecialchars($flightStatus['departure']['delay']); ?> minutes</span>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <?php if (isset($flightStatus['arrival']) && 
+                            (!empty($flightStatus['arrival']['terminal']) || !empty($flightStatus['arrival']['gate']))): ?>
+                        <div class="flight-detail-row">
+                            <div class="flight-detail">
+                                <span class="label">Arrival Details:</span>
+                                <span class="value">
+                                    <?php 
+                                    $details = [];
+                                    if (!empty($flightStatus['arrival']['terminal'])) 
+                                        $details[] = "Terminal: " . htmlspecialchars($flightStatus['arrival']['terminal']);
+                                    if (!empty($flightStatus['arrival']['gate'])) 
+                                        $details[] = "Gate: " . htmlspecialchars($flightStatus['arrival']['gate']);
+                                    if (!empty($flightStatus['arrival']['baggage'])) 
+                                        $details[] = "Baggage: " . htmlspecialchars($flightStatus['arrival']['baggage']);
+                                    echo implode(' | ', $details);
+                                    ?>
+                                </span>
+                            </div>
+                            <?php if (!empty($flightStatus['arrival']['delay']) && $flightStatus['arrival']['delay'] > 0): ?>
+                            <div class="flight-detail">
+                                <span class="label">Arrival Delay:</span>
+                                <span class="value delay"><?php echo htmlspecialchars($flightStatus['arrival']['delay']); ?> minutes</span>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <?php if (isset($flightStatus['aircraft']) && !empty($flightStatus['aircraft']['iata'])): ?>
+                        <div class="flight-detail-row">
+                            <div class="flight-detail">
+                                <span class="label">Aircraft:</span>
+                                <span class="value"><?php echo htmlspecialchars($flightStatus['aircraft']['iata']); ?>
+                                <?php if (!empty($flightStatus['aircraft']['registration'])): ?>
+                                    (<?php echo htmlspecialchars($flightStatus['aircraft']['registration']); ?>)
+                                <?php endif; ?>
+                                </span>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 
                 <div class="payment-info">
@@ -110,7 +218,14 @@ include 'templates/header.php';
                 
                 <div class="confirmation-actions">
                     <a href="index.php" class="btn btn-primary">Return to Home</a>
-                    <a href="account.php" class="btn btn-secondary">View All Bookings</a>
+                    <a href="my-bookings.php" class="btn btn-secondary">View All Bookings</a>
+                    <?php if ($booking['status'] === 'pending'): ?>
+                        <form method="POST" action="payment.php">
+                            <input type="hidden" name="booking_id" value="<?php echo htmlspecialchars($booking['id']); ?>">
+                            <input type="hidden" name="price" value="<?php echo htmlspecialchars($booking['total_price']); ?>">
+                            <button type="submit" name="pay_booking" class="btn btn-accent">Pay Now</button>
+                        </form>
+                    <?php endif; ?>
                 </div>
             </div>
         <?php endif; ?>
@@ -167,7 +282,7 @@ include 'templates/header.php';
         color: #856404;
     }
     
-    .booking-status.canceled {
+    .booking-status.cancelled {
         background-color: #f8d7da;
         color: #721c24;
     }
@@ -246,6 +361,7 @@ include 'templates/header.php';
     .btn-primary {
         background-color: #4CAF50;
         color: white;
+        border: none;
     }
     
     .btn-primary:hover {
@@ -262,6 +378,17 @@ include 'templates/header.php';
         background-color: #e2e6ea;
     }
     
+    .btn-accent {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-accent:hover {
+        background-color: #0069d9;
+    }
+    
     .alert {
         padding: 15px;
         margin-bottom: 20px;
@@ -276,6 +403,57 @@ include 'templates/header.php';
     
     .mt-3 {
         margin-top: 15px;
+    }
+    
+    .real-time-info {
+        background-color: #f8f9fa;
+        padding: 15px;
+        margin-top: 20px;
+        border-radius: 8px;
+        border-left: 4px solid #007bff;
+    }
+    
+    .real-time-info h3 {
+        color: #007bff;
+        margin-bottom: 15px;
+        font-size: 1.2em;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-weight: bold;
+    }
+    
+    .status-badge.scheduled {
+        background-color: rgba(0, 123, 255, 0.1);
+        color: #007bff;
+    }
+    
+    .status-badge.active {
+        background-color: rgba(40, 167, 69, 0.1);
+        color: #28a745;
+    }
+    
+    .status-badge.landed {
+        background-color: rgba(108, 117, 125, 0.1);
+        color: #6c757d;
+    }
+    
+    .status-badge.cancelled {
+        background-color: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+    }
+    
+    .status-badge.diverted {
+        background-color: rgba(255, 193, 7, 0.1);
+        color: #ffc107;
+    }
+    
+    .value.delay {
+        color: #dc3545;
+        font-weight: bold;
     }
     
     @media (max-width: 768px) {

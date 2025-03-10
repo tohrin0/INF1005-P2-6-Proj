@@ -16,19 +16,29 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// Redirect if flight not selected
-if (!isset($_SESSION['selected_flight_id'])) {
-    header('Location: flight-selection.php');
-    exit;
-}
-
 $userId = $_SESSION['user_id'];
-$flightId = $_SESSION['selected_flight_id'];
-$flightPrice = $_SESSION['selected_flight_price'];
 $error = '';
 $success = '';
 
-// Process form submission
+// Check if there's a direct POST from search.php or index.php
+if (isset($_POST['select_flight']) && !empty($_POST['flight_id'])) {
+    $_SESSION['selected_flight_id'] = $_POST['flight_id'];
+    $_SESSION['selected_flight_price'] = $_POST['price'];
+    $flightId = $_POST['flight_id'];
+    $flightPrice = $_POST['price'];
+} 
+// If no direct POST, check if we have stored flight data in session
+else if (isset($_SESSION['selected_flight_id'])) {
+    $flightId = $_SESSION['selected_flight_id'];
+    $flightPrice = $_SESSION['selected_flight_price'];
+} 
+// No flight selected, redirect to search
+else {
+    header('Location: search.php');
+    exit;
+}
+
+// Process form submission for booking
 if (isset($_POST['submit_booking'])) {
     error_log("===== DEBUG: Passenger form submitted =====");
     error_log("POST data: " . print_r($_POST, true));
@@ -76,7 +86,7 @@ try {
     $flight = $apiClient->getFlightById($flightId);
     if (!$flight) {
         $error = "Selected flight not found. Please try again.";
-        header('Location: flight-selection.php');
+        header('Location: search.php');
         exit;
     }
 } catch (Exception $e) {

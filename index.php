@@ -53,13 +53,13 @@ include 'templates/header.php';
         </div>
     </div>
 
-    <?php if ($isLoggedIn): ?>
+    <?php if ($isLoggedIn && !empty($flights)): ?>
         <div class="personal-section">
             <h2>Hello, <?php echo htmlspecialchars($_SESSION['username']); ?>!</h2>
-            <p>Welcome back to our flight booking platform. Ready to plan your next adventure?</p>
+            <p>Welcome to our flight booking platform. Check out our popular flights below or search for specific routes.</p>
             <div class="action-buttons">
                 <a href="search.php" class="btn">Search Flights</a>
-                <a href="account.php" class="btn">My Account</a>
+                <a href="my-bookings.php" class="btn">My Bookings</a>
             </div>
         </div>
 
@@ -71,7 +71,7 @@ include 'templates/header.php';
                         <div class="flight-card">
                             <div class="flight-header">
                                 <span class="flight-number"><?php echo htmlspecialchars($flight['flight_number']); ?></span>
-                                <span class="flight-airline"><?php echo htmlspecialchars($flight['airline']); ?></span>
+                                <span class="flight-airline"><?php echo htmlspecialchars($flight['airline'] ?? ''); ?></span>
                             </div>
                             <div class="flight-route">
                                 <div class="route-info">
@@ -81,21 +81,19 @@ include 'templates/header.php';
                                 </div>
                             </div>
                             <div class="flight-date">
-                                <?php echo date('M j, Y', strtotime($flight['date'])); ?> at <?php echo date('g:i A', strtotime($flight['time'])); ?>
+                                <?php echo htmlspecialchars($flight['date']); ?> at <?php echo htmlspecialchars($flight['time']); ?>
                             </div>
                             <div class="flight-price">
                                 $<?php echo htmlspecialchars(number_format($flight['price'], 2)); ?>
                             </div>
-                            <form method="POST" action="flight-selection.php" class="book-btn">
-                                <input type="hidden" name="flight_id" value="<?php echo htmlspecialchars($flight['id']); ?>">
-                                <input type="hidden" name="price" value="<?php echo htmlspecialchars($flight['price']); ?>">
-                                <button type="submit" name="select_flight" class="btn btn-primary">Book Now</button>
-                            </form>
+                            <div class="flight-info-badge">
+                                <i class="fas fa-info-circle"></i> View details on search page
+                            </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
-                <div class="view-all">
-                    <a href="search.php" class="btn btn-secondary">View All Flights</a>
+                <div class="view-all-flights">
+                    <a href="search.php" class="btn-view-all">View All Flights <i class="fas fa-arrow-right"></i></a>
                 </div>
             </div>
         <?php endif; ?>
@@ -115,19 +113,19 @@ include 'templates/header.php';
         <div class="testimonial-grid">
             <div class="testimonial">
                 <div class="testimonial-content">
-                    <p>"I found an amazing deal to Europe that saved me over $300. The booking process was so simple!"</p>
+                    "The booking process was incredibly easy and the prices were better than any other site I checked. Will definitely book through here again!"
                 </div>
-                <div class="testimonial-author">- Sarah T.</div>
+                <div class="testimonial-author">- Sarah L.</div>
             </div>
             <div class="testimonial">
                 <div class="testimonial-content">
-                    <p>"The customer service was exceptional when I needed to change my flight dates at the last minute."</p>
+                    "I needed to make a last minute change to my flight, and the customer service was fantastic. They helped me every step of the way."
                 </div>
-                <div class="testimonial-author">- Michael P.</div>
+                <div class="testimonial-author">- Michael T.</div>
             </div>
             <div class="testimonial">
                 <div class="testimonial-content">
-                    <p>"I've been using Flight Booking for all my business trips. Reliable, fast, and always the best prices."</p>
+                    "I've been using this site for all my business trips. The interface is clean, and I can always find what I need quickly."
                 </div>
                 <div class="testimonial-author">- Jennifer R.</div>
             </div>
@@ -205,6 +203,26 @@ include 'templates/header.php';
         margin: 30px 0;
     }
     
+    .action-buttons {
+        margin-top: 20px;
+    }
+    
+    .action-buttons .btn {
+        display: inline-block;
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 4px;
+        text-decoration: none;
+        margin-right: 10px;
+        font-weight: 600;
+        transition: background-color 0.3s;
+    }
+    
+    .action-buttons .btn:hover {
+        background-color: #45a049;
+    }
+    
     /* Popular flights section */
     .popular-flights {
         margin: 40px 0;
@@ -255,9 +273,55 @@ include 'templates/header.php';
         margin-bottom: 15px;
     }
     
-    .book-btn {
-        display: block;
+    .flight-info-badge {
         text-align: center;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    /* View All Flights button - ATTENTION GRABBING */
+    .view-all-flights {
+        text-align: center;
+        margin-top: 30px;
+    }
+    
+    .btn-view-all {
+        display: inline-block;
+        background: linear-gradient(45deg, #4CAF50, #2196F3);
+        color: white;
+        padding: 15px 30px;
+        border-radius: 50px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        text-decoration: none;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .btn-view-all:before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: 0.5s;
+    }
+    
+    .btn-view-all:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+    
+    .btn-view-all:hover:before {
+        left: 100%;
+    }
+    
+    .btn-view-all i {
+        margin-left: 10px;
     }
     
     /* CTA section for non-logged-in users */
@@ -316,8 +380,16 @@ include 'templates/header.php';
         .hero-content h1 {
             font-size: 2rem;
         }
+        
+        .btn-view-all {
+            padding: 12px 25px;
+            font-size: 1.1rem;
+        }
     }
 </style>
+
+<!-- Add Font Awesome -->
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
 <?php include 'templates/footer.php'; ?>
 

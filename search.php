@@ -409,8 +409,8 @@ include 'templates/header.php';
                             <div class="price">$<?php echo htmlspecialchars(number_format($flight['price'], 2)); ?></div>
                             <?php if (isset($flight['available_seats']) && $flight['available_seats'] > 0): ?>
                                 <div class="seats"><?php echo htmlspecialchars($flight['available_seats']); ?> seats left</div>
-                                <!-- Pass the flight ID as a parameter to flight-selection.php -->
-                                <form method="POST" action="flight-selection.php">
+                                <!-- Direct POST to passenger-details.php -->
+                                <form method="POST" action="passenger-details.php">
                                     <input type="hidden" name="flight_id" value="<?php echo htmlspecialchars($flight['id']); ?>">
                                     <input type="hidden" name="price" value="<?php echo htmlspecialchars($flight['price']); ?>">
                                     <button type="submit" name="select_flight" class="book-btn">Book Now</button>

@@ -102,7 +102,7 @@
                     <li><a href="globe.php">World Map</a></li>
                     <li><a href="search.php">Search Flights</a></li>
                     <li><a href="contact.php">Contact</a></li>
-                    <li><a href="faq.php">FAQ</a></li>
+                    <li><a href="my-bookings.php">Bookings</a></li>
                     <?php if (isset($_SESSION['user_id'])): ?>
                         <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
                             <li><a href="admin/dashboard.php" class="admin-link">Admin Dashboard</a></li>
