@@ -401,4 +401,69 @@ function formatDuration($durationMinutes) {
         return $minutes . "m";
     }
 }
+
+/**
+ * Check API key status and update database with usage information
+ * 
+ * @param int $keyIndex The index of the key in the FLIGHT_API_KEYS array
+ * @param bool $isWorking Whether the key is currently working
+ * @param string $errorMessage Error message if the key failed
+ * @return bool Success or failure
+ */
+function updateApiKeyStatus($keyIndex, $isWorking, $errorMessage = '') {
+    global $pdo;
+    
+    try {
+        // Check if we have a table to track API key status
+        $tableExists = $pdo->query("SHOW TABLES LIKE 'api_keys'")->rowCount() > 0;
+        
+        // Create table if it doesn't exist
+        if (!$tableExists) {
+            $pdo->exec("CREATE TABLE api_keys (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                key_index INT NOT NULL,
+                api_key VARCHAR(255) NOT NULL,
+                is_working BOOLEAN DEFAULT TRUE,
+                last_error TEXT,
+                last_used TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                request_count INT DEFAULT 0
+            )");
+        }
+        
+        // Get the API key for this index
+        $apiKeys = json_decode(FLIGHT_API_KEYS, true);
+        $apiKey = $apiKeys[$keyIndex] ?? null;
+        
+        if (!$apiKey) {
+            return false;
+        }
+        
+        // Check if this key is already in the database
+        $stmt = $pdo->prepare("SELECT id, request_count FROM api_keys WHERE api_key = ?");
+        $stmt->execute([$apiKey]);
+        $keyData = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($keyData) {
+            // Update existing key
+            $stmt = $pdo->prepare("UPDATE api_keys SET 
+                is_working = ?, 
+                last_error = ?, 
+                last_used = NOW(),
+                request_count = request_count + 1
+                WHERE id = ?");
+            $stmt->execute([$isWorking ? 1 : 0, $errorMessage, $keyData['id']]);
+        } else {
+            // Insert new key
+            $stmt = $pdo->prepare("INSERT INTO api_keys 
+                (key_index, api_key, is_working, last_error, request_count) 
+                VALUES (?, ?, ?, ?, 1)");
+            $stmt->execute([$keyIndex, $apiKey, $isWorking ? 1 : 0, $errorMessage]);
+        }
+        
+        return true;
+    } catch (Exception $e) {
+        error_log("Error updating API key status: " . $e->getMessage());
+        return false;
+    }
+}
 ?>

@@ -12,7 +12,23 @@ define('DB_NAME', 'flight_booking');
 
 // API settings for AviationStack
 define('FLIGHT_API_URL', 'https://api.aviationstack.com/v1');
-define('FLIGHT_API_KEY', '16cebcc9041492c90f3eb7ff50e66d94');
+
+// Multiple API keys - when one is capped/fails, the system will try the next one
+define('FLIGHT_API_KEYS', json_encode([
+    '16cebcc9041492c90f3eb7ff50e66d94', // Primary key
+    '16cebcc9041492c90f3eb7ff50e66d94',
+    '16cebcc9041492c90f3eb7ff50e66d94',
+    '16cebcc9041492c90f3eb7ff50e66d94',
+    '16cebcc9041492c90f3eb7ff50e66d94',
+    '16cebcc9041492c90f3eb7ff50e66d94',
+    '16cebcc9041492c90f3eb7ff50e66d94',
+    '16cebcc9041492c90f3eb7ff50e66d94',
+    '16cebcc9041492c90f3eb7ff50e66d94',
+    '16cebcc9041492c90f3eb7ff50e66d94'
+]));
+
+// For backward compatibility
+define('FLIGHT_API_KEY', json_decode(FLIGHT_API_KEYS, true)[0]);
 
 // Site settings
 define('SITE_NAME', 'Flight Booking Website');

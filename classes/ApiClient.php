@@ -3,19 +3,23 @@
 class ApiClient
 {
     private $apiUrl;
-    private $apiKey;
+    private $apiKeys;
+    private $currentKeyIndex = 0;
 
-    public function __construct($apiUrl = null, $apiKey = null)
+    public function __construct($apiUrl = null)
     {
         $this->apiUrl = $apiUrl ?? FLIGHT_API_URL;
-        $this->apiKey = $apiKey ?? FLIGHT_API_KEY;
+        $this->apiKeys = json_decode(FLIGHT_API_KEYS, true);
+        
+        if (empty($this->apiKeys)) {
+            throw new Exception("No API keys configured");
+        }
     }
 
     public function searchFlights($departure, $arrival, $date)
     {
         // Prepare parameters for AviationStack API
         $params = [
-            'access_key' => $this->apiKey,
             'limit' => 20
         ];
         
@@ -33,35 +37,23 @@ class ApiClient
                 // If input contains IATA code in parentheses, extract it
                 $params['dep_iata'] = $matches[1];
             } else {
-                // Check if the input is already an IATA code (3 letters)
-                if (preg_match('/^[A-Z]{3}$/', strtoupper($departure))) {
-                    $params['dep_iata'] = strtoupper($departure);
-                } else {
-                    // Try to use first 3 letters as a fallback
-                    $params['dep_iata'] = strtoupper(substr($departure, 0, 3));
-                }
+                // Otherwise, use the first 3 characters as the IATA code
+                $params['dep_iata'] = strtoupper(substr($departure, 0, 3));
             }
         }
         
         // Add arrival filter
         if (!empty($arrival)) {
             if (preg_match($pattern, $arrival, $matches)) {
-                // If input contains IATA code in parentheses, extract it
                 $params['arr_iata'] = $matches[1];
             } else {
-                // Check if the input is already an IATA code (3 letters)
-                if (preg_match('/^[A-Z]{3}$/', strtoupper($arrival))) {
-                    $params['arr_iata'] = strtoupper($arrival);
-                } else {
-                    // Try to use first 3 letters as a fallback
-                    $params['arr_iata'] = strtoupper(substr($arrival, 0, 3));
-                }
+                $params['arr_iata'] = strtoupper(substr($arrival, 0, 3));
             }
         }
 
-        // Build API URL
+        // Build API URL (without access_key - we'll add it in makeRequest)
         $url = $this->apiUrl . '/flights?' . http_build_query($params);
-        error_log("API Request URL: " . $url);
+        error_log("API Request URL (without key): " . $url);
 
         $response = $this->makeRequest($url);
         
@@ -76,8 +68,6 @@ class ApiClient
 
     public function getFlightSchedules($params = [])
     {
-        $params['access_key'] = $this->apiKey;
-        $params['limit'] = $params['limit'] ?? 20;
         $url = $this->apiUrl . '/flights?' . http_build_query($params);
         
         $response = $this->makeRequest($url);
@@ -87,7 +77,6 @@ class ApiClient
     public function getAvailableFlights()
     {
         $params = [
-            'access_key' => $this->apiKey,
             'flight_status' => 'scheduled',
             'limit' => 20
         ];
@@ -100,34 +89,73 @@ class ApiClient
 
     private function makeRequest($url)
     {
-        try {
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-            
-            $response = curl_exec($ch);
-            
-            if (curl_errno($ch)) {
-                error_log('cURL error: ' . curl_error($ch));
+        // Try each API key until one works or we run out of keys
+        $attempts = 0;
+        $maxAttempts = count($this->apiKeys);
+        $lastError = null;
+        
+        while ($attempts < $maxAttempts) {
+            try {
+                // Add the current API key to the URL
+                $currentKey = $this->apiKeys[$this->currentKeyIndex];
+                $fullUrl = $url . (parse_url($url, PHP_URL_QUERY) ? '&' : '?') . 'access_key=' . $currentKey;
+                
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $fullUrl);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+                
+                $response = curl_exec($ch);
+                
+                if (curl_errno($ch)) {
+                    throw new Exception('cURL error: ' . curl_error($ch));
+                }
+                
                 curl_close($ch);
-                return ['data' => []];
+                
+                $result = json_decode($response, true);
+                
+                // Check for API-specific errors
+                if (!$result) {
+                    throw new Exception("Failed to decode API response");
+                }
+                
+                if (isset($result['error'])) {
+                    $errorInfo = $result['error']['info'] ?? 'Unknown API error';
+                    
+                    // If usage limit is exceeded, try the next key
+                    if (strpos($errorInfo, 'usage limit') !== false || 
+                        strpos($errorInfo, 'rate limit') !== false) {
+                        throw new Exception("API key limit reached: " . $errorInfo);
+                    }
+                    
+                    // For other errors, just return the error
+                    error_log('API response error: ' . $errorInfo);
+                    return ['data' => []];
+                }
+                
+                // If we got here, the request was successful
+                return $result;
+                
+            } catch (Exception $e) {
+                $lastError = $e->getMessage();
+                error_log("API key {$this->currentKeyIndex} failed: " . $lastError);
+                
+                // Try the next API key
+                $this->currentKeyIndex = ($this->currentKeyIndex + 1) % $maxAttempts;
+                $attempts++;
+                
+                // If we've tried all keys and are back to the first one, break
+                if ($attempts >= $maxAttempts) {
+                    error_log("All API keys failed. Last error: " . $lastError);
+                    break;
+                }
             }
-            
-            curl_close($ch);
-            
-            $result = json_decode($response, true);
-            
-            if (!$result || isset($result['error'])) {
-                error_log('API response error: ' . ($result['error']['info'] ?? $response));
-                return ['data' => []];
-            }
-
-            return $result;
-        } catch (Exception $e) {
-            error_log('Exception in API request: ' . $e->getMessage());
-            return ['data' => []];
         }
+        
+        // If we've exhausted all API keys, return an empty result
+        error_log("All API keys exhausted. Last error: " . $lastError);
+        return ['data' => []];
     }
 
     private function formatFlightResults($response)
@@ -326,12 +354,11 @@ class ApiClient
         return null;
     }
 
-    public function getFlightStatus($params = []) {
-        $params['access_key'] = $this->apiKey;
-        
-        // Build API URL
+    public function getFlightStatus($params = [])
+    {
+        // Build API URL (without access_key - we'll add it in makeRequest)
         $url = $this->apiUrl . '/flights?' . http_build_query($params);
-        error_log("API Request URL for flight status: " . $url);
+        error_log("API Request URL for flight status (without key): " . $url);
 
         try {
             $response = $this->makeRequest($url);

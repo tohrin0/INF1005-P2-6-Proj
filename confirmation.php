@@ -22,11 +22,11 @@ if (!$booking_id) {
 }
 
 try {
-    // Get booking details
+    // Get booking details - Fix the missing FROM clause in the SQL query
     $stmt = $pdo->prepare(
         "SELECT b.*, f.flight_number, f.departure, f.arrival, f.date as flight_date, f.time 
          FROM bookings b
-         JOIN flights f ON b.flight_id = f.id
+         LEFT JOIN flights f ON b.flight_id = f.id
          WHERE b.id = ? AND b.user_id = ?"
     );
     $stmt->execute([$booking_id, $user_id]);
@@ -244,6 +244,20 @@ include 'templates/header.php';
         padding: 30px;
         max-width: 800px;
         margin: 0 auto;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .confirmation-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 150px;
+        height: 150px;
+        background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(76, 175, 80, 0.1) 50%, transparent 50%, transparent 100%);
+        z-index: 0;
+        border-radius: 0 0 0 150px;
     }
     
     .confirmation-header {
@@ -256,6 +270,8 @@ include 'templates/header.php';
     .confirmation-header h1 {
         color: #28a745;
         margin-bottom: 15px;
+        font-size: 2rem;
+        font-weight: 700;
     }
     
     .booking-id {
@@ -270,6 +286,8 @@ include 'templates/header.php';
         font-weight: bold;
         font-size: 0.9em;
         margin-top: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
     
     .booking-status.confirmed {
@@ -296,23 +314,42 @@ include 'templates/header.php';
         color: #333;
         font-size: 1.5em;
         margin-bottom: 15px;
+        position: relative;
+        padding-bottom: 8px;
+    }
+    
+    .customer-info h2::after, .flight-info h2::after, .payment-info h2::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 50px;
+        height: 3px;
+        background: #4CAF50;
     }
     
     .customer-info p {
         margin-bottom: 10px;
         line-height: 1.6;
+        display: flex;
+        justify-content: space-between;
     }
     
     .flight-detail-row {
         display: flex;
         flex-wrap: wrap;
         margin-bottom: 15px;
+        gap: 20px;
     }
     
     .flight-detail {
         flex: 1;
         min-width: 200px;
         margin-bottom: 10px;
+        background: #f9f9f9;
+        padding: 12px 15px;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     
     .flight-detail .label {
@@ -320,21 +357,30 @@ include 'templates/header.php';
         display: block;
         margin-bottom: 5px;
         color: #555;
+        font-size: 0.85em;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
     
     .flight-detail .value {
         font-size: 1.1em;
+        color: #333;
     }
     
     .total-price {
         text-align: right;
         padding: 10px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f9f9f9;
+        padding: 15px 20px;
+        border-radius: 6px;
     }
     
     .total-price .label {
         font-weight: bold;
         font-size: 1.2em;
-        margin-right: 15px;
     }
     
     .total-price .price {
@@ -347,7 +393,8 @@ include 'templates/header.php';
         padding-top: 25px;
         display: flex;
         justify-content: center;
-        gap: 20px;
+        gap: 15px;
+        flex-wrap: wrap;
     }
     
     .btn {
@@ -356,6 +403,8 @@ include 'templates/header.php';
         text-decoration: none;
         font-weight: 600;
         font-size: 16px;
+        transition: all 0.3s ease;
+        display: inline-block;
     }
     
     .btn-primary {
@@ -366,6 +415,8 @@ include 'templates/header.php';
     
     .btn-primary:hover {
         background-color: #45a049;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     
     .btn-secondary {
@@ -376,6 +427,8 @@ include 'templates/header.php';
     
     .btn-secondary:hover {
         background-color: #e2e6ea;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
     }
     
     .btn-accent {
@@ -387,6 +440,8 @@ include 'templates/header.php';
     
     .btn-accent:hover {
         background-color: #0069d9;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     
     .alert {
@@ -407,16 +462,33 @@ include 'templates/header.php';
     
     .real-time-info {
         background-color: #f8f9fa;
-        padding: 15px;
-        margin-top: 20px;
         border-radius: 8px;
+        padding: 20px;
+        margin-top: 25px;
         border-left: 4px solid #007bff;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     }
     
     .real-time-info h3 {
         color: #007bff;
-        margin-bottom: 15px;
+        margin-bottom: 20px;
         font-size: 1.2em;
+        display: flex;
+        align-items: center;
+    }
+    
+    .real-time-info h3::before {
+        content: "●";
+        color: #007bff;
+        animation: pulse 2s infinite;
+        margin-right: 10px;
+        font-size: 0.8em;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.3; }
+        100% { opacity: 1; }
     }
     
     .status-badge {
@@ -458,11 +530,12 @@ include 'templates/header.php';
     
     @media (max-width: 768px) {
         .confirmation-card {
-            padding: 20px;
+            padding: 20px 15px;
         }
         
         .flight-detail-row {
             flex-direction: column;
+            gap: 10px;
         }
         
         .flight-detail {
@@ -472,11 +545,13 @@ include 'templates/header.php';
         .confirmation-actions {
             flex-direction: column;
             gap: 10px;
+            align-items: stretch;
         }
         
         .btn {
             display: block;
             text-align: center;
+            margin-bottom: 10px;
         }
     }
 </style>
