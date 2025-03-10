@@ -1,27 +1,74 @@
 # Flight Booking Website
 
 ## Overview
-This project is a flight booking website that allows users to search for flights, make bookings, and manage their accounts. It features a responsive design, ensuring a seamless experience across various devices. The back-end functionality supports user membership and data management, utilizing a flight schedule API for real-time flight information.
+A comprehensive flight booking platform that enables users to search, book, and manage flight reservations. The system integrates with real-time flight APIs and provides a responsive user interface across all devices.
 
-## Features
-- **User Authentication**: Users can register, log in, and manage their accounts.
-- **Flight Search**: Users can search for available flights using the flight schedule API.
-- **Booking Management**: Users can book flights and view their booking history.
-- **Responsive Design**: The website is designed to be mobile-friendly and accessible on all devices.
+## Key Features
 
-## Technologies Used
-- **PHP**: Server-side scripting language for back-end development.
-- **MySQL**: Database management system for storing user and booking data.
-- **HTML/CSS/JavaScript**: Front-end technologies for building the user interface.
-- **API Integration**: Utilizes a flight schedule API for real-time flight data.
-- **Admin Dashboard**: Admins can CRUD flights, users, messages databases in the admin dashboard
+### User Management
+- User registration and authentication
+- Profile management
+- Booking history tracking
+- Password reset functionality
+
+### Flight Management
+- Real-time flight search and booking
+- Integration with flight schedule API
+- Seat availability tracking
+- Flight status updates
+- Multiple passenger booking support
+
+### Booking System
+- Secure payment processing
+- Booking confirmation system
+- Passenger information management
+- Multiple passenger handling per booking
+- Real-time booking status updates
+
+### Admin Dashboard
+- User management
+- Flight management
+- Booking oversight
+- System settings control
+- Analytics and reporting
+
+## Technical Stack
+- **Backend**: PHP 7.4+
+- **Database**: MySQL
+- **Frontend**: HTML5, CSS3, JavaScript
+- **Dependencies**: 
+  - GuzzleHTTP for API requests
+  - PHPDotenv for environment management
+  - Monolog for logging
 
 ## Installation
 1. Set up a web server (e.g., Apache) and configure it to serve the project directory.
 2. Create a MySQL database and import schema.sql.
 3. Update the `inc/config.php` and `inc/db.php` files with your database/server connection details.
 
-## Usage
-- Access the website through the web server's URL.
-- Use the navigation to explore different pages, search for flights, and manage bookings.
-- Please take note that Five Server does not work properly with MySQL.
+
+## Security Features
+- Password hashing
+- Session management
+- SQL injection prevention
+- XSS protection
+- CSRF protection
+- Input validation
+
+## Contributing
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+This project is proprietary software. All rights reserved.
+
+## Notes
+- For testing purposes only
+- Not for production use
+- Five Server does not work properly with MySQL
+
+## Support
+For support questions, please open an issue in the repository or contact the development team.
