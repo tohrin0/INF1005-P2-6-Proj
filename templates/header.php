@@ -99,6 +99,7 @@
             <nav>
                 <ul>
                     <!-- Removed "Home" menu item since logo now links to home -->
+                    <li><a href="globe.php">World Map</a></li>
                     <li><a href="search.php">Search Flights</a></li>
                     <li><a href="about.php">About Us</a></li>
                     <li><a href="services.php">Services</a></li>
