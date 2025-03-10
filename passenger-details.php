@@ -54,7 +54,8 @@ if (isset($_POST['submit_booking'])) {
             'email' => htmlspecialchars(trim($_POST['email'])),
             'phone' => htmlspecialchars(trim($_POST['phone'])),
             'passengers' => (int)$_POST['passengers'],
-            'price' => (float)$flightPrice
+            'price' => (float)$flightPrice,
+            'flight_api' => $flightId  // Store the API flight ID here
         ];
         
         try {
@@ -82,7 +83,8 @@ if (isset($_POST['submit_booking'])) {
                     'departure_terminal' => $flightData['departure_terminal'] ?? null,
                     'departure_gate' => $flightData['departure_gate'] ?? null,
                     'arrival_terminal' => $flightData['arrival_terminal'] ?? null,
-                    'arrival_gate' => $flightData['arrival_gate'] ?? null
+                    'arrival_gate' => $flightData['arrival_gate'] ?? null,
+                    'flight_api' => $flightId // Add the API flight ID here as well
                 ]);
                 
                 // Save flight to database (handles both insert and update)
@@ -101,6 +103,7 @@ if (isset($_POST['submit_booking'])) {
                         $_SESSION['booking_id'] = $newBookingId;
                         $_SESSION['booking_data'] = [
                             'flight_id' => $localFlightId,
+                            'flight_api' => $flightId, // Include flight_api in session data
                             'total_price' => $passengerDetails['passengers'] * $flightPrice,
                             'customer_name' => $passengerDetails['name'],
                             'flight_number' => $flightData['flight_number'],

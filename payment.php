@@ -8,6 +8,10 @@ require_once 'classes/Booking.php';
 require_once 'classes/Payment.php';
 require_once 'classes/ApiClient.php';
 
+// At the top of the file, add error reporting
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 if (!isLoggedIn()) {
     header('Location: login.php');
     exit();
@@ -25,7 +29,7 @@ if (isset($_POST['pay_booking']) && isset($_POST['booking_id'])) {
     
     // Verify the booking belongs to the user
     $stmt = $pdo->prepare(
-        "SELECT b.*, f.flight_number, f.departure, f.arrival, f.date, f.time 
+        "SELECT b.*, f.flight_number, f.flight_api, f.departure, f.arrival, f.date, f.time 
          FROM bookings b
          JOIN flights f ON b.flight_id = f.id
          WHERE b.id = ? AND b.user_id = ?"
@@ -43,6 +47,7 @@ if (isset($_POST['pay_booking']) && isset($_POST['booking_id'])) {
     $_SESSION['booking_id'] = $bookingId;
     $_SESSION['booking_data'] = [
         'flight_id' => $booking['flight_id'],
+        'flight_api' => $booking['flight_api'], // Include the flight_api ID
         'total_price' => $booking['total_price'],
         'customer_name' => $booking['customer_name'],
         'flight_number' => $booking['flight_number'],
@@ -77,89 +82,39 @@ $bookingData = $_SESSION['booking_data'];
 
 // Handle payment form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
-    // Process payment
-    $paymentMethod = $_POST['payment_method'] ?? '';
-    $cardNumber = $_POST['card_number'] ?? '';
-    $cardName = $_POST['card_name'] ?? '';
-    $expiryDate = $_POST['expiry_date'] ?? '';
-    $cvv = $_POST['cvv'] ?? '';
+    // Debug line
+    error_log("Payment form submitted");
     
-    // Validate card data
-    $isValid = true;
-    $error = '';
+    // Create Payment object with booking amount
+    $payment = new Payment($bookingData['total_price'], 'USD', 'credit_card');
     
-    // Validate card number - must be 16 digits and start with 4 (Visa) or 5 (Mastercard)
-    if (empty($cardNumber) || !preg_match('/^(4|5)\d{15}$/', $cardNumber)) {
-        $isValid = false;
-        $error = "Please enter a valid Visa or Mastercard card number";
-    }
-    
-    // Validate expiry date - must be in MM/YY format and not expired
-    if ($isValid && (empty($expiryDate) || !preg_match('/^(0[1-9]|1[0-2])\/([0-9]{2})$/', $expiryDate, $matches))) {
-        $isValid = false;
-        $error = "Please enter a valid expiry date (MM/YY)";
-    } else if ($isValid) {
-        // Extract month and year from expiry date
-        $expMonth = intval($matches[1]);
-        $expYear = intval('20' . $matches[2]);
+    try {
+        // Process payment (simplified version)
+        $result = $payment->processPayment($userId, $bookingData['total_price'], 'credit_card');
         
-        // Get current date for comparison
-        $currentMonth = intval(date('m'));
-        $currentYear = intval(date('Y'));
-        
-        // Check if card is expired
-        if (($expYear < $currentYear) || ($expYear == $currentYear && $expMonth < $currentMonth)) {
-            $isValid = false;
-            $error = "The card has expired";
-        }
-        
-        // Check for unreasonably far future dates
-        if ($expYear > 2035) {
-            $isValid = false;
-            $error = "Please enter a valid expiry date";
-        }
-    }
-    
-    // Validate CVV - must be 3 digits
-    if ($isValid && (empty($cvv) || !preg_match('/^[0-9]{3}$/', $cvv))) {
-        $isValid = false;
-        $error = "Please enter a valid 3-digit CVV code";
-    }
-    
-    // Validate cardholder name - must not be empty
-    if ($isValid && empty($cardName)) {
-        $isValid = false;
-        $error = "Please enter the cardholder name";
-    }
-    
-    // If all validation passes, process payment and update booking status
-    if ($isValid) {
-        try {
-            // Create Payment object
-            $payment = new Payment();
+        if ($result['success']) {
+            // Debug line
+            error_log("Payment processed successfully");
             
-            // Process payment 
-            $result = $payment->processPayment($userId, $bookingData['total_price'], $paymentMethod);
-            
-            if ($result['success']) {
-                // Update booking status to confirmed
-                $booking = new Booking();
-                $updateResult = $booking->updateBookingStatus($bookingId, 'confirmed');
+            // Update booking status to confirmed
+            if ($payment->updateBookingAfterPayment($bookingId, 'confirmed', $result['transaction_id'])) {
+                // Debug line
+                error_log("Booking status updated successfully");
                 
-                if ($updateResult) {
-                    // Redirect to my bookings page with success message
-                    $_SESSION['payment_success'] = true;
-                    header('Location: my-bookings.php?success=payment');
-                    exit();
-                } else {
-                    $error = "Payment was processed but booking status could not be updated";
-                }
+                $_SESSION['payment_success'] = true;
+                header('Location: my-bookings.php?success=payment');
+                exit();
             } else {
-                $error = "Payment processing failed";
+                $error = "Payment was processed but booking status could not be updated";
+                error_log("Failed to update booking status");
             }
-        } catch (Exception $e) {
-            $error = "An error occurred during payment processing: " . $e->getMessage();
+        } else {
+            $error = "Payment processing failed";
+            error_log("Payment processing failed");
         }
+    } catch (Exception $e) {
+        error_log("Payment error: " . $e->getMessage());
+        $error = "An error occurred during payment processing";
     }
 }
 
@@ -215,7 +170,7 @@ include 'templates/header.php';
             
             <div class="form-group">
                 <label for="card_number">Card Number</label>
-                <input type="text" id="card_number" name="card_number" placeholder="e.g., 4111222233334444" required maxlength="16">
+                <input type="text" id="card_number" name="card_number" placeholder="e.g., 4111222233334444" maxlength="16" required>
                 <small>Visa (starts with 4) or MasterCard (starts with 5)</small>
             </div>
             
@@ -227,14 +182,15 @@ include 'templates/header.php';
             <div class="form-row">
                 <div class="form-group half">
                     <label for="expiry_date">Expiry Date</label>
-                    <input type="text" id="expiry_date" name="expiry_date" placeholder="MM/YY" required maxlength="5">
+                    <input type="text" id="expiry_date" name="expiry_date" placeholder="MM/YY" maxlength="5" required>
                 </div>
                 <div class="form-group half">
                     <label for="cvv">CVV</label>
-                    <input type="password" id="cvv" name="cvv" placeholder="3 digits" required maxlength="3">
+                    <input type="password" id="cvv" name="cvv" placeholder="3 digits" maxlength="3" required>
                 </div>
             </div>
             
+            <input type="hidden" name="booking_id" value="<?php echo htmlspecialchars($bookingId); ?>">
             <button type="submit" name="process_payment" class="btn-primary">Complete Payment</button>
         </form>
     </div>
@@ -370,6 +326,7 @@ include 'templates/header.php';
                 // Limit to 16 digits
                 value = value.substring(0, 16);
                 
+                // Format with spaces (optional)
                 e.target.value = value;
             });
         }

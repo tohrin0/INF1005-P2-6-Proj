@@ -205,6 +205,7 @@ class ApiClient
             
             $formattedFlight = [
                 'id' => $id,
+                'flight_api' => $id, // Store the API's flight ID
                 'flight_number' => $flight['flight']['iata'] ?? $flight['flight']['icao'] ?? 'Unknown',
                 'airline' => $flight['airline']['name'] ?? ($flight['airline']['iata'] ?? 'Unknown'),
                 'departure' => $departureCity,
@@ -255,6 +256,14 @@ class ApiClient
 
     private function getDummyFlightData($departure = null, $arrival = null, $date = null)
     {
+        // Generate some fake flights for testing or when API is unavailable
+        $flights = [];
+        $airlines = ['American Airlines', 'Delta Air Lines', 'United Airlines', 'Southwest', 'JetBlue'];
+        
+        // Set default date if not provided
+        $searchDate = $date ? date('Y-m-d', strtotime($date)) : date('Y-m-d');
+        
+        // Cities with airport codes
         $cities = [
             'New York' => 'NYC',
             'Los Angeles' => 'LAX',
@@ -270,12 +279,7 @@ class ApiClient
             'Phoenix' => 'PHX'
         ];
         
-        $airlines = ['American Airlines', 'Delta Air Lines', 'United Airlines', 'Southwest', 'JetBlue'];
-        $flights = [];
-        
-        // Set default date if not provided
-        $searchDate = $date ? date('Y-m-d', strtotime($date)) : date('Y-m-d');
-        
+        // Extract city and code info for departure and arrival
         // Extract codes from city names if provided in "City (CODE)" format
         $pattern = '/\(([A-Z]{3})\)$/';
         
@@ -316,9 +320,13 @@ class ApiClient
             $depTime = strtotime($searchDate . ' +' . rand(0, 23) . ' hours +' . rand(0, 59) . ' minutes');
             $flightDuration = rand(45, 360); // Flight duration in minutes
             $arrTime = $depTime + ($flightDuration * 60);
+            
+            // Generate unique flight ID for API
+            $flightApiId = 'api_flight_' . uniqid();
 
             $flights[] = [
                 'id' => 'FL' . str_pad($i + 100, 4, '0', STR_PAD_LEFT),
+                'flight_api' => $flightApiId, // Add flight_api ID
                 'flight_number' => 'FL' . str_pad($i + 100, 4, '0', STR_PAD_LEFT),
                 'airline' => $airlines[array_rand($airlines)],
                 'departure' => $departureCity,

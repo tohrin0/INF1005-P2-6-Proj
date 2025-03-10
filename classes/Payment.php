@@ -76,6 +76,9 @@ class Payment {
         // Generate a transaction ID
         $this->transactionId = uniqid('txn_');
         
+        // Debug line
+        error_log("Processing payment with amount: $amount, method: $paymentMethod");
+        
         // Simulate payment processing (always successful in this demo)
         return [
             'success' => true,
@@ -93,17 +96,30 @@ class Payment {
      */
     public function updateBookingAfterPayment($bookingId, $status = 'confirmed', $transactionId = null) {
         try {
-            // Update the booking status
-            $stmt = $this->db->prepare("UPDATE bookings SET status = ? WHERE id = ?");
-            $result = $stmt->execute([$status, $bookingId]);
+            $this->db->beginTransaction();
             
-            if ($result && $transactionId) {
-                // Record the payment in payments table if you have one
-                $this->recordPayment($bookingId, $transactionId);
+            // Debug line
+            error_log("Updating booking status: $bookingId to $status");
+            
+            // Update booking status
+            $stmt = $this->db->prepare("UPDATE bookings SET status = ? WHERE id = ?");
+            $bookingResult = $stmt->execute([$status, $bookingId]);
+            
+            // Record payment if we have a transaction ID
+            if ($bookingResult && $transactionId) {
+                $paymentResult = $this->recordPayment($bookingId, $transactionId);
+                if ($paymentResult) {
+                    $this->db->commit();
+                    error_log("Payment recorded successfully");
+                    return true;
+                }
             }
             
-            return $result;
+            $this->db->rollBack();
+            error_log("Failed to record payment");
+            return false;
         } catch (PDOException $e) {
+            $this->db->rollBack();
             error_log("Error updating booking status: " . $e->getMessage());
             return false;
         }
@@ -118,14 +134,22 @@ class Payment {
      */
     private function recordPayment($bookingId, $transactionId) {
         try {
-            // Check if payments table is properly set up in your database
+            // Match the schema exactly
             $stmt = $this->db->prepare(
-                "INSERT INTO payments (booking_id, transaction_id, amount, payment_method, status, created_at) 
-                 VALUES (?, ?, ?, ?, 'completed', NOW())"
+                "INSERT INTO payments (booking_id, amount, payment_method, transaction_id, status) 
+                 VALUES (?, ?, ?, ?, 'completed')"
             );
-            return $stmt->execute([$bookingId, $transactionId, $this->amount, $this->paymentMethod]);
+            
+            // Debug line
+            error_log("Recording payment for booking: $bookingId");
+            
+            return $stmt->execute([
+                $bookingId,
+                $this->amount,
+                $this->paymentMethod,
+                $transactionId
+            ]);
         } catch (PDOException $e) {
-            // Just log the error but don't fail the main booking status update
             error_log("Error recording payment details: " . $e->getMessage());
             return false;
         }

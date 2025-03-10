@@ -15,6 +15,7 @@ class Flight {
     private $departureGate;
     private $arrivalTerminal;
     private $arrivalGate;
+    private $flightApi; // New property for API flight ID
     private $db;
 
     public function __construct($flightNumber, $departure, $arrival, $duration = 0, $price = 0) {
@@ -27,6 +28,7 @@ class Flight {
         $this->price = $price;
         $this->availableSeats = 100; // Default value
         $this->status = 'scheduled'; // Default value
+        $this->flightApi = null; // Default value
     }
 
     // Getters
@@ -68,6 +70,11 @@ class Flight {
 
     public function getStatus() {
         return $this->status;
+    }
+
+    // Add getter for flight_api
+    public function getFlightApi() {
+        return $this->flightApi;
     }
 
     // Setters
@@ -127,6 +134,11 @@ class Flight {
         $this->arrivalGate = $gate;
     }
 
+    // Add setter for flight_api
+    public function setFlightApi($flightApi) {
+        $this->flightApi = $flightApi;
+    }
+
     /**
      * Set properties from an array of flight data
      * 
@@ -143,6 +155,7 @@ class Flight {
         if (isset($flightData['departure_gate'])) $this->setDepartureGate($flightData['departure_gate']);
         if (isset($flightData['arrival_terminal'])) $this->setArrivalTerminal($flightData['arrival_terminal']);
         if (isset($flightData['arrival_gate'])) $this->setArrivalGate($flightData['arrival_gate']);
+        if (isset($flightData['flight_api'])) $this->setFlightApi($flightData['flight_api']); // Add flight_api
         
         return $this;
     }
@@ -155,6 +168,7 @@ class Flight {
     public function toArray() {
         return [
             'flight_number' => $this->flightNumber,
+            'flight_api' => $this->flightApi, // Add flight_api
             'departure' => $this->departure,
             'arrival' => $this->arrival,
             'duration' => $this->duration,
@@ -356,7 +370,8 @@ class Flight {
                     arrival_gate = ?,
                     departure_terminal = ?,
                     arrival_terminal = ?,
-                    status = ?
+                    status = ?,
+                    flight_api = ?
                     WHERE id = ?"
                 );
                 
@@ -373,6 +388,7 @@ class Flight {
                     $this->departureTerminal,
                     $this->arrivalTerminal,
                     $this->status,
+                    $this->flightApi ?? null, // Add flight_api
                     $existingFlight['id']
                 ]);
                 
@@ -381,14 +397,15 @@ class Flight {
                 // Insert new flight
                 $stmt = $this->db->prepare(
                     "INSERT INTO flights (
-                        flight_number, departure, arrival, date, time, duration, price, 
+                        flight_number, flight_api, departure, arrival, date, time, duration, price, 
                         available_seats, airline, departure_gate, arrival_gate, 
                         departure_terminal, arrival_terminal, status
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
                 );
                 
                 $result = $stmt->execute([
                     $this->flightNumber,
+                    $this->flightApi ?? null, // Add flight_api
                     $this->departure,
                     $this->arrival,
                     $this->date,

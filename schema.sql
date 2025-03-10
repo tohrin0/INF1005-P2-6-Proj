@@ -1,3 +1,4 @@
+DROP DATABASE IF EXISTS flight_booking;
 -- Create database if not exists
 CREATE DATABASE IF NOT EXISTS flight_booking;
 USE flight_booking;
@@ -19,6 +20,7 @@ CREATE TABLE users (
 CREATE TABLE flights (
     id INT AUTO_INCREMENT PRIMARY KEY,
     flight_number VARCHAR(20) NOT NULL,
+    flight_api VARCHAR(255) NULL COMMENT 'Flight ID from the API provider',
     departure VARCHAR(100) NOT NULL,
     arrival VARCHAR(100) NOT NULL,
     date DATE NOT NULL,
@@ -41,7 +43,8 @@ CREATE TABLE flights (
 CREATE TABLE IF NOT EXISTS bookings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    flight_id VARCHAR(255) NOT NULL, -- Changed to VARCHAR as it's from API
+    flight_id VARCHAR(255) NOT NULL,
+    flight_api VARCHAR(255) NULL COMMENT 'Flight ID from the API provider',
     status VARCHAR(20) NOT NULL DEFAULT 'pending',
     customer_name VARCHAR(100) NOT NULL,
     customer_email VARCHAR(100) NOT NULL,
@@ -52,7 +55,6 @@ CREATE TABLE IF NOT EXISTS bookings (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-
 );
 
 -- Payments table
@@ -68,6 +70,32 @@ CREATE TABLE payments (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
 );
+
+-- Passengers table for online check-in
+CREATE TABLE passengers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    booking_id INT NOT NULL,
+    title ENUM('Mr', 'Mrs', 'Ms', 'Dr') NOT NULL,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    date_of_birth DATE NOT NULL,
+    nationality VARCHAR(50) NOT NULL,
+    passport_number VARCHAR(20) NOT NULL,
+    passport_expiry DATE NOT NULL,
+    seat_number VARCHAR(4) NULL,
+    checked_in BOOLEAN DEFAULT FALSE,
+    special_requirements TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+    UNIQUE KEY (booking_id, passport_number),
+    UNIQUE KEY (booking_id, seat_number)
+);
+
+-- Insert sample passenger data
+INSERT INTO passengers (booking_id, title, first_name, last_name, date_of_birth, nationality, passport_number, passport_expiry, seat_number) VALUES
+(1, 'Mr', 'John', 'Doe', '1990-01-15', 'American', 'P123456789', '2025-12-31', '12A'),
+(1, 'Mrs', 'Jane', 'Doe', '1992-05-20', 'American', 'P987654321', '2026-10-15', '12B');
 
 -- Settings table
 CREATE TABLE settings (
@@ -118,14 +146,14 @@ INSERT INTO faq (question, answer, display_order) VALUES
 ('Is my personal information safe?', 'Yes, we take your privacy seriously. We use encryption and secure protocols to protect your personal information.', 5);
 
 -- Insert sample flights for testing
-INSERT INTO flights (flight_number, departure, arrival, date, time, duration, price, available_seats, airline, status) VALUES
-('FL1001', 'New York', 'Los Angeles', CURDATE(), '08:00:00', 360, 299.99, 120, 'American Airlines', 'scheduled'),
-('FL1002', 'Chicago', 'Miami', CURDATE(), '10:30:00', 180, 199.99, 85, 'Delta Air Lines', 'scheduled'),
-('FL1003', 'San Francisco', 'Seattle', CURDATE(), '12:15:00', 120, 149.99, 65, 'United Airlines', 'scheduled'),
-('FL1004', 'Boston', 'Washington DC', CURDATE(), '14:45:00', 90, 129.99, 100, 'JetBlue', 'scheduled'),
-('FL1005', 'Las Vegas', 'Phoenix', CURDATE(), '16:30:00', 60, 99.99, 150, 'Southwest', 'scheduled'),
-('FL1006', 'Orlando', 'Atlanta', DATE_ADD(CURDATE(), INTERVAL 1 DAY), '09:00:00', 120, 179.99, 200, 'Delta Air Lines', 'scheduled'),
-('FL1007', 'Denver', 'Dallas', DATE_ADD(CURDATE(), INTERVAL 1 DAY), '11:30:00', 150, 219.99, 80, 'American Airlines', 'scheduled'),
-('FL1008', 'Los Angeles', 'New York', DATE_ADD(CURDATE(), INTERVAL 2 DAY), '07:15:00', 330, 329.99, 110, 'United Airlines', 'scheduled'),
-('FL1009', 'Miami', 'Chicago', DATE_ADD(CURDATE(), INTERVAL 2 DAY), '13:45:00', 190, 209.99, 95, 'JetBlue', 'scheduled'),
-('FL1010', 'Seattle', 'San Francisco', DATE_ADD(CURDATE(), INTERVAL 3 DAY), '15:30:00', 130, 159.99, 75, 'Southwest', 'scheduled');
+INSERT INTO flights (flight_number, flight_api, departure, arrival, date, time, duration, price, available_seats, airline, status) VALUES
+('FL1001', 'api_flight_123456', 'New York', 'Los Angeles', CURDATE(), '08:00:00', 360, 299.99, 120, 'American Airlines', 'scheduled'),
+('FL1002', 'api_flight_234567', 'Chicago', 'Miami', CURDATE(), '10:30:00', 180, 199.99, 85, 'Delta Air Lines', 'scheduled'),
+('FL1003', 'api_flight_345678', 'San Francisco', 'Seattle', CURDATE(), '12:15:00', 120, 149.99, 65, 'United Airlines', 'scheduled'),
+('FL1004', 'api_flight_456789', 'Boston', 'Washington DC', CURDATE(), '14:45:00', 90, 129.99, 100, 'JetBlue', 'scheduled'),
+('FL1005', 'api_flight_567890', 'Las Vegas', 'Phoenix', CURDATE(), '16:30:00', 60, 99.99, 150, 'Southwest', 'scheduled'),
+('FL1006', 'api_flight_678901', 'Orlando', 'Atlanta', DATE_ADD(CURDATE(), INTERVAL 1 DAY), '09:00:00', 120, 179.99, 200, 'Delta Air Lines', 'scheduled'),
+('FL1007', 'api_flight_789012', 'Denver', 'Dallas', DATE_ADD(CURDATE(), INTERVAL 1 DAY), '11:30:00', 150, 219.99, 80, 'American Airlines', 'scheduled'),
+('FL1008', 'api_flight_890123', 'Los Angeles', 'New York', DATE_ADD(CURDATE(), INTERVAL 2 DAY), '07:15:00', 330, 329.99, 110, 'United Airlines', 'scheduled'),
+('FL1009', 'api_flight_901234', 'Miami', 'Chicago', DATE_ADD(CURDATE(), INTERVAL 2 DAY), '13:45:00', 190, 209.99, 95, 'JetBlue', 'scheduled'),
+('FL1010', 'api_flight_012345', 'Seattle', 'San Francisco', DATE_ADD(CURDATE(), INTERVAL 3 DAY), '15:30:00', 130, 159.99, 75, 'Southwest', 'scheduled');

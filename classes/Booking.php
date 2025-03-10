@@ -18,20 +18,24 @@ class Booking {
             // Use passenger count from the form; default to 1 if not set
             $passengerCount = isset($passengerDetails['passengers']) ? (int)$passengerDetails['passengers'] : 1;
             
-            // Instead of fetching any price via the API, get the flight price _directly_ from the form
+            // Get the price directly from form
             $price = isset($passengerDetails['price']) ? floatval($passengerDetails['price']) : 0;
             $totalPrice = $price * $passengerCount;
             
+            // Get flight_api from flightData if available
+            $flightApiId = isset($passengerDetails['flight_api']) ? $passengerDetails['flight_api'] : null;
+            
             // Prepare the INSERT query using all required fields
             $query = "INSERT INTO bookings 
-                (user_id, flight_id, status, customer_name, customer_email, customer_phone, passengers, total_price)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                (user_id, flight_id, flight_api, status, customer_name, customer_email, customer_phone, passengers, total_price)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             error_log("SQL Query: " . $query);
             
             $params = [
                 $userId,
                 $flightId,
+                $flightApiId,
                 $status,
                 isset($passengerDetails['name']) ? $passengerDetails['name'] : '',
                 isset($passengerDetails['email']) ? $passengerDetails['email'] : '',

@@ -163,11 +163,12 @@ function addFlight($flightData) {
     global $pdo;
     try {
         $stmt = $pdo->prepare(
-            "INSERT INTO flights (flight_number, departure, arrival, date, time, price, duration) 
-             VALUES (?, ?, ?, ?, ?, ?, ?)"
+            "INSERT INTO flights (flight_number, flight_api, departure, arrival, date, time, price, duration) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
         );
         return $stmt->execute([
             $flightData['flight_number'],
+            $flightData['flight_api'] ?? null, // Add API flight ID
             $flightData['departure'],
             $flightData['arrival'],
             $flightData['date'],
@@ -242,11 +243,12 @@ function storeApiFlights($flights) {
             if (!$existingFlight) {
                 // Insert new flight
                 $stmt = $pdo->prepare(
-                    "INSERT INTO flights (flight_number, departure, arrival, date, time, price, duration, available_seats) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+                    "INSERT INTO flights (flight_number, flight_api, departure, arrival, date, time, price, duration, available_seats) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
                 );
                 $stmt->execute([
                     $flight['flight_number'],
+                    $flight['id'] ?? null, // Add API flight ID
                     $flight['departure'],
                     $flight['arrival'],
                     $flight['date'],
@@ -333,6 +335,7 @@ function updateFlight($flightId, $flightData) {
         $stmt = $pdo->prepare(
             "UPDATE flights SET 
              flight_number = ?,
+             flight_api = ?,
              departure = ?,
              arrival = ?,
              date = ?,
@@ -345,6 +348,7 @@ function updateFlight($flightId, $flightData) {
         
         return $stmt->execute([
             $flightData['flight_number'],
+            $flightData['flight_api'] ?? null, // Add API flight ID
             $flightData['departure'],
             $flightData['arrival'],
             $flightData['date'],
