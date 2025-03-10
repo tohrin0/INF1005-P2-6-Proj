@@ -1,4 +1,8 @@
 <?php
+// Add this at the very beginning to catch any early errors
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
 session_start();
 require_once 'inc/config.php';
 require_once 'inc/db.php';
@@ -7,9 +11,22 @@ require_once 'inc/auth.php';
 require_once 'inc/api.php';
 require_once 'classes/Booking.php';
 
+// Debug: Log request method and headers for debugging
+error_log("Request method: " . $_SERVER['REQUEST_METHOD']);
+error_log("X-Requested-With: " . ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? 'not set'));
+
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
-    exit;
+    $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+              strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+    
+    if ($isAjax) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'You must be logged in to book a flight', 'redirect' => 'login.php']);
+        exit;
+    } else {
+        header('Location: login.php');
+        exit;
+    }
 }
 
 $userId = $_SESSION['user_id'];
@@ -17,15 +34,33 @@ $error = '';
 $success = '';
 $flights = [];
 
+// Debug: log any POST data
+error_log("POST data received in booking.php: " . json_encode($_POST));
+
 // Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Validate form data
+    // Check if it's an AJAX request
+    $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+              strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+    
+    // Debug: log POST data and AJAX status
+    error_log("POST data: " . json_encode($_POST));
+    error_log("Is AJAX request: " . ($isAjax ? 'yes' : 'no'));
+    
     if (empty($_POST['flight_id']) || empty($_POST['name']) || empty($_POST['email']) || empty($_POST['phone'])) {
         $error = "Please fill in all required fields";
+        
+        if ($isAjax) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => $error]);
+            exit;
+        }
     } else {
-        // Create booking
         try {
-            $bookingObj = new Booking();
+            // Create booking logic
+            $booking = new Booking();
+            
+            // Gather passenger details
             $passengerDetails = [
                 'name' => $_POST['name'],
                 'email' => $_POST['email'],
@@ -33,57 +68,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'passengers' => $_POST['passengers'] ?? 1
             ];
             
-            $bookingId = $bookingObj->createBooking($userId, $_POST['flight_id'], $passengerDetails);
+            // Create booking
+            $bookingId = $booking->createBooking(
+                $userId,
+                $_POST['flight_id'],
+                $passengerDetails
+            );
             
             if ($bookingId) {
-                $success = "Booking successful! Your booking ID is #" . $bookingId;
-                // Optionally redirect to a confirmation page
-                // header("Location: confirmation.php?booking_id=" . $bookingId);
-                // exit;
+                // Store booking info in session for payment page
+                $_SESSION['booking_id'] = $bookingId;
+                $_SESSION['booking_data'] = [
+                    'flight_id' => $_POST['flight_id'],
+                    'total_price' => $_POST['total_price'] ?? 0
+                ];
+                
+                // For AJAX requests, return JSON instead of redirecting
+                if ($isAjax) {
+                    header('Content-Type: application/json');
+                    echo json_encode([
+                        'success' => true, 
+                        'message' => 'Booking created successfully',
+                        'redirect' => 'payment.php',
+                        'booking_id' => $bookingId
+                    ]);
+                    exit;
+                }
+                
+                // For non-AJAX requests, redirect
+                header("Location: payment.php");
+                exit;
             } else {
-                $error = "Failed to create booking. Please try again.";
+                throw new Exception("Failed to create booking");
             }
+            
         } catch (Exception $e) {
-            $error = $e->getMessage();
+            $error = "Booking error: " . $e->getMessage();
+            error_log($error);
+            
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => $error]);
+                exit;
+            }
         }
     }
 }
 
-// Always load available flights
+// Retrieve flights data via API
 try {
-    // Get flights with available seats
-    $stmt = $pdo->query("SELECT id, flight_number, departure, arrival, date, time, price, available_seats 
-                         FROM flights 
-                         WHERE available_seats > 0 
-                         ORDER BY date, time");
-    $flights = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $apiClient = new ApiClient();
+    $flights = $apiClient->getAvailableFlights();
     
-    if (empty($flights)) {
+    if (!empty($flights)) {
+        $_SESSION['flight_data'] = [];
+        foreach ($flights as $f) {
+            $_SESSION['flight_data'][$f['id']] = $f;
+        }
+        error_log("Using API data - " . count($flights) . " flights found");
+    } else {
         $error = "No flights available at this time.";
+        error_log("API returned no flights");
     }
 } catch (Exception $e) {
-    error_log("Error loading available flights: " . $e->getMessage());
-    $error = "Error loading available flights.";
-}
-
-// Add formatDuration function if it doesn't exist
-if (!function_exists('formatDuration')) {
-    function formatDuration($durationMinutes) {
-        if (!is_numeric($durationMinutes)) {
-            return "N/A";
-        }
-        
-        $hours = floor($durationMinutes / 60);
-        $minutes = $durationMinutes % 60;
-        
-        if ($hours > 0 && $minutes > 0) {
-            return $hours . "h " . $minutes . "m";
-        } elseif ($hours > 0) {
-            return $hours . "h";
-        } else {
-            return $minutes . "m";
-        }
-    }
+    $error = "Error loading flights from API: " . $e->getMessage();
+    error_log("Error loading flights from API: " . $e->getMessage());
 }
 
 include 'templates/header.php';
@@ -101,57 +150,56 @@ include 'templates/header.php';
     <?php endif; ?>
     
     <?php if (!empty($flights)): ?>
-        <div class="booking-form-container">
-            <h2>Flight Booking</h2>
-            <form id="booking-form" method="POST" action="booking.php">
-                <div class="form-group">
-                    <label for="flight_id">Select a Flight:</label>
-                    <select id="flight_id" name="flight_id" class="form-control" required>
-                        <option value="">-- Select Flight --</option>
-                        <?php foreach ($flights as $flight): ?>
-                            <option value="<?php echo htmlspecialchars($flight['id']); ?>">
-                                <?php echo htmlspecialchars($flight['flight_number']); ?> 
-                                (<?php echo htmlspecialchars($flight['departure']); ?> - <?php echo htmlspecialchars($flight['arrival']); ?>)
-                                - <?php echo htmlspecialchars(date('M j, Y', strtotime($flight['date']))); ?> 
-                                at <?php echo htmlspecialchars(date('H:i', strtotime($flight['time']))); ?>
-                                - $<?php echo htmlspecialchars($flight['price']); ?>
-                                - <?php echo htmlspecialchars($flight['available_seats']); ?> seats available
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="passengers">Number of Passengers:</label>
-                    <select id="passengers" name="passengers" class="form-control" required>
-                        <?php for ($i = 1; $i <= 5; $i++): ?>
-                            <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
-                        <?php endfor; ?>
-                    </select>
-                </div>
-                
-                <h3>Passenger Information</h3>
-                
-                <div class="form-group">
-                    <label for="name">Full Name:</label>
-                    <input type="text" id="name" name="name" class="form-control" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="email">Email:</label>
-                    <input type="email" id="email" name="email" class="form-control" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="phone">Phone:</label>
-                    <input type="tel" id="phone" name="phone" class="form-control" required>
-                </div>
-                
-                <div class="form-group">
-                    <input type="submit" class="btn-primary" value="Book Flight">
-                </div>
-            </form>
-        </div>
+    <div class="booking-form-container">
+        <h2>Flight Booking</h2>
+        <!-- Using PHP_SELF ensures the form posts to the correct URL -->
+        <form id="booking-form" method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
+            <div class="form-group">
+                <label for="flight_id"><i class="fas fa-plane"></i> Select a Flight:</label>
+                <select id="flight_id" name="flight_id" class="form-control" required>
+                    <option value="">-- Select Flight --</option>
+                    <?php foreach ($flights as $f): ?>
+                        <option value="<?php echo htmlspecialchars($f['id']); ?>">
+                            <?php echo htmlspecialchars($f['flight_number']); ?> -
+                            <?php echo htmlspecialchars($f['departure']); ?> to 
+                            <?php echo htmlspecialchars($f['arrival']); ?> - 
+                            <?php echo htmlspecialchars(date('M j, Y', strtotime($f['date']))); ?> - 
+                            $<?php echo htmlspecialchars(number_format($f['price'], 2)); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="passengers"><i class="fas fa-users"></i> Number of Passengers:</label>
+                <input type="number" id="passengers" name="passengers" min="1" max="9" value="1" class="form-control" required>
+            </div>
+            
+            <h3>Passenger Information</h3>
+            <div class="form-group">
+                <label for="name"><i class="fas fa-user"></i> Full Name:</label>
+                <input type="text" id="name" name="name" placeholder="Enter your name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="email"><i class="fas fa-envelope"></i> Email:</label>
+                <input type="email" id="email" name="email" placeholder="Enter your email" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="phone"><i class="fas fa-phone"></i> Phone:</label>
+                <input type="tel" id="phone" name="phone" placeholder="Enter your phone number" class="form-control" required>
+            </div>
+            
+            <div id="total-price-display" class="total-price">
+                <strong>Total Price:</strong> $0.00
+            </div>
+            
+            <div class="form-group" style="margin-top: 20px;">
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-check-circle"></i> Book Flight
+                </button>
+            </div>
+        </form>
+    </div>
     <?php endif; ?>
 </div>
 
@@ -260,6 +308,8 @@ include 'templates/header.php';
         }
         
         const form = document.getElementById('booking-form');
+        const flightSelect = document.getElementById('flight_id');
+        const passengers = document.getElementById('passengers');
         
         if (form) {
             form.addEventListener('submit', function(e) {
@@ -267,7 +317,7 @@ include 'templates/header.php';
                 const name = document.getElementById('name').value.trim();
                 const email = document.getElementById('email').value.trim();
                 const phone = document.getElementById('phone').value.trim();
-                const flightId = document.getElementById('flight_id').value;
+                const flightId = flightSelect.value;
                 
                 if (!flightId || !name || !email || !phone) {
                     e.preventDefault();
@@ -291,8 +341,144 @@ include 'templates/header.php';
                     return false;
                 }
             });
+            
+            // Update price calculation when passengers change
+            passengers.addEventListener('change', function() {
+                updateTotalPrice();
+            });
+            
+            flightSelect.addEventListener('change', function() {
+                updateTotalPrice();
+            });
+            
+            function updateTotalPrice() {
+                const selectedOption = flightSelect.options[flightSelect.selectedIndex];
+                if (selectedOption.value) {
+                    const priceText = selectedOption.text.match(/\$([0-9,.]+)/);
+                    if (priceText && priceText[1]) {
+                        const basePrice = parseFloat(priceText[1].replace(',', ''));
+                        const numPassengers = parseInt(passengers.value) || 1;
+                        const totalPrice = basePrice * numPassengers;
+                        
+                        // Update the price display element
+                        const priceDisplay = document.getElementById('total-price-display');
+                        priceDisplay.innerHTML = `<strong>Total Price:</strong> $${totalPrice.toFixed(2)}`;
+                    }
+                }
+            }
+            
+            // Initialize price display on page load
+            if (flightSelect.selectedIndex > 0) {
+                updateTotalPrice();
+            }
+        }
+        
+        // Disable automatic form validation and ajax submission from booking-form.js
+        if (typeof window.disableBookingFormAjax === 'undefined') {
+            window.disableBookingFormAjax = true;
         }
     });
+</script>
+
+<script>
+    // Add this at the end of booking.php right before the footer include
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get element references
+        const form = document.getElementById('booking-form');
+        const flightSelect = document.getElementById('flight_id');
+        const passengers = document.getElementById('passengers');
+        
+        if (form && flightSelect && passengers) {
+            // Override any existing event listeners
+            const newForm = form.cloneNode(true);
+            form.parentNode.replaceChild(newForm, form);
+            
+            // Reattach our own listeners to the new form
+            newForm.addEventListener('submit', function(e) {
+                // Basic form validation
+                const name = document.getElementById('name').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const phone = document.getElementById('phone').value.trim();
+                const flightId = document.getElementById('flight_id').value;
+                
+                if (!flightId || !name || !email || !phone) {
+                    e.preventDefault();
+                    alert('Please fill in all required fields');
+                    return false;
+                }
+                
+                // Allow normal form submission
+                return true;
+            });
+            
+            // Get new references after replacing the form
+            const newFlightSelect = document.getElementById('flight_id');
+            const newPassengers = document.getElementById('passengers');
+            
+            // Re-attach price update functionality
+            if (newFlightSelect && newPassengers) {
+                newFlightSelect.addEventListener('change', updateTotalPrice);
+                newPassengers.addEventListener('change', updateTotalPrice);
+                
+                // Initialize price display
+                if (newFlightSelect.selectedIndex > 0) {
+                    updateTotalPrice();
+                }
+            }
+        }
+        
+        function updateTotalPrice() {
+            const flightSelect = document.getElementById('flight_id');
+            const passengers = document.getElementById('passengers');
+            const priceDisplay = document.getElementById('total-price-display');
+            
+            if (!flightSelect || !passengers || !priceDisplay) return;
+            
+            const selectedOption = flightSelect.options[flightSelect.selectedIndex];
+            if (selectedOption && selectedOption.value) {
+                const priceText = selectedOption.text.match(/\$([0-9,.]+)/);
+                if (priceText && priceText[1]) {
+                    const basePrice = parseFloat(priceText[1].replace(',', ''));
+                    const numPassengers = parseInt(passengers.value) || 1;
+                    const totalPrice = basePrice * numPassengers;
+                    
+                    priceDisplay.innerHTML = `<strong>Total Price:</strong> $${totalPrice.toFixed(2)}`;
+                }
+            }
+        }
+    });
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get element references
+    const form = document.getElementById('booking-form');
+    const flightSelect = document.getElementById('flight_id');
+    const passengers = document.getElementById('passengers');
+    const totalPriceDisplay = document.getElementById('total-price-display');
+    
+    if (form && flightSelect && passengers) {
+        // Update price when flight or passenger count changes
+        flightSelect.addEventListener('change', updateTotalPrice);
+        passengers.addEventListener('change', updateTotalPrice);
+        
+        function updateTotalPrice() {
+            const selectedOption = flightSelect.selectedOptions[0];
+            
+            if (selectedOption && selectedOption.value) {
+                // Extract price from the option text (assuming format ends with "$XX.XX")
+                const priceText = selectedOption.text.split('$').pop();
+                const price = parseFloat(priceText.replace(/,/g, ''));
+                
+                if (!isNaN(price)) {
+                    const passengerCount = parseInt(passengers.value) || 1;
+                    const totalPrice = (price * passengerCount).toFixed(2);
+                    totalPriceDisplay.innerHTML = '<strong>Total Price:</strong> $' + totalPrice;
+                }
+            }
+        }
+    }
+});
 </script>
 
 <?php include 'templates/footer.php'; ?>

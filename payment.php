@@ -13,79 +13,81 @@ if (!isLoggedIn()) {
 
 $userId = $_SESSION['user_id'];
 $error = '';
-$flight = null;
 
-// Check if form was submitted from booking page
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['flight_id'])) {
-    $flightId = $_POST['flight_id'];
-    $flight = getFlightById($flightId);
-    
-    // Store booking data in session for later use after payment
-    $_SESSION['booking_data'] = [
-        'flight_id' => $flightId,
-        'user_id' => $userId,
-        'passenger_details' => $_POST['passenger_details'] ?? [],
-        'passengers' => $_POST['passengers'] ?? 1,
-        'price' => $_POST['price'] ?? ($flight ? $flight['price'] : 0)
-    ];
-} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['payment_method'])) {
-    // Handle payment submission
-    $paymentMethod = $_POST['payment_method'];
+// Check if we have booking data in session
+if (!isset($_SESSION['booking_id']) || !isset($_SESSION['booking_data'])) {
+    header('Location: booking.php');
+    exit;
+}
+
+$bookingId = $_SESSION['booking_id'];
+$bookingData = $_SESSION['booking_data'];
+
+// Get flight details for display on payment page
+$flightId = $bookingData['flight_id'] ?? 0;
+$stmt = $pdo->prepare("SELECT * FROM flights WHERE id = ?");
+$stmt->execute([$flightId]);
+$flight = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// Handle payment form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Process payment
+    $paymentMethod = $_POST['payment_method'] ?? '';
     $cardNumber = $_POST['card_number'] ?? '';
     $cardName = $_POST['card_name'] ?? '';
     $expiryDate = $_POST['expiry_date'] ?? '';
     $cvv = $_POST['cvv'] ?? '';
     
-    $bookingData = $_SESSION['booking_data'] ?? null;
-    
-    if (!$bookingData) {
-        $error = 'Booking information is missing. Please start over.';
+    if (empty($paymentMethod) || empty($cardNumber) || empty($cardName) || empty($expiryDate) || empty($cvv)) {
+        $error = "Please fill in all payment details.";
     } else {
         try {
             // Start transaction
             $pdo->beginTransaction();
             
-            // For demonstration purposes, we'll always consider the payment successful
-            // In a real application, you would integrate with a payment gateway here
-            
-            // Create a successful "payment" record
-            $paymentStmt = $pdo->prepare("
-                INSERT INTO payments (booking_id, amount, payment_method, transaction_id, status) 
-                VALUES (?, ?, ?, ?, 'completed')
-            ");
-            
-            // Create the booking first
-            $booking = new Booking();
-            $flightId = $bookingData['flight_id'];
-            $passengerDetails = $bookingData['passenger_details'];
-            $passengers = $bookingData['passengers'];
-            $totalPrice = $bookingData['price'] * $passengers;
-            
-            // Add passenger count to passenger details
-            $passengerDetails['passengers'] = $passengers;
-            
-            // Create booking with status "confirmed" since payment is successful
-            $bookingId = $booking->createBooking($userId, $flightId, $passengerDetails, 'confirmed');
-            
-            if (!$bookingId) {
-                throw new Exception("Failed to create booking");
+            // Update booking status to "confirmed"
+            $updateStmt = $pdo->prepare("UPDATE bookings SET status = 'confirmed' WHERE id = ? AND user_id = ?");
+            if (!$updateStmt->execute([$bookingId, $userId])) {
+                throw new Exception("Failed to update booking status.");
             }
             
-            // Create dummy transaction ID
+            // Create dummy transaction ID for payment record
             $transactionId = 'TX' . time() . rand(1000, 9999);
             
             // Record payment
-            $paymentStmt->execute([
+            $paymentStmt = $pdo->prepare("
+                INSERT INTO payments (booking_id, amount, payment_method, transaction_id, status)
+                VALUES (?, ?, ?, ?, 'completed')
+            ");
+            
+            if (!$paymentStmt->execute([
                 $bookingId,
-                $totalPrice,
+                $bookingData['total_price'],
                 $paymentMethod,
                 $transactionId
-            ]);
+            ])) {
+                throw new Exception("Failed to record payment.");
+            }
+            
+            // Update available seats
+            $updateSeatsStmt = $pdo->prepare("
+                UPDATE flights 
+                SET available_seats = available_seats - ? 
+                WHERE id = ?
+            ");
+            
+            if (!$updateSeatsStmt->execute([
+                $bookingData['passenger_details']['passengers'],
+                $flightId
+            ])) {
+                throw new Exception("Failed to update available seats.");
+            }
             
             // Commit transaction
             $pdo->commit();
             
             // Clear booking data from session
+            unset($_SESSION['booking_id']);
             unset($_SESSION['booking_data']);
             
             // Redirect to confirmation page
@@ -99,16 +101,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['flight_id'])) {
             error_log($error);
         }
     }
-} else {
-    // No data submitted, redirect back to search
-    if (!isset($_SESSION['booking_data'])) {
-        header('Location: search.php');
-        exit;
-    }
-    
-    // Get flight details for display on payment page
-    $flightId = $_SESSION['booking_data']['flight_id'] ?? 0;
-    $flight = getFlightById($flightId);
 }
 
 include 'templates/header.php';
@@ -125,22 +117,22 @@ include 'templates/header.php';
             <?php if ($flight): ?>
                 <div class="booking-details">
                     <div class="flight-info">
-                        <p><strong>Flight:</strong> <?php echo htmlspecialchars($flight['flight_number']); ?></p>
+                        <h3>Flight Details</h3>
+                        <p><strong>Flight Number:</strong> <?php echo htmlspecialchars($flight['flight_number']); ?></p>
                         <p><strong>From:</strong> <?php echo htmlspecialchars($flight['departure']); ?></p>
                         <p><strong>To:</strong> <?php echo htmlspecialchars($flight['arrival']); ?></p>
-                        <p><strong>Date:</strong> <?php echo htmlspecialchars(date('M j, Y', strtotime($flight['date']))); ?></p>
-                        <p><strong>Time:</strong> <?php echo htmlspecialchars(date('H:i', strtotime($flight['time']))); ?></p>
+                        <p><strong>Date:</strong> <?php echo htmlspecialchars($flight['date']); ?></p>
+                        <p><strong>Time:</strong> <?php echo htmlspecialchars($flight['time']); ?></p>
                     </div>
                     
                     <div class="price-info">
-                        <?php 
-                            $basePrice = $flight['price'];
-                            $passengers = $_SESSION['booking_data']['passengers'] ?? 1;
-                            $totalPrice = $basePrice * $passengers;
-                        ?>
-                        <p><strong>Base Price:</strong> $<?php echo htmlspecialchars(number_format($basePrice, 2)); ?></p>
-                        <p><strong>Passengers:</strong> <?php echo htmlspecialchars($passengers); ?></p>
-                        <p class="total-price"><strong>Total Price:</strong> $<?php echo htmlspecialchars(number_format($totalPrice, 2)); ?></p>
+                        <h3>Price Details</h3>
+                        <p><strong>Price per passenger:</strong> $<?php echo number_format($flight['price'], 2); ?></p>
+                        <p><strong>Passengers:</strong> <?php echo $bookingData['passenger_details']['passengers']; ?></p>
+                        <div class="total-price">
+                            <span class="label">Total:</span>
+                            <span class="price">$<?php echo number_format($bookingData['total_price'], 2); ?></span>
+                        </div>
                     </div>
                 </div>
             <?php endif; ?>
@@ -151,43 +143,35 @@ include 'templates/header.php';
             <form action="payment.php" method="POST" id="payment-form">
                 <div class="payment-methods">
                     <div class="payment-method">
-                        <input type="radio" name="payment_method" id="credit-card" value="credit_card" checked>
+                        <input type="radio" id="credit-card" name="payment_method" value="credit_card" checked>
                         <label for="credit-card">Credit Card</label>
-                    </div>
-                    <div class="payment-method">
-                        <input type="radio" name="payment_method" id="debit-card" value="debit_card">
-                        <label for="debit-card">Debit Card</label>
-                    </div>
-                    <div class="payment-method">
-                        <input type="radio" name="payment_method" id="paypal" value="paypal">
-                        <label for="paypal">PayPal</label>
                     </div>
                 </div>
                 
                 <div id="credit-card-form">
                     <div class="form-group">
-                        <label for="card-number">Card Number*</label>
-                        <input type="text" id="card-number" name="card_number" placeholder="1234 5678 9012 3456" maxlength="19" required>
+                        <label for="card-name">Name on Card</label>
+                        <input type="text" id="card-name" name="card_name" placeholder="John Smith" required>
                     </div>
                     
                     <div class="form-group">
-                        <label for="card-name">Name on Card*</label>
-                        <input type="text" id="card-name" name="card_name" placeholder="John Doe" required>
+                        <label for="card-number">Card Number</label>
+                        <input type="text" id="card-number" name="card_number" placeholder="1234 5678 9012 3456" maxlength="19" required>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group half">
-                            <label for="expiry-date">Expiry Date*</label>
+                            <label for="expiry-date">Expiry Date</label>
                             <input type="text" id="expiry-date" name="expiry_date" placeholder="MM/YY" maxlength="5" required>
                         </div>
                         <div class="form-group half">
-                            <label for="cvv">CVV*</label>
-                            <input type="text" id="cvv" name="cvv" placeholder="123" maxlength="4" required>
+                            <label for="cvv">CVV</label>
+                            <input type="text" id="cvv" name="cvv" placeholder="123" maxlength="3" required>
                         </div>
                     </div>
                 </div>
                 
-                <button type="submit" class="btn-primary">Pay Now</button>
+                <button type="submit" class="btn-primary">Complete Payment</button>
             </form>
         </div>
     <?php endif; ?>
@@ -284,6 +268,15 @@ include 'templates/header.php';
     .btn-primary:hover {
         background-color: #45a049;
     }
+
+    .alert-danger {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+    }
 </style>
 
 <script>
@@ -313,58 +306,41 @@ include 'templates/header.php';
             let value = e.target.value.replace(/\D/g, '');
             
             if (value.length > 2) {
-                e.target.value = value.substring(0, 2) + '/' + value.substring(2);
-            } else {
-                e.target.value = value;
+                value = value.substring(0, 2) + '/' + value.substring(2, 4);
             }
+            
+            e.target.value = value;
         });
         
         // Basic form validation
         form.addEventListener('submit', function(e) {
-            const cardName = document.getElementById('card-name').value.trim();
-            const cardNumberValue = cardNumber.value.replace(/\s/g, '');
-            const expiryDateValue = expiryDate.value;
+            const cardValue = cardNumber.value.replace(/\s/g, '');
+            const expiryValue = expiryDate.value;
             const cvvValue = cvv.value;
             
             let isValid = true;
             
-            if (cardNumberValue.length < 16) {
-                alert('Please enter a valid card number');
+            // Validate card number (16 digits)
+            if (!/^\d{16}$/.test(cardValue)) {
+                alert('Please enter a valid 16-digit card number.');
                 isValid = false;
             }
             
-            if (!cardName) {
-                alert('Please enter the name on card');
+            // Validate expiry date (MM/YY format)
+            if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiryValue)) {
+                alert('Please enter a valid expiry date in MM/YY format.');
                 isValid = false;
             }
             
-            if (!expiryDateValue.match(/^\d{2}\/\d{2}$/)) {
-                alert('Please enter a valid expiry date (MM/YY)');
-                isValid = false;
-            }
-            
-            if (cvvValue.length < 3) {
-                alert('Please enter a valid CVV');
+            // Validate CVV (3 digits)
+            if (!/^\d{3}$/.test(cvvValue)) {
+                alert('Please enter a valid 3-digit CVV.');
                 isValid = false;
             }
             
             if (!isValid) {
                 e.preventDefault();
             }
-        });
-        
-        // Toggle between payment methods (for future implementation)
-        const paymentMethods = document.querySelectorAll('input[name="payment_method"]');
-        const creditCardForm = document.getElementById('credit-card-form');
-        
-        paymentMethods.forEach(method => {
-            method.addEventListener('change', function() {
-                if (this.value === 'credit_card' || this.value === 'debit_card') {
-                    creditCardForm.style.display = 'block';
-                } else {
-                    creditCardForm.style.display = 'none';
-                }
-            });
         });
     });
 </script>
