@@ -15,60 +15,34 @@ class Booking {
             error_log("status: " . $status);
             error_log("passengerDetails: " . print_r($passengerDetails, true));
             
-            // Calculate total price based on flight API data and passenger count
-            $apiClient = new ApiClient();
-            $flightDetails = $apiClient->getFlightById($flightId);
+            // Use passenger count from the form; default to 1 if not set
+            $passengerCount = isset($passengerDetails['passengers']) ? (int)$passengerDetails['passengers'] : 1;
             
-            error_log("flightDetails from API: " . print_r($flightDetails, true));
-            
-            if (!$flightDetails) {
-                error_log("ERROR: Flight not found in API");
-                throw new Exception("Flight not found");
-            }
-            
-            $price = $flightDetails['price'];
-            $passengerCount = $passengerDetails['passengers'];
+            // Instead of fetching any price via the API, get the flight price _directly_ from the form
+            $price = isset($passengerDetails['price']) ? floatval($passengerDetails['price']) : 0;
             $totalPrice = $price * $passengerCount;
             
-            error_log("price: " . $price);
-            error_log("passengerCount: " . $passengerCount);
-            error_log("totalPrice: " . $totalPrice);
-            
-            // Insert booking into database
+            // Prepare the INSERT query using all required fields
             $query = "INSERT INTO bookings 
-                    (user_id, flight_id, status, customer_name, customer_email, customer_phone, 
-                    passengers, total_price) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                (user_id, flight_id, status, customer_name, customer_email, customer_phone, passengers, total_price)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
             
             error_log("SQL Query: " . $query);
-            error_log("Query params: " . print_r([
+            
+            $params = [
                 $userId,
                 $flightId,
                 $status,
-                $passengerDetails['name'],
-                $passengerDetails['email'],
-                $passengerDetails['phone'],
+                isset($passengerDetails['name']) ? $passengerDetails['name'] : '',
+                isset($passengerDetails['email']) ? $passengerDetails['email'] : '',
+                isset($passengerDetails['phone']) ? $passengerDetails['phone'] : '',
                 $passengerCount,
                 $totalPrice
-            ], true));
+            ];
+            error_log("Query parameters: " . print_r($params, true));
             
             $stmt = $this->db->prepare($query);
-            
-            // Enable PDO error info
-            $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            
-            $result = $stmt->execute([
-                $userId,
-                $flightId,
-                $status,
-                $passengerDetails['name'],
-                $passengerDetails['email'],
-                $passengerDetails['phone'],
-                $passengerCount,
-                $totalPrice
-            ]);
-            
-            error_log("Execute result: " . ($result ? 'true' : 'false'));
+            $result = $stmt->execute($params);
             
             if ($result) {
                 $newId = $this->db->lastInsertId();
@@ -76,13 +50,13 @@ class Booking {
                 return $newId;
             }
             
-            error_log("ERROR: Insert failed but no exception thrown");
+            error_log("ERROR: Insert failed");
             error_log("PDO error info: " . print_r($stmt->errorInfo(), true));
             return false;
         } catch (Exception $e) {
             error_log("EXCEPTION in createBooking: " . $e->getMessage());
             error_log("Exception trace: " . $e->getTraceAsString());
-            throw $e;
+            return false;
         }
     }
     
@@ -113,6 +87,17 @@ class Booking {
         $stmt->execute([$userId]);
         
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    public static function getAllBookings() {
+        global $pdo;
+        try {
+            $stmt = $pdo->query("SELECT * FROM bookings");
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error in getAllBookings: " . $e->getMessage());
+            return [];
+        }
     }
 }
 ?>

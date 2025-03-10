@@ -65,39 +65,47 @@ include 'templates/header.php';
 
         <?php if (!empty($flights)): ?>
             <div class="popular-flights">
-                <h2>Featured Flights</h2>
+                <h2>Popular Flights</h2>
                 <div class="flight-grid">
-                    <?php 
-                    $count = 0;
-                    foreach ($flights as $flight): 
-                        if ($count >= 3) break; // Only show up to 3 flights
-                        $count++;
-                    ?>
+                    <?php foreach (array_slice($flights, 0, 3) as $flight): ?>
                         <div class="flight-card">
                             <div class="flight-header">
                                 <span class="flight-number"><?php echo htmlspecialchars($flight['flight_number']); ?></span>
                                 <span class="flight-airline"><?php echo htmlspecialchars($flight['airline']); ?></span>
                             </div>
                             <div class="flight-route">
-                                <p><strong><?php echo htmlspecialchars($flight['departure']); ?></strong> to <strong><?php echo htmlspecialchars($flight['arrival']); ?></strong></p>
-                                <p class="flight-date"><?php echo htmlspecialchars($flight['date']); ?> | <?php echo htmlspecialchars($flight['time']); ?></p>
+                                <div class="route-info">
+                                    <strong><?php echo htmlspecialchars($flight['departure']); ?></strong>
+                                    <span>to</span>
+                                    <strong><?php echo htmlspecialchars($flight['arrival']); ?></strong>
+                                </div>
+                            </div>
+                            <div class="flight-date">
+                                <?php echo date('M j, Y', strtotime($flight['date'])); ?> at <?php echo date('g:i A', strtotime($flight['time'])); ?>
                             </div>
                             <div class="flight-price">
-                                <span>$<?php echo number_format($flight['price'], 2); ?></span>
+                                $<?php echo htmlspecialchars(number_format($flight['price'], 2)); ?>
                             </div>
-                            <a href="booking.php?flight_id=<?php echo htmlspecialchars($flight['id']); ?>" class="btn book-btn">Book Now</a>
+                            <form method="POST" action="flight-selection.php" class="book-btn">
+                                <input type="hidden" name="flight_id" value="<?php echo htmlspecialchars($flight['id']); ?>">
+                                <input type="hidden" name="price" value="<?php echo htmlspecialchars($flight['price']); ?>">
+                                <button type="submit" name="select_flight" class="btn btn-primary">Book Now</button>
+                            </form>
                         </div>
                     <?php endforeach; ?>
+                </div>
+                <div class="view-all">
+                    <a href="search.php" class="btn btn-secondary">View All Flights</a>
                 </div>
             </div>
         <?php endif; ?>
     <?php else: ?>
         <div class="cta-section">
-            <h2>Join Our Community of Travelers</h2>
-            <p>Create an account to book flights, save your favorite routes, and receive personalized travel recommendations.</p>
+            <h2>Ready to Book Your Next Trip?</h2>
+            <p>Create an account or log in to get started with your flight booking.</p>
             <div class="cta-buttons">
-                <a href="login.php" class="btn">Log In</a>
                 <a href="register.php" class="btn btn-primary">Create Account</a>
+                <a href="login.php" class="btn btn-secondary">Log In</a>
             </div>
         </div>
     <?php endif; ?>
