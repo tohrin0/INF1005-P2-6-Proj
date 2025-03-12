@@ -94,11 +94,6 @@ CREATE TABLE passengers (
     UNIQUE KEY (booking_id, seat_number)
 );
 
--- Insert sample passenger data
-INSERT INTO passengers (booking_id, title, first_name, last_name, date_of_birth, nationality, passport_number, passport_expiry, seat_number) VALUES
-(1, 'Mr', 'John', 'Doe', '1990-01-15', 'American', 'P123456789', '2025-12-31', '12A'),
-(1, 'Mrs', 'Jane', 'Doe', '1992-05-20', 'American', 'P987654321', '2026-10-15', '12B');
-
 -- Settings table
 CREATE TABLE settings (
     id INT AUTO_INCREMENT PRIMARY KEY,
