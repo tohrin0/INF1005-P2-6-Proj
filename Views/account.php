@@ -15,6 +15,7 @@ $user = getUserById($_SESSION['user_id']);
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,6 +23,7 @@ $user = getUserById($_SESSION['user_id']);
     <link rel="stylesheet" href="assets/css/responsive.css">
     <title>Account Management</title>
 </head>
+
 <body>
     <?php include 'templates/header.php'; ?>
 
@@ -56,4 +58,5 @@ $user = getUserById($_SESSION['user_id']);
 
     <?php include 'templates/footer.php'; ?>
 </body>
+
 </html>
