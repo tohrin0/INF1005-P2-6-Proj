@@ -1,0 +1,3 @@
+npm install
+npm run build
+chmod -R 755 assets/css 

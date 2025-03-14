@@ -1,0 +1,23 @@
+{
+  "name": "flight-booking",
+  "version": "1.0.0",
+  "description": "Flight Booking Website",
+  "scripts": {
+    "build": "postcss src/input.css -o assets/css/tailwind.css --minify",
+    "watch": "postcss src/input.css -o assets/css/tailwind.css --watch"
+  },
+  "keywords": [
+    "flight",
+    "booking",
+    "php",
+    "tailwindcss"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.31",
+    "postcss-cli": "^10.1.0",
+    "tailwindcss": "^3.3.5"
+  }
+}

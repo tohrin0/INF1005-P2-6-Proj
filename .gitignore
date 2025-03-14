@@ -1,0 +1,10 @@
+# Node.js
+node_modules/
+package-lock.json
+
+# Generated CSS
+assets/css/tailwind.css
+
+# OS specific files
+.DS_Store
+Thumbs.db 
