@@ -1,164 +1,168 @@
 /* Basic styling for the flight booking website */
 body {
-    font-family: Arial, sans-serif;
-    line-height: 1.6;
-    margin: 0;
-    padding: 0;
-    color: #333;
-    background-color: #f9f9f9;
+  font-family: Arial, sans-serif;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+  color: #333;
+  background-color: #f9f9f9;
 }
 
 header {
-    background-color: #fff;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    padding: 10px 0;
+  background-color: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 10px 0;
 }
 
 /* Update the nav styles to be compatible with header.php */
 nav {
-    margin: 10px 0;
+  margin: 10px 0;
 }
 
 nav a {
-    color: #333; /* Changed from white to dark color */
-    text-decoration: none;
-    padding: 10px 15px;
+  color: #333; /* Changed from white to dark color */
+  text-decoration: none;
+  padding: 10px 15px;
 }
 
 nav a:hover {
-    background: #e9ecef;
-    color: #007bff;
-    border-radius: 4px;
+  background: #e9ecef;
+  color: #007bff;
+  border-radius: 4px;
 }
 
 .container {
-    width: 90%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
+  width: 90%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
 }
 
 footer {
-    background-color: #2c3e50;
-    color: white;
-    padding: 20px 0;
-    margin-top: 40px;
-    text-align: center;
+  background-color: #2c3e50;
+  color: white;
+  padding: 20px 0;
+  margin-top: 40px;
+  text-align: center;
 }
 
 footer a {
-    color: #ecf0f1;
+  color: #ecf0f1;
 }
 
-h1, h2, h3 {
-    color: #2c3e50;
+h1,
+h2,
+h3 {
+  color: #2c3e50;
 }
 
 button {
-    background: #007bff;
-    color: #fff;
-    border: none;
-    padding: 10px 15px;
-    cursor: pointer;
+  background: #007bff;
+  color: #fff;
+  border: none;
+  padding: 10px 15px;
+  cursor: pointer;
 }
 
 button:hover {
-    background: #0056b3;
+  background: #0056b3;
 }
 
 input[type="text"],
 input[type="email"],
 input[type="password"],
 select {
-    width: 100%;
-    padding: 10px;
-    margin: 5px 0 20px 0;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+  width: 100%;
+  padding: 10px;
+  margin: 5px 0 20px 0;
+  border: 1px solid #ccc;
+  border-radius: 5px;
 }
 
 .error {
-    color: #e74c3c;
-    margin-bottom: 15px;
+  color: #e74c3c;
+  margin-bottom: 15px;
 }
 
 .welcome-message {
-    color: #4CAF50;
-    font-weight: bold;
-    padding: 10px 15px;
-    background-color: #f1f9f1;
-    border-radius: 4px;
-    margin-right: 10px;
+  color: #4caf50;
+  font-weight: bold;
+  padding: 10px 15px;
+  background-color: #f1f9f1;
+  border-radius: 4px;
+  margin-right: 10px;
 }
 
 nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    align-items: center;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
 }
 
 nav li {
-    margin-right: 20px;
-    list-style: none;
+  margin-right: 20px;
+  list-style: none;
 }
 
 /* Button styles */
 .btn {
-    display: inline-block;
-    padding: 10px 20px;
-    background-color: #3498db;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    text-decoration: none;
-    margin-right: 10px;
-    margin-bottom: 10px;
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  margin-right: 10px;
+  margin-bottom: 10px;
 }
 
 .btn:hover {
-    background-color: #2980b9;
-    text-decoration: none;
+  background-color: #2980b9;
+  text-decoration: none;
 }
 
 /* Form styles */
 form {
-    max-width: 600px;
-    margin: 0 auto;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
-input, select, textarea {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 15px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-sizing: border-box;
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
 }
 
 button[type="submit"] {
-    background-color: #3498db;
-    color: white;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
+  background-color: #3498db;
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
 }
 
 button[type="submit"]:hover {
-    background-color: #2980b9;
+  background-color: #2980b9;
 }
 
 /* Error and success messages */
 .success {
-    color: #2ecc71;
-    margin-bottom: 15px;
+  color: #2ecc71;
+  margin-bottom: 15px;
 }
 
 /* Action buttons container */
 .action-buttons {
-    margin: 20px 0;
+  margin: 20px 0;
 }

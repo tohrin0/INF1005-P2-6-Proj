@@ -10,20 +10,39 @@ $flights = [];
 $error = '';
 $searchPerformed = false;
 
+// Get search parameters
+$from = $_GET['from'] ?? ($_POST['from'] ?? '');
+$to = $_GET['to'] ?? ($_POST['to'] ?? '');
+$departDate = $_GET['departDate'] ?? ($_POST['departDate'] ?? '');
+$returnDate = $_GET['returnDate'] ?? ($_POST['returnDate'] ?? '');
+$cabinClass = $_GET['cabinClass'] ?? ($_POST['cabinClass'] ?? 'economy');
+$adults = $_GET['adults'] ?? ($_POST['adults'] ?? 1);
+$children = $_GET['children'] ?? ($_POST['children'] ?? 0);
+$infants = $_GET['infants'] ?? ($_POST['infants'] ?? 0);
+$tripType = $_GET['tripType'] ?? ($_POST['tripType'] ?? 'roundtrip');
+
+// Sorting options
+$sortBy = $_GET['sortBy'] ?? 'price';
+$sortOrder = $_GET['sortOrder'] ?? 'asc';
+
+// Filter options
+$minPrice = $_GET['minPrice'] ?? '';
+$maxPrice = $_GET['maxPrice'] ?? '';
+$selectedAirlines = $_GET['airlines'] ?? [];
+$selectedDepartureTimes = $_GET['departureTimes'] ?? [];
+$selectedStops = $_GET['stops'] ?? [];
+
 // Fix the REQUEST_METHOD error by checking if it exists first
-if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    $departure = $_POST['departure'] ?? '';
-    $arrival = $_POST['arrival'] ?? '';
-    $date = $_POST['date'] ?? '';
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' || !empty($from) && !empty($to) && !empty($departDate)) {
     $searchPerformed = true;
 
-    if (empty($departure) || empty($arrival) || empty($date)) {
+    if (empty($from) || empty($to) || empty($departDate)) {
         $error = 'Please fill in all fields.';
     } else {
         try {
             $apiClient = new ApiClient();
-            $flights = $apiClient->searchFlights($departure, $arrival, $date);
-            
+            $flights = $apiClient->searchFlights($from, $to, $departDate);
+
             if (empty($flights)) {
                 $error = 'No flights found for your search criteria.';
             }
@@ -37,7 +56,7 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') 
     try {
         $apiClient = new ApiClient();
         $flights = $apiClient->getAvailableFlights();
-        
+
         if (empty($flights)) {
             $error = 'No available flights found. Please try a different search.';
         }
@@ -47,409 +66,352 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') 
     }
 }
 
-// Common airports list for autocomplete
-$commonAirports = [
-    ['name' => 'Atlanta International Airport', 'code' => 'ATL'],
-    ['name' => 'Beijing Capital International Airport', 'code' => 'PEK'],
-    ['name' => 'Dubai International Airport', 'code' => 'DXB'],
-    ['name' => 'Los Angeles International Airport', 'code' => 'LAX'],
-    ['name' => 'Tokyo Haneda Airport', 'code' => 'HND'],
-    ['name' => 'Chicago O\'Hare International Airport', 'code' => 'ORD'],
-    ['name' => 'London Heathrow Airport', 'code' => 'LHR'],
-    ['name' => 'Shanghai Pudong International Airport', 'code' => 'PVG'],
-    ['name' => 'Paris Charles de Gaulle Airport', 'code' => 'CDG'],
-    ['name' => 'Amsterdam Airport Schiphol', 'code' => 'AMS'],
-    ['name' => 'Dallas/Fort Worth International Airport', 'code' => 'DFW'],
-    ['name' => 'Hong Kong International Airport', 'code' => 'HKG'],
-    ['name' => 'Frankfurt Airport', 'code' => 'FRA'],
-    ['name' => 'Denver International Airport', 'code' => 'DEN'],
-    ['name' => 'Seoul Incheon International Airport', 'code' => 'ICN'],
-    ['name' => 'Singapore Changi Airport', 'code' => 'SIN'],
-    ['name' => 'New York JFK International Airport', 'code' => 'JFK'],
-    ['name' => 'San Francisco International Airport', 'code' => 'SFO'],
-    ['name' => 'Sydney Airport', 'code' => 'SYD'],
-    ['name' => 'Miami International Airport', 'code' => 'MIA'],
-    ['name' => 'Toronto Pearson International Airport', 'code' => 'YYZ'],
-    ['name' => 'Barcelona–El Prat Airport', 'code' => 'BCN'],
-    ['name' => 'Orlando International Airport', 'code' => 'MCO'],
-    ['name' => 'New Delhi Indira Gandhi International Airport', 'code' => 'DEL'],
-    ['name' => 'Mumbai Chhatrapati Shivaji Maharaj International Airport', 'code' => 'BOM'],
-    ['name' => 'Istanbul Airport', 'code' => 'IST'],
-    ['name' => 'Mexico City International Airport', 'code' => 'MEX'],
-    ['name' => 'Munich Airport', 'code' => 'MUC'],
-    ['name' => 'Moscow Sheremetyevo International Airport', 'code' => 'SVO'],
-    ['name' => 'São Paulo–Guarulhos International Airport', 'code' => 'GRU']
+// Sample airlines for filter
+$airlines = [
+    "SkyWings Airlines",
+    "Pacific Air",
+    "TransAtlantic",
+    "Coastal Airways",
+    "Global Express"
 ];
 
-// Add formatDuration function if it doesn't exist
-if (!function_exists('formatDuration')) {
-    function formatDuration($durationMinutes) {
-        if (!is_numeric($durationMinutes)) {
-            return "N/A";
-        }
-        
-        $hours = floor($durationMinutes / 60);
-        $minutes = $durationMinutes % 60;
-        
-        if ($hours > 0 && $minutes > 0) {
-            return $hours . "h " . $minutes . "m";
-        } elseif ($hours > 0) {
-            return $hours . "h";
-        } else {
-            return $minutes . "m";
-        }
-    }
+// Sample departure times for filter
+$departureTimes = [
+    "Morning (6AM - 12PM)",
+    "Afternoon (12PM - 6PM)",
+    "Evening (6PM - 12AM)",
+    "Night (12AM - 6AM)"
+];
+
+// Sample stops for filter
+$stops = [
+    "Non-stop",
+    "1 Stop",
+    "2+ Stops"
+];
+
+// Function to render flight search result
+function renderFlightSearchResult($flight)
+{
+    $airline = $flight['airline'] ?? 'Unknown Airline';
+    $flightNumber = $flight['flightNumber'] ?? 'N/A';
+    $departureTime = $flight['departureTime'] ?? '00:00';
+    $departureAirport = $flight['departureAirport'] ?? 'N/A';
+    $arrivalTime = $flight['arrivalTime'] ?? '00:00';
+    $arrivalAirport = $flight['arrivalAirport'] ?? 'N/A';
+    $duration = $flight['duration'] ?? 'N/A';
+    $stops = $flight['stops'] ?? 0;
+    $stopAirport = $flight['stopAirport'] ?? '';
+    $price = $flight['price'] ?? 0;
+
+    $stopsText = $stops === 0 ? 'Non-stop' : ($stops === 1 ? '1 Stop' : $stops . ' Stops');
+    $stopsClass = $stops === 0 ? 'text-green-600' : ($stops === 1 ? 'text-yellow-600' : 'text-red-600');
+
+    $stopDot = $stops > 0 ? '<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-gray-400 rounded-full"></div>' : '';
+    $stopAirportText = $stops > 0 && $stopAirport ? '<div class="text-xs text-gray-400">' . $stopAirport . '</div>' : '';
+
+    return <<<HTML
+    <div class="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow">
+        <div class="flex flex-col md:flex-row md:items-center justify-between">
+            <div class="flex flex-col md:flex-row md:items-center gap-4 mb-4 md:mb-0">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                        <span class="font-bold text-sm">{$airline[0]}</span>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="text-sm text-gray-500">{$airline}</div>
+                    <div class="text-xs text-gray-400">Flight {$flightNumber}</div>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <div class="text-center">
+                        <div class="text-lg font-bold">{$departureTime}</div>
+                        <div class="text-sm font-medium">{$departureAirport}</div>
+                    </div>
+                    
+                    <div class="flex flex-col items-center">
+                        <div class="text-xs text-gray-500">{$duration}</div>
+                        <div class="w-20 md:w-32 h-px bg-gray-300 my-1 relative">
+                            {$stopDot}
+                        </div>
+                        <div class="text-xs {$stopsClass}">{$stopsText}</div>
+                        {$stopAirportText}
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="text-lg font-bold">{$arrivalTime}</div>
+                        <div class="text-sm font-medium">{$arrivalAirport}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex flex-col items-end">
+                <div class="text-2xl font-bold text-blue-600">\${$price}</div>
+                <div class="text-sm text-gray-500">per person</div>
+                <a href="booking.php?flight={$flightNumber}" class="mt-2 inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    Select
+                </a>
+            </div>
+        </div>
+    </div>
+    HTML;
 }
 
 include 'templates/header.php';
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="assets/css/main.css">
-    <link rel="stylesheet" href="assets/css/responsive.css">
-    <title>Flight Search</title>
-    <!-- Add jQuery UI CSS -->
-    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-    <style>
-        .search-form {
-            background-color: #f8f9fa;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
-        
-        .form-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        
-        .form-group {
-            flex: 1;
-            min-width: 200px;
-            margin-bottom: 15px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-        
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        
-        button[type="submit"] {
-            background-color: #4CAF50;
-            color: white;
-            padding: 12px 25px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        
-        button[type="submit"]:hover {
-            background-color: #45a049;
-        }
-        
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-        }
-        
-        .no-results {
-            background-color: #fff3cd;
-            color: #856404;
-            padding: 20px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        
-        .flight-results-title {
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .flights-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .flight-card {
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            overflow: hidden;
-            transition: all 0.3s ease;
-            border: 1px solid #eaeaea;
-        }
-        
-        .flight-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        .flight-header {
-            padding: 15px;
-            background-color: #f8f9fa;
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 1px solid #eaeaea;
-        }
-        
-        .flight-number {
-            font-weight: bold;
-            color: #2c3e50;
-        }
-        
-        .flight-airline {
-            color: #7f8c8d;
-        }
-        
-        .flight-details {
-            padding: 15px;
-        }
-        
-        .route-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        
-        .departure, .arrival {
-            flex: 1;
-        }
-        
-        .time {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .airport {
-            color: #7f8c8d;
-        }
-        
-        .duration-display {
-            background-color: #e8f4fd;
-            color: #0078d4;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-        }
-        
-        .flight-meta {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-top: 1px solid #eaeaea;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .price {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #27ae60;
-        }
-        
-        .seats {
-            color: #7f8c8d;
-            font-size: 0.9rem;
-        }
-        
-        .book-btn {
-            background-color: #4CAF50;
-            color: white;
-            padding: 8px 15px;
-            text-decoration: none;
-            border-radius: 4px;
-            font-weight: 500;
-            transition: background-color 0.3s;
-        }
-        
-        .book-btn:hover {
-            background-color: #45a049;
-            color: white;
-        }
-        
-        .sold-out {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 0.9rem;
-        }
-        
-        /* Separator between departure and arrival */
-        .route-separator {
-            display: flex;
-            align-items: center;
-            margin: 0 15px;
-        }
-        
-        .route-line {
-            flex-grow: 1;
-            height: 2px;
-            background: #ddd;
-            position: relative;
-        }
-        
-        .route-icon {
-            margin: 0 10px;
-            color: #7f8c8d;
-            font-size: 1.2rem;
-        }
-        
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .flights-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .form-row {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .form-group {
-                width: 100%;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="search-form">
-            <form method="POST" action="search.php">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="departure">From</label>
-                        <input type="text" id="departure" name="departure" placeholder="City or Airport" value="<?php echo htmlspecialchars($departure ?? ''); ?>" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="arrival">To</label>
-                        <input type="text" id="arrival" name="arrival" placeholder="City or Airport" value="<?php echo htmlspecialchars($arrival ?? ''); ?>" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="date">Date</label>
-                        <input type="date" id="date" name="date" value="<?php echo htmlspecialchars($date ?? ''); ?>" required>
-                    </div>
-                </div>
-                
-                <button type="submit">Search Flights</button>
-            </form>
-        </div>
+<main class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Flight Search Results</h1>
 
-        <?php if (!empty($error)): ?>
-            <div class="error"><?php echo htmlspecialchars($error); ?></div>
-        <?php elseif (empty($flights)): ?>
-            <div class="no-results">No flights found. Please try different search criteria.</div>
-        <?php else: ?>
-            <h2 class="flight-results-title">
-                <?php if ($searchPerformed): ?>
-                    Search Results
-                <?php else: ?>
-                    Available Flights
-                <?php endif; ?>
-            </h2>
-            <div class="flights-grid">
-                <?php foreach ($flights as $flight): ?>
-                    <div class="flight-card">
-                        <div class="flight-header">
-                            <div class="flight-number"><?php echo htmlspecialchars($flight['flight_number']); ?></div>
-                            <div class="flight-airline"><?php echo htmlspecialchars($flight['airline']); ?></div>
-                            <?php if (isset($flight['duration'])): ?>
-                                <div class="duration-display"><?php echo formatDuration($flight['duration']); ?></div>
-                            <?php endif; ?>
-                        </div>
-                        <div class="flight-details">
-                            <div class="route-info">
-                                <div class="departure">
-                                    <div class="time"><?php echo htmlspecialchars(date('H:i', strtotime($flight['time']))); ?></div>
-                                    <div class="airport"><?php echo htmlspecialchars($flight['departure']); ?></div>
-                                </div>
-                                
-                                <div class="route-separator">
-                                    <div class="route-line"></div>
-                                    <div class="route-icon"><i class="fas fa-plane"></i></div>
-                                    <div class="route-line"></div>
-                                </div>
-                                
-                                <div class="arrival">
-                                    <?php 
-                                    $arrivalTime = strtotime($flight['time']) + ($flight['duration'] * 60);
-                                    ?>
-                                    <div class="time"><?php echo date('H:i', $arrivalTime); ?></div>
-                                    <div class="airport"><?php echo htmlspecialchars($flight['arrival']); ?></div>
-                                </div>
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Filters Sidebar -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg shadow-md sticky top-4">
+                <div class="p-6">
+                    <h2 class="text-xl font-bold mb-4">Filter Results</h2>
+
+                    <form method="GET" action="" class="space-y-6">
+                        <!-- Preserve search parameters -->
+                        <input type="hidden" name="from" value="<?= htmlspecialchars($from) ?>">
+                        <input type="hidden" name="to" value="<?= htmlspecialchars($to) ?>">
+                        <input type="hidden" name="departDate" value="<?= htmlspecialchars($departDate) ?>">
+                        <input type="hidden" name="returnDate" value="<?= htmlspecialchars($returnDate) ?>">
+                        <input type="hidden" name="cabinClass" value="<?= htmlspecialchars($cabinClass) ?>">
+                        <input type="hidden" name="adults" value="<?= htmlspecialchars($adults) ?>">
+                        <input type="hidden" name="children" value="<?= htmlspecialchars($children) ?>">
+                        <input type="hidden" name="infants" value="<?= htmlspecialchars($infants) ?>">
+                        <input type="hidden" name="tripType" value="<?= htmlspecialchars($tripType) ?>">
+
+                        <!-- Price Range -->
+                        <div>
+                            <label class="text-sm font-medium mb-2 block">Price Range</label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" name="minPrice" placeholder="Min" value="<?= htmlspecialchars($minPrice) ?>"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                                <span>-</span>
+                                <input type="number" name="maxPrice" placeholder="Max" value="<?= htmlspecialchars($maxPrice) ?>"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md">
                             </div>
                         </div>
-                        <div class="flight-meta">
-                            <div class="price">$<?php echo htmlspecialchars(number_format($flight['price'], 2)); ?></div>
-                            <?php if (isset($flight['available_seats']) && $flight['available_seats'] > 0): ?>
-                                <div class="seats"><?php echo htmlspecialchars($flight['available_seats']); ?> seats left</div>
-                                <!-- Direct POST to passenger-details.php -->
-                                <form method="POST" action="passenger-details.php">
-                                    <input type="hidden" name="flight_id" value="<?php echo htmlspecialchars($flight['id']); ?>">
-                                    <input type="hidden" name="price" value="<?php echo htmlspecialchars($flight['price']); ?>">
-                                    <button type="submit" name="select_flight" class="book-btn">Book Now</button>
-                                </form>
-                            <?php else: ?>
-                                <div class="sold-out">Sold Out</div>
-                            <?php endif; ?>
+
+                        <!-- Airlines -->
+                        <div>
+                            <label class="text-sm font-medium mb-2 block">Airlines</label>
+                            <div class="space-y-2">
+                                <?php foreach ($airlines as $airline): ?>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="airline-<?= htmlspecialchars($airline) ?>" name="airlines[]"
+                                            value="<?= htmlspecialchars($airline) ?>"
+                                            <?= in_array($airline, (array)$selectedAirlines) ? 'checked' : '' ?>
+                                            class="mr-2">
+                                        <label for="airline-<?= htmlspecialchars($airline) ?>" class="text-sm">
+                                            <?= htmlspecialchars($airline) ?>
+                                        </label>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+
+                        <!-- Departure Time -->
+                        <div>
+                            <label class="text-sm font-medium mb-2 block">Departure Time</label>
+                            <div class="space-y-2">
+                                <?php foreach ($departureTimes as $time): ?>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="time-<?= htmlspecialchars($time) ?>" name="departureTimes[]"
+                                            value="<?= htmlspecialchars($time) ?>"
+                                            <?= in_array($time, (array)$selectedDepartureTimes) ? 'checked' : '' ?>
+                                            class="mr-2">
+                                        <label for="time-<?= htmlspecialchars($time) ?>" class="text-sm">
+                                            <?= htmlspecialchars($time) ?>
+                                        </label>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+
+                        <!-- Stops -->
+                        <div>
+                            <label class="text-sm font-medium mb-2 block">Stops</label>
+                            <div class="space-y-2">
+                                <?php foreach ($stops as $stop): ?>
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="stop-<?= htmlspecialchars($stop) ?>" name="stops[]"
+                                            value="<?= htmlspecialchars($stop) ?>"
+                                            <?= in_array($stop, (array)$selectedStops) ? 'checked' : '' ?>
+                                            class="mr-2">
+                                        <label for="stop-<?= htmlspecialchars($stop) ?>" class="text-sm">
+                                            <?= htmlspecialchars($stop) ?>
+                                        </label>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition-colors flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                            </svg>
+                            Apply Filters
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Column -->
+        <div class="lg:col-span-3">
+            <!-- Search Summary and Sort Options -->
+            <div class="bg-white rounded-lg shadow-md mb-6">
+                <div class="p-4">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex items-center">
+                            <div class="font-medium"><?= htmlspecialchars($from) ?></div>
+                            <span class="mx-2">→</span>
+                            <div class="font-medium"><?= htmlspecialchars($to) ?></div>
+                            <span class="mx-2 text-sm text-gray-500"><?= htmlspecialchars($departDate) ?><?= $returnDate ? ' - ' . htmlspecialchars($returnDate) : '' ?></span>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <form method="GET" action="" id="sortForm" class="flex items-center gap-2">
+                                <!-- Preserve search parameters -->
+                                <input type="hidden" name="from" value="<?= htmlspecialchars($from) ?>">
+                                <input type="hidden" name="to" value="<?= htmlspecialchars($to) ?>">
+                                <input type="hidden" name="departDate" value="<?= htmlspecialchars($departDate) ?>">
+                                <input type="hidden" name="returnDate" value="<?= htmlspecialchars($returnDate) ?>">
+                                <input type="hidden" name="cabinClass" value="<?= htmlspecialchars($cabinClass) ?>">
+                                <input type="hidden" name="adults" value="<?= htmlspecialchars($adults) ?>">
+                                <input type="hidden" name="children" value="<?= htmlspecialchars($children) ?>">
+                                <input type="hidden" name="infants" value="<?= htmlspecialchars($infants) ?>">
+                                <input type="hidden" name="tripType" value="<?= htmlspecialchars($tripType) ?>">
+
+                                <!-- Sort options -->
+                                <select name="sortBy" onchange="document.getElementById('sortForm').submit()"
+                                    class="px-3 py-2 border border-gray-300 rounded-md w-[180px]">
+                                    <option value="price" <?= $sortBy === 'price' && $sortOrder === 'asc' ? 'selected' : '' ?>>Price: Low to High</option>
+                                    <option value="price-desc" <?= $sortBy === 'price' && $sortOrder === 'desc' ? 'selected' : '' ?>>Price: High to Low</option>
+                                    <option value="duration" <?= $sortBy === 'duration' ? 'selected' : '' ?>>Duration: Shortest</option>
+                                    <option value="departure" <?= $sortBy === 'departure' ? 'selected' : '' ?>>Departure: Earliest</option>
+                                    <option value="arrival" <?= $sortBy === 'arrival' ? 'selected' : '' ?>>Arrival: Earliest</option>
+                                </select>
+
+                                <button type="submit" name="sortOrder" value="<?= $sortOrder === 'asc' ? 'desc' : 'asc' ?>"
+                                    class="p-2 border border-gray-300 rounded-md hover:bg-gray-100">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="16 3 21 3 21 8"></polyline>
+                                        <line x1="4" y1="20" x2="21" y2="3"></line>
+                                        <polyline points="21 16 21 21 16 21"></polyline>
+                                        <line x1="15" y1="15" x2="21" y2="21"></line>
+                                        <line x1="4" y1="4" x2="9" y2="9"></line>
+                                    </svg>
+                                </button>
+                            </form>
                         </div>
                     </div>
-                <?php endforeach; ?>
+                </div>
             </div>
-        <?php endif; ?>
-    </div>
 
-    <!-- Add jQuery and jQuery UI -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
-    
-    <script>
-    // Autocomplete for departure and arrival fields
-    $(function() {
-        var airports = <?php echo json_encode($commonAirports); ?>;
-        var airportNames = airports.map(function(airport) {
-            return airport.name + " (" + airport.code + ")";
-        });
-        
-        $("#departure, #arrival").autocomplete({
-            source: airportNames,
-            minLength: 2
-        });
-        
-        // Add plane icon to route
-        $(".route-info").append('<i class="fas fa-plane" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);"></i>');
-    });
-    </script>
-    
-    <!-- Add Font Awesome -->
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-</body>
-</html>
+            <!-- Flight Results -->
+            <?php if ($error): ?>
+                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
+                    <?= htmlspecialchars($error) ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if (empty($flights) && empty($error)): ?>
+                <div class="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-md mb-4">
+                    No flights found. Please try different search criteria.
+                </div>
+            <?php endif; ?>
+
+            <div class="space-y-4">
+                <?php
+                // If no real flights data, use sample data for demonstration
+                if (empty($flights) && empty($error)) {
+                    $flights = [
+                        [
+                            'airline' => 'SkyWings Airlines',
+                            'flightNumber' => 'SW1234',
+                            'departureTime' => '08:30',
+                            'departureAirport' => 'JFK',
+                            'arrivalTime' => '20:15',
+                            'arrivalAirport' => 'LHR',
+                            'duration' => '7h 45m',
+                            'stops' => 0,
+                            'price' => 349
+                        ],
+                        [
+                            'airline' => 'TransAtlantic',
+                            'flightNumber' => 'TA5678',
+                            'departureTime' => '10:45',
+                            'departureAirport' => 'JFK',
+                            'arrivalTime' => '22:30',
+                            'arrivalAirport' => 'LHR',
+                            'duration' => '7h 45m',
+                            'stops' => 0,
+                            'price' => 379
+                        ],
+                        [
+                            'airline' => 'Global Express',
+                            'flightNumber' => 'GE9012',
+                            'departureTime' => '14:20',
+                            'departureAirport' => 'JFK',
+                            'arrivalTime' => '02:15',
+                            'arrivalAirport' => 'LHR',
+                            'duration' => '7h 55m',
+                            'stops' => 0,
+                            'price' => 329
+                        ],
+                        [
+                            'airline' => 'Pacific Air',
+                            'flightNumber' => 'PA3456',
+                            'departureTime' => '16:30',
+                            'departureAirport' => 'JFK',
+                            'arrivalTime' => '09:45',
+                            'arrivalAirport' => 'LHR',
+                            'duration' => '8h 15m',
+                            'stops' => 1,
+                            'stopAirport' => 'BOS',
+                            'price' => 299
+                        ],
+                        [
+                            'airline' => 'Coastal Airways',
+                            'flightNumber' => 'CA7890',
+                            'departureTime' => '19:15',
+                            'departureAirport' => 'JFK',
+                            'arrivalTime' => '12:30',
+                            'arrivalAirport' => 'LHR',
+                            'duration' => '8h 15m',
+                            'stops' => 1,
+                            'stopAirport' => 'DUB',
+                            'price' => 319
+                        ]
+                    ];
+                }
+
+                foreach ($flights as $flight) {
+                    echo renderFlightSearchResult($flight);
+                }
+                ?>
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex justify-center mt-8">
+                <?php for ($i = 1; $i <= 5; $i++): ?>
+                    <a href="?page=<?= $i ?>&from=<?= htmlspecialchars($from) ?>&to=<?= htmlspecialchars($to) ?>&departDate=<?= htmlspecialchars($departDate) ?>&returnDate=<?= htmlspecialchars($returnDate) ?>&cabinClass=<?= htmlspecialchars($cabinClass) ?>&adults=<?= htmlspecialchars($adults) ?>&children=<?= htmlspecialchars($children) ?>&infants=<?= htmlspecialchars($infants) ?>&tripType=<?= htmlspecialchars($tripType) ?>&sortBy=<?= htmlspecialchars($sortBy) ?>&sortOrder=<?= htmlspecialchars($sortOrder) ?>"
+                        class="mx-1 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-100 <?= ($_GET['page'] ?? 1) == $i ? 'bg-blue-600 text-white hover:bg-blue-700' : '' ?>">
+                        <?= $i ?>
+                    </a>
+                <?php endfor; ?>
+                <a href="?page=<?= min(($_GET['page'] ?? 1) + 1, 5) ?>&from=<?= htmlspecialchars($from) ?>&to=<?= htmlspecialchars($to) ?>&departDate=<?= htmlspecialchars($departDate) ?>&returnDate=<?= htmlspecialchars($returnDate) ?>&cabinClass=<?= htmlspecialchars($cabinClass) ?>&adults=<?= htmlspecialchars($adults) ?>&children=<?= htmlspecialchars($children) ?>&infants=<?= htmlspecialchars($infants) ?>&tripType=<?= htmlspecialchars($tripType) ?>&sortBy=<?= htmlspecialchars($sortBy) ?>&sortOrder=<?= htmlspecialchars($sortOrder) ?>"
+                    class="mx-1 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-100">
+                    Next
+                </a>
+            </div>
+        </div>
+    </div>
+</main>
 
 <?php include 'templates/footer.php'; ?>

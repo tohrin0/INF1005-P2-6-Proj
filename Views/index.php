@@ -1,394 +1,224 @@
 <?php
-require_once 'inc/config.php';
-require_once 'inc/db.php';
-require_once 'inc/functions.php';
-require_once 'inc/auth.php';
-require_once 'inc/api.php';
-
-// Check if user is logged in
-$isLoggedIn = isset($_SESSION['user_id']);
-
-// Fetch flight data from API if user is logged in
-$flights = [];
-if ($isLoggedIn) {
-    try {
-        $apiClient = new ApiClient();
-        $flights = $apiClient->getFlightSchedules();
-
-        // Debug the API response
-        error_log("API getFlightSchedules returned: " . json_encode(array_slice($flights, 0, 2)));
-    } catch (Exception $e) {
-        error_log("Error fetching flights: " . $e->getMessage());
-    }
-}
-
-include 'templates/header.php';
+// Include necessary files
+include_once 'templates/header.php';
 ?>
 
-<div class="hero-section">
-    <div class="hero-content">
-        <h1>Discover the World with Flight Booking</h1>
-        <p>Your journey begins with a single search. Find the best flights at competitive prices.</p>
-        <a href="search.php" class="btn btn-primary">Start Your Journey</a>
-    </div>
-</div>
-
-<div class="container">
-    <div class="features-section">
-        <div class="feature">
-            <div class="feature-icon">✈️</div>
-            <h3>Global Destinations</h3>
-            <p>Access flights to over 10,000 destinations worldwide with our comprehensive flight database.</p>
-        </div>
-        <div class="feature">
-            <div class="feature-icon">💰</div>
-            <h3>Best Prices</h3>
-            <p>Compare prices across multiple airlines to ensure you always get the best deal available.</p>
-        </div>
-        <div class="feature">
-            <div class="feature-icon">🔒</div>
-            <h3>Secure Booking</h3>
-            <p>Book with confidence using our secure payment system and receive instant confirmation.</p>
-        </div>
-    </div>
-
-    <?php if ($isLoggedIn && !empty($flights)): ?>
-        <div class="personal-section">
-            <h2>Hello, <?php echo htmlspecialchars($_SESSION['username']); ?>!</h2>
-            <p>Welcome to our flight booking platform. Check out our popular flights below or search for specific routes.</p>
-            <div class="action-buttons">
-                <a href="search.php" class="btn">Search Flights</a>
-                <a href="my-bookings.php" class="btn">My Bookings</a>
+<main class="flex min-h-screen flex-col">
+    <div class="relative h-[600px] w-full overflow-hidden">
+        <img
+            src="assets/images/Plane1hero.jpg"
+            alt="Airplane flying over a beautiful landscape"
+            class="object-cover w-full h-full absolute inset-0"
+            loading="eager" />
+        <div class="absolute inset-0 bg-gradient-to-r from-black/70 to-black/30 flex flex-col justify-center">
+            <div class="container mx-auto px-4">
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 max-w-2xl">
+                    Discover the World with Our Best Flight Deals
+                </h1>
+                <p class="text-xl text-white/90 mb-8 max-w-xl">
+                    Book your flights with confidence. Transparent pricing, no hidden fees, and 24/7 customer support.
+                </p>
             </div>
         </div>
+    </div>
 
-        <?php if (!empty($flights)): ?>
-            <div class="popular-flights">
-                <h2>Popular Flights</h2>
-                <div class="flight-grid">
-                    <?php foreach (array_slice($flights, 0, 3) as $flight): ?>
-                        <div class="flight-card">
-                            <div class="flight-header">
-                                <span class="flight-number"><?php echo htmlspecialchars($flight['flight_number']); ?></span>
-                                <span class="flight-airline"><?php echo htmlspecialchars($flight['airline'] ?? ''); ?></span>
-                            </div>
-                            <div class="flight-route">
-                                <div class="route-info">
-                                    <strong><?php echo htmlspecialchars($flight['departure']); ?></strong>
-                                    <span>to</span>
-                                    <strong><?php echo htmlspecialchars($flight['arrival']); ?></strong>
-                                </div>
-                            </div>
-                            <div class="flight-date">
-                                <?php echo htmlspecialchars($flight['date']); ?> at <?php echo htmlspecialchars($flight['time']); ?>
-                            </div>
-                            <div class="flight-price">
-                                $<?php echo htmlspecialchars(number_format($flight['price'], 2)); ?>
-                            </div>
-                            <div class="flight-info-badge">
-                                <i class="fas fa-info-circle"></i> View details on search page
+    <div class="container mx-auto px-4 -mt-24 relative z-10 mb-16">
+        <?php include 'components/flight-search.php'; ?>
+    </div>
+
+    <section class="container mx-auto px-4 py-12">
+        <h2 class="text-3xl font-bold mb-8 text-center">Featured Destinations</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <?php
+            $destinations = [
+                ["name" => "New York", "image" => "/placeholder.svg?height=400&width=600", "price" => 349],
+                ["name" => "London", "image" => "/placeholder.svg?height=400&width=600", "price" => 429],
+                ["name" => "Paris", "image" => "/placeholder.svg?height=400&width=600", "price" => 399],
+                ["name" => "Tokyo", "image" => "/placeholder.svg?height=400&width=600", "price" => 689],
+                ["name" => "Dubai", "image" => "/placeholder.svg?height=400&width=600", "price" => 499],
+                ["name" => "Sydney", "image" => "/placeholder.svg?height=400&width=600", "price" => 799]
+            ];
+
+            foreach ($destinations as $destination):
+                $destinationUrl = 'destinations/' . strtolower($destination['name']);
+            ?>
+                <a href="<?= htmlspecialchars($destinationUrl) ?>" class="group">
+                    <div class="relative h-64 rounded-xl overflow-hidden shadow-md transition-transform group-hover:shadow-lg group-hover:-translate-y-1">
+                        <img
+                            src="<?= htmlspecialchars($destination['image'] ?: '/placeholder.svg') ?>"
+                            alt="<?= htmlspecialchars($destination['name']) ?>"
+                            class="object-cover w-full h-full absolute inset-0 transition-transform group-hover:scale-105" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6">
+                            <h3 class="text-xl font-bold text-white"><?= htmlspecialchars($destination['name']) ?></h3>
+                            <div class="flex justify-between items-center mt-2">
+                                <span class="text-white/80">From</span>
+                                <span class="text-white font-bold text-lg">$<?= htmlspecialchars($destination['price']) ?></span>
                             </div>
                         </div>
+                    </div>
+                </a>
+            <?php endforeach; ?>
+        </div>
+        <div class="flex justify-center mt-8">
+            <a
+                href="destinations"
+                class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-full transition-colors">
+                View All Destinations
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2 h-4 w-4">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </a>
+        </div>
+    </section>
+
+    <section class="bg-gray-50 py-16">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold mb-12 text-center">Why Choose SkyBooker</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-white rounded-xl p-8 shadow-sm text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8 text-blue-600">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">Best Price Guarantee</h3>
+                    <p class="text-gray-600">
+                        We compare prices from hundreds of airlines to ensure you get the best deal every time.
+                    </p>
+                </div>
+
+                <div class="bg-white rounded-xl p-8 shadow-sm text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8 text-blue-600">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">Flexible Booking</h3>
+                    <p class="text-gray-600">
+                        Plans change? No problem. Enjoy free cancellation on select flights and easy rebooking options.
+                    </p>
+                </div>
+
+                <div class="bg-white rounded-xl p-8 shadow-sm text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8 text-blue-600">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">24/7 Support</h3>
+                    <p class="text-gray-600">
+                        Our customer service team is available around the clock to assist with any questions or concerns.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="container mx-auto px-4 py-16">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+                <h2 class="text-3xl font-bold mb-6">Download Our Mobile App</h2>
+                <p class="text-lg text-gray-600 mb-6">
+                    Take SkyBooker with you wherever you go. Book flights, check in, receive flight alerts, and access your
+                    boarding pass—all from your mobile device.
+                </p>
+                <ul class="space-y-4 mb-8">
+                    <?php
+                    $features = [
+                        "Book flights in just a few taps",
+                        "Get real-time flight notifications",
+                        "Access mobile boarding passes",
+                        "Manage your bookings on the go"
+                    ];
+
+                    foreach ($features as $feature):
+                    ?>
+                        <li class="flex items-start">
+                            <div class="bg-blue-100 p-1 rounded-full mr-3 mt-1">
+                                <?php echo renderCheck("h-4 w-4 text-blue-600"); ?>
+                            </div>
+                            <span><?= htmlspecialchars($feature) ?></span>
+                        </li>
                     <?php endforeach; ?>
-                </div>
-                <div class="view-all-flights">
-                    <a href="search.php" class="btn-view-all">View All Flights <i class="fas fa-arrow-right"></i></a>
+                </ul>
+                <div class="flex flex-wrap gap-4">
+                    <a href="#" class="inline-block">
+                        <img
+                            src="/placeholder.svg?height=60&width=180"
+                            alt="Download on the App Store"
+                            width="180"
+                            height="60"
+                            class="rounded-lg" />
+                    </a>
+                    <a href="#" class="inline-block">
+                        <img
+                            src="/placeholder.svg?height=60&width=180"
+                            alt="Get it on Google Play"
+                            width="180"
+                            height="60"
+                            class="rounded-lg" />
+                    </a>
                 </div>
             </div>
-        <?php endif; ?>
-    <?php else: ?>
-        <div class="cta-section">
-            <h2>Ready to Book Your Next Trip?</h2>
-            <p>Create an account or log in to get started with your flight booking.</p>
-            <div class="cta-buttons">
-                <a href="register.php" class="btn btn-primary">Create Account</a>
-                <a href="login.php" class="btn btn-secondary">Log In</a>
-            </div>
-        </div>
-    <?php endif; ?>
-
-    <div class="testimonials">
-        <h2>What Our Customers Say</h2>
-        <div class="testimonial-grid">
-            <div class="testimonial">
-                <div class="testimonial-content">
-                    "The booking process was incredibly easy and the prices were better than any other site I checked. Will definitely book through here again!"
-                </div>
-                <div class="testimonial-author">- Sarah L.</div>
-            </div>
-            <div class="testimonial">
-                <div class="testimonial-content">
-                    "I needed to make a last minute change to my flight, and the customer service was fantastic. They helped me every step of the way."
-                </div>
-                <div class="testimonial-author">- Michael T.</div>
-            </div>
-            <div class="testimonial">
-                <div class="testimonial-content">
-                    "I've been using this site for all my business trips. The interface is clean, and I can always find what I need quickly."
-                </div>
-                <div class="testimonial-author">- Jennifer R.</div>
+            <div class="relative h-[500px]">
+                <img
+                    src="/placeholder.svg?height=1000&width=500"
+                    alt="SkyBooker mobile app"
+                    class="object-contain absolute inset-0 w-full h-full" />
             </div>
         </div>
-    </div>
-</div>
+    </section>
 
-<style>
-    /* Hero section styling */
-    .hero-section {
-        background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7)), url('assets/images/hero-bg.jpg');
-        background-color: #2c3e50;
-        /* Fallback color */
-        background-size: cover;
-        background-position: center;
-        color: white;
-        padding: 80px 20px;
-        text-align: center;
-        margin-bottom: 40px;
-    }
+    <section class="bg-blue-600 text-white py-16">
+        <div class="container mx-auto px-4 text-center">
+            <h2 class="text-3xl font-bold mb-6">Join Our Newsletter</h2>
+            <p class="text-xl max-w-2xl mx-auto mb-8">
+                Subscribe to our newsletter and be the first to know about exclusive deals, travel tips, and special offers.
+            </p>
+            <div class="max-w-md mx-auto">
+                <form class="flex flex-col sm:flex-row gap-2">
+                    <input
+                        type="email"
+                        placeholder="Enter your email address"
+                        class="flex-1 px-4 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                    <button type="submit" class="bg-white text-blue-600 hover:bg-blue-50 px-6 py-3 rounded-lg font-medium transition-colors">
+                        Subscribe
+                    </button>
+                </form>
+                <p class="text-sm mt-4 text-blue-100">
+                    By subscribing, you agree to our Privacy Policy and consent to receive updates from SkyBooker.
+                </p>
+            </div>
+        </div>
+    </section>
+</main>
 
-    .hero-content {
-        max-width: 800px;
-        margin: 0 auto;
-    }
+<?php
+// Helper function for the check icon
+function renderCheck($className = "")
+{
+    return '<svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="' . $className . '">
+        <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>';
+}
 
-    .hero-content h1 {
-        font-size: 2.5rem;
-        margin-bottom: 20px;
-        color: white;
-    }
-
-    .hero-content p {
-        font-size: 1.2rem;
-        margin-bottom: 30px;
-        opacity: 0.9;
-    }
-
-    .btn-primary {
-        background-color: #e74c3c;
-    }
-
-    .btn-primary:hover {
-        background-color: #c0392b;
-    }
-
-    /* Features section */
-    .features-section {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        margin: 40px 0;
-    }
-
-    .feature {
-        flex: 1;
-        min-width: 250px;
-        padding: 20px;
-        text-align: center;
-        margin: 10px;
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-
-    .feature-icon {
-        font-size: 2rem;
-        margin-bottom: 15px;
-    }
-
-    /* Personal section for logged-in users */
-    .personal-section {
-        background-color: #f1f9f1;
-        padding: 30px;
-        border-radius: 8px;
-        margin: 30px 0;
-    }
-
-    .action-buttons {
-        margin-top: 20px;
-    }
-
-    .action-buttons .btn {
-        display: inline-block;
-        background-color: #4CAF50;
-        color: white;
-        padding: 10px 20px;
-        border-radius: 4px;
-        text-decoration: none;
-        margin-right: 10px;
-        font-weight: 600;
-        transition: background-color 0.3s;
-    }
-
-    .action-buttons .btn:hover {
-        background-color: #45a049;
-    }
-
-    /* Popular flights section */
-    .popular-flights {
-        margin: 40px 0;
-    }
-
-    .flight-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 20px;
-        margin-top: 20px;
-    }
-
-    .flight-card {
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        padding: 20px;
-        transition: transform 0.3s;
-    }
-
-    .flight-card:hover {
-        transform: translateY(-5px);
-    }
-
-    .flight-header {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 15px;
-        padding-bottom: 10px;
-        border-bottom: 1px solid #eee;
-    }
-
-    .flight-route {
-        text-align: center;
-        margin-bottom: 15px;
-    }
-
-    .flight-date {
-        color: #666;
-        font-size: 0.9rem;
-    }
-
-    .flight-price {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #4CAF50;
-        text-align: center;
-        margin-bottom: 15px;
-    }
-
-    .flight-info-badge {
-        text-align: center;
-        color: #6c757d;
-        font-size: 0.9rem;
-    }
-
-    /* View All Flights button - ATTENTION GRABBING */
-    .view-all-flights {
-        text-align: center;
-        margin-top: 30px;
-    }
-
-    .btn-view-all {
-        display: inline-block;
-        background: linear-gradient(45deg, #4CAF50, #2196F3);
-        color: white;
-        padding: 15px 30px;
-        border-radius: 50px;
-        font-size: 1.2rem;
-        font-weight: bold;
-        text-decoration: none;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .btn-view-all:before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-        transition: 0.5s;
-    }
-
-    .btn-view-all:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-    }
-
-    .btn-view-all:hover:before {
-        left: 100%;
-    }
-
-    .btn-view-all i {
-        margin-left: 10px;
-    }
-
-    /* CTA section for non-logged-in users */
-    .cta-section {
-        background-color: #e3f2fd;
-        padding: 30px;
-        border-radius: 8px;
-        margin: 30px 0;
-        text-align: center;
-    }
-
-    .cta-buttons {
-        margin-top: 20px;
-    }
-
-    /* Testimonials section */
-    .testimonials {
-        margin: 50px 0;
-        text-align: center;
-    }
-
-    .testimonial-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 30px;
-        margin-top: 30px;
-    }
-
-    .testimonial {
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        padding: 20px;
-    }
-
-    .testimonial-content {
-        margin-bottom: 15px;
-        font-style: italic;
-    }
-
-    .testimonial-author {
-        font-weight: bold;
-        color: #555;
-    }
-
-    /* Responsive design adjustments */
-    @media (max-width: 768px) {
-        .features-section {
-            flex-direction: column;
-        }
-
-        .feature {
-            margin: 10px 0;
-        }
-
-        .hero-content h1 {
-            font-size: 2rem;
-        }
-
-        .btn-view-all {
-            padding: 12px 25px;
-            font-size: 1.1rem;
-        }
-    }
-</style>
-
-<!-- Add Font Awesome -->
-<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-
-<?php include 'templates/footer.php'; ?>
+include_once 'templates/footer.php';
+?>

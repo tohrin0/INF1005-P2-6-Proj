@@ -9,8 +9,8 @@ require_once 'inc/functions.php';
 require_once 'inc/auth.php';
 
 // For debugging - show detailed errors
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
+// ini_set('display_errors', 1);
+// error_reporting(E_ALL);
 
 // Define the base path for views
 define('VIEWS_PATH', __DIR__ . '/Views/');
@@ -22,7 +22,7 @@ $request_uri = $_SERVER['REQUEST_URI'];
 $request_path = parse_url($request_uri, PHP_URL_PATH);
 
 // Remove base directory from path if needed
-$base_dir = '/INF1005-P2-6-Proj';  // Change this if your app is in a subdirectory
+$base_dir = '/INF1005-P2-6-Proj/';  // Change this if your app is in a subdirectory
 $request_path = str_replace($base_dir, '', $request_path);
 
 // Default to home page if no path is specified
@@ -40,6 +40,7 @@ $request_path = str_replace('.php', '', $request_path);
 
 // Map routes to view files
 $routes = [
+    'home' => 'home.php',
     'index' => 'index.php',
     'about' => 'about.php',
     'account' => 'account.php',
@@ -60,17 +61,14 @@ $routes = [
     'terms' => 'terms.php'
 ];
 
-// Debug: Check if the route exists
-// echo "Looking for route: " . $request_path . "<br>";
-// echo "Routes available: " . implode(", ", array_keys($routes)) . "<br>";
 
 // Check if the route exists
 if (array_key_exists($request_path, $routes)) {
     $view_file = VIEWS_PATH . $routes[$request_path];
 
     // Debug: Show file path being checked
-    echo "Checking file: " . $view_file . "<br>";
-    echo "File exists: " . (file_exists($view_file) ? "Yes" : "No") . "<br>";
+    // echo "Checking file: " . $view_file . "<br>";
+    // echo "File exists: " . (file_exists($view_file) ? "Yes" : "No") . "<br>";
 
     // Check if the file exists
     if (file_exists($view_file)) {
@@ -98,14 +96,7 @@ header("HTTP/1.0 404 Not Found");
 
 <body>
     <?php include 'templates/header.php'; ?>
-
-    <div class="container" style="text-align: center; padding: 50px 20px;">
-        <h1>404 - Page Not Found</h1>
-        <p>The page you are looking for does not exist or has been moved.</p>
-        <p><small>Request path: <?php echo htmlspecialchars($request_path); ?></small></p>
-        <a href="index.php" class="btn btn-primary">Go Back to Home</a>
-    </div>
-
+    <?php include 'Views/components/404.php'; ?>
     <?php include 'templates/footer.php'; ?>
 </body>
 

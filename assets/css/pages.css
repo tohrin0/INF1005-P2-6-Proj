@@ -1,266 +1,267 @@
 /* Shared styling for content pages */
 .page-header {
-    background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.8)), url('../images/header-bg.jpg');
-    background-size: cover;
-    background-position: center;
-    color: white;
-    padding: 60px 0;
-    margin-bottom: 40px;
-    text-align: center;
-    border-radius: 0 0 10px 10px;
+  background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)),
+    url("../images/header-bg.jpg");
+  background-size: cover;
+  background-position: center;
+  color: white;
+  padding: 60px 0;
+  margin-bottom: 40px;
+  text-align: center;
+  border-radius: 0 0 10px 10px;
 }
 
 .page-header h1 {
-    font-size: 2.5rem;
-    margin-bottom: 15px;
-    font-weight: 600;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+  font-size: 2.5rem;
+  margin-bottom: 15px;
+  font-weight: 600;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .page-header p {
-    font-size: 1.1rem;
-    max-width: 700px;
-    margin: 0 auto;
-    opacity: 0.9;
+  font-size: 1.1rem;
+  max-width: 700px;
+  margin: 0 auto;
+  opacity: 0.9;
 }
 
 /* Content section styling */
 .content-section {
-    background: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    padding: 40px;
-    margin-bottom: 30px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  padding: 40px;
+  margin-bottom: 30px;
 }
 
 .content-section h2 {
-    color: #2c3e50;
-    margin-bottom: 20px;
-    font-size: 1.8rem;
-    position: relative;
-    padding-bottom: 10px;
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-size: 1.8rem;
+  position: relative;
+  padding-bottom: 10px;
 }
 
 .content-section h2:after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 60px;
-    height: 3px;
-    background: #3498db;
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 3px;
+  background: #3498db;
 }
 
 .content-section p {
-    font-size: 1.05rem;
-    line-height: 1.7;
-    color: #555;
-    margin-bottom: 20px;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: #555;
+  margin-bottom: 20px;
 }
 
 /* Card grid layout */
 .card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 30px;
-    margin: 30px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 30px;
+  margin: 30px 0;
 }
 
 .card {
-    background: #fff;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    transition: transform 0.3s, box-shadow 0.3s;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s, box-shadow 0.3s;
 }
 
 .card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 
 .card-icon {
-    background-color: #f8f9fa;
-    padding: 30px 0;
-    text-align: center;
-    color: #3498db;
+  background-color: #f8f9fa;
+  padding: 30px 0;
+  text-align: center;
+  color: #3498db;
 }
 
 .card-icon i {
-    font-size: 3rem;
+  font-size: 3rem;
 }
 
 .card-content {
-    padding: 20px;
+  padding: 20px;
 }
 
 .card-content h3 {
-    color: #2c3e50;
-    margin-bottom: 15px;
-    font-size: 1.4rem;
+  color: #2c3e50;
+  margin-bottom: 15px;
+  font-size: 1.4rem;
 }
 
 .card-content p {
-    color: #666;
-    line-height: 1.6;
+  color: #666;
+  line-height: 1.6;
 }
 
 /* Contact form styling */
 .contact-form {
-    max-width: 700px;
-    margin: 0 auto;
+  max-width: 700px;
+  margin: 0 auto;
 }
 
 .form-group {
-    margin-bottom: 25px;
+  margin-bottom: 25px;
 }
 
 .form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: #2c3e50;
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #2c3e50;
 }
 
 .form-group input,
 .form-group textarea {
-    width: 100%;
-    padding: 12px 15px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 16px;
-    transition: border-color 0.3s;
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 16px;
+  transition: border-color 0.3s;
 }
 
 .form-group input:focus,
 .form-group textarea:focus {
-    border-color: #3498db;
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
-    outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.15);
+  outline: none;
 }
 
 .submit-btn {
-    background: linear-gradient(to right, #3498db, #2980b9);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 14px 25px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-    display: inline-block;
+  background: linear-gradient(to right, #3498db, #2980b9);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 14px 25px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: inline-block;
 }
 
 .submit-btn:hover {
-    background: linear-gradient(to right, #2980b9, #2573a7);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  background: linear-gradient(to right, #2980b9, #2573a7);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* FAQ accordion styling */
 .faq-item {
-    margin-bottom: 15px;
-    border-radius: 6px;
-    overflow: hidden;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    background: #fff;
+  margin-bottom: 15px;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  background: #fff;
 }
 
 .faq-question {
-    background: #f8f9fa;
-    padding: 18px 20px;
-    cursor: pointer;
-    position: relative;
-    font-weight: 600;
-    color: #2c3e50;
+  background: #f8f9fa;
+  padding: 18px 20px;
+  cursor: pointer;
+  position: relative;
+  font-weight: 600;
+  color: #2c3e50;
 }
 
 .faq-question:hover {
-    background: #eaecef;
+  background: #eaecef;
 }
 
 .faq-answer {
-    padding: 15px 20px;
-    border-top: 1px solid #eee;
-    line-height: 1.7;
-    color: #555;
+  padding: 15px 20px;
+  border-top: 1px solid #eee;
+  line-height: 1.7;
+  color: #555;
 }
 
 /* About page team section */
 .team-section {
-    text-align: center;
-    margin: 40px 0;
+  text-align: center;
+  margin: 40px 0;
 }
 
 .team-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 30px;
-    margin-top: 30px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 30px;
+  margin-top: 30px;
 }
 
 .team-member {
-    background: #fff;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
 }
 
 .team-photo {
-    height: 200px;
-    background-color: #eee;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #aaa;
-    font-size: 4rem;
+  height: 200px;
+  background-color: #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #aaa;
+  font-size: 4rem;
 }
 
 .team-info {
-    padding: 20px;
+  padding: 20px;
 }
 
 .team-info h3 {
-    margin-bottom: 5px;
-    color: #2c3e50;
+  margin-bottom: 5px;
+  color: #2c3e50;
 }
 
 .team-info .role {
-    color: #3498db;
-    margin-bottom: 15px;
-    font-size: 0.9rem;
+  color: #3498db;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-    .page-header {
-        padding: 40px 0;
-    }
-    
-    .page-header h1 {
-        font-size: 2rem;
-    }
-    
-    .content-section {
-        padding: 25px;
-    }
-    
-    .card-grid {
-        gap: 20px;
-    }
+  .page-header {
+    padding: 40px 0;
+  }
+
+  .page-header h1 {
+    font-size: 2rem;
+  }
+
+  .content-section {
+    padding: 25px;
+  }
+
+  .card-grid {
+    gap: 20px;
+  }
 }
 
 @media (max-width: 576px) {
-    .page-header {
-        padding: 30px 0;
-    }
-    
-    .page-header h1 {
-        font-size: 1.8rem;
-    }
-    
-    .content-section {
-        padding: 20px;
-    }
+  .page-header {
+    padding: 30px 0;
+  }
+
+  .page-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .content-section {
+    padding: 20px;
+  }
 }
