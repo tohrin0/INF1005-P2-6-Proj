@@ -1,56 +1,10 @@
-# IDE and Editor Files
-
-# Visual Studio Code
-.vscode/
-*.code-workspace
-.history/
-
-# PhpStorm/JetBrains
-.idea/
-*.iml
-*.iws
-*.ipr
-.idea_modules/
-
-# Sublime Text
-*.sublime-project
-*.sublime-workspace
-
-# PHP specific
-vendor/
-composer.phar
-composer.lock
-phpunit.xml
-.phpunit.result.cache
-
-# Environment files
-.env
-.env.local
-.env.*.local
-.env.backup
-.env.production
-
-# Cache and logs
-/logs/
-*.log
-/cache/
-/tmp/
-*.tmp
-
-# Build and package files
-/build/
-/dist/
-/public/build/
-/node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Node.js
+node_modules/
 package-lock.json
-yarn.lock
 
-# Configuration files that might contain credentials
-config.php
-database.php
-*credentials*
-*secret*
-auth.json
+# Generated CSS
+assets/css/tailwind.css
+
+# OS specific files
+.DS_Store
+Thumbs.db 
