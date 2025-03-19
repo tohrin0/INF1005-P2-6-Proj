@@ -1,39 +1,33 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    "./**/*.php",
-    "./templates/**/*.php",
-    "./inc/**/*.php",
-    "./admin/**/*.php",
-  ],
+  content: ["./Views/**/*.php", "./templates/**/*.php", "./assets/js/**/*.js"],
   theme: {
     extend: {
       colors: {
-        primary: {
-          DEFAULT: "#0f172a",
-          foreground: "#f8fafc",
+        blue: {
+          50: "#eff6ff",
+          100: "#dbeafe",
+          600: "#2563eb",
+          700: "#1d4ed8",
+          800: "#1e40af",
+          900: "#1e3a8a",
         },
-        secondary: {
-          DEFAULT: "#4f46e5",
-          foreground: "#ffffff",
-        },
-        accent: {
-          DEFAULT: "#22c55e",
-          foreground: "#ffffff",
-        },
-        muted: {
-          DEFAULT: "#f1f5f9",
-          foreground: "#64748b",
+        indigo: {
+          50: "#eef2ff",
+          600: "#4f46e5",
+          700: "#4338ca",
         },
       },
-      borderRadius: {
-        lg: "0.5rem",
-        md: "calc(0.5rem - 2px)",
-        sm: "calc(0.5rem - 4px)",
+      animation: {
+        "fade-in": "fadeIn 0.8s ease-out forwards",
+        "fade-in-delayed": "fadeIn 0.8s ease-out 0.2s forwards",
       },
-    },
-    fontFamily: {
-      sans: ["Inter", "sans-serif"],
+      keyframes: {
+        fadeIn: {
+          from: { opacity: "0", transform: "translateY(10px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+      },
     },
   },
   plugins: [],

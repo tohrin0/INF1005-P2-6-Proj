@@ -1,0 +1,224 @@
+<?php
+// Include necessary files
+include_once 'templates/header.php';
+?>
+
+<main class="flex min-h-screen flex-col">
+    <div class="relative h-[600px] w-full overflow-hidden">
+        <img
+            src="assets/images/Plane1hero.jpg"
+            alt="Airplane flying over a beautiful landscape"
+            class="object-cover w-full h-full absolute inset-0"
+            loading="eager" />
+        <div class="absolute inset-0 bg-gradient-to-r from-black/70 to-black/30 flex flex-col justify-center">
+            <div class="container mx-auto px-4">
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 max-w-2xl">
+                    Discover the World with Our Best Flight Deals
+                </h1>
+                <p class="text-xl text-white/90 mb-8 max-w-xl">
+                    Book your flights with confidence. Transparent pricing, no hidden fees, and 24/7 customer support.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 -mt-24 relative z-10 mb-16">
+        <?php include 'components/flight-search.php'; ?>
+    </div>
+
+    <section class="container mx-auto px-4 py-12">
+        <h2 class="text-3xl font-bold mb-8 text-center">Featured Destinations</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <?php
+            $destinations = [
+                ["name" => "New York", "image" => "/placeholder.svg?height=400&width=600", "price" => 349],
+                ["name" => "London", "image" => "/placeholder.svg?height=400&width=600", "price" => 429],
+                ["name" => "Paris", "image" => "/placeholder.svg?height=400&width=600", "price" => 399],
+                ["name" => "Tokyo", "image" => "/placeholder.svg?height=400&width=600", "price" => 689],
+                ["name" => "Dubai", "image" => "/placeholder.svg?height=400&width=600", "price" => 499],
+                ["name" => "Sydney", "image" => "/placeholder.svg?height=400&width=600", "price" => 799]
+            ];
+
+            foreach ($destinations as $destination):
+                $destinationUrl = 'destinations/' . strtolower($destination['name']);
+            ?>
+                <a href="<?= htmlspecialchars($destinationUrl) ?>" class="group">
+                    <div class="relative h-64 rounded-xl overflow-hidden shadow-md transition-transform group-hover:shadow-lg group-hover:-translate-y-1">
+                        <img
+                            src="<?= htmlspecialchars($destination['image'] ?: '/placeholder.svg') ?>"
+                            alt="<?= htmlspecialchars($destination['name']) ?>"
+                            class="object-cover w-full h-full absolute inset-0 transition-transform group-hover:scale-105" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6">
+                            <h3 class="text-xl font-bold text-white"><?= htmlspecialchars($destination['name']) ?></h3>
+                            <div class="flex justify-between items-center mt-2">
+                                <span class="text-white/80">From</span>
+                                <span class="text-white font-bold text-lg">$<?= htmlspecialchars($destination['price']) ?></span>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            <?php endforeach; ?>
+        </div>
+        <div class="flex justify-center mt-8">
+            <a
+                href="destinations"
+                class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-full transition-colors">
+                View All Destinations
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2 h-4 w-4">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </a>
+        </div>
+    </section>
+
+    <section class="bg-gray-50 py-16">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold mb-12 text-center">Why Choose SkyBooker</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-white rounded-xl p-8 shadow-sm text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8 text-blue-600">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">Best Price Guarantee</h3>
+                    <p class="text-gray-600">
+                        We compare prices from hundreds of airlines to ensure you get the best deal every time.
+                    </p>
+                </div>
+
+                <div class="bg-white rounded-xl p-8 shadow-sm text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8 text-blue-600">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">Flexible Booking</h3>
+                    <p class="text-gray-600">
+                        Plans change? No problem. Enjoy free cancellation on select flights and easy rebooking options.
+                    </p>
+                </div>
+
+                <div class="bg-white rounded-xl p-8 shadow-sm text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-8 w-8 text-blue-600">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">24/7 Support</h3>
+                    <p class="text-gray-600">
+                        Our customer service team is available around the clock to assist with any questions or concerns.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="container mx-auto px-4 py-16">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+                <h2 class="text-3xl font-bold mb-6">Download Our Mobile App</h2>
+                <p class="text-lg text-gray-600 mb-6">
+                    Take SkyBooker with you wherever you go. Book flights, check in, receive flight alerts, and access your
+                    boarding pass—all from your mobile device.
+                </p>
+                <ul class="space-y-4 mb-8">
+                    <?php
+                    $features = [
+                        "Book flights in just a few taps",
+                        "Get real-time flight notifications",
+                        "Access mobile boarding passes",
+                        "Manage your bookings on the go"
+                    ];
+
+                    foreach ($features as $feature):
+                    ?>
+                        <li class="flex items-start">
+                            <div class="bg-blue-100 p-1 rounded-full mr-3 mt-1">
+                                <?php echo renderCheck("h-4 w-4 text-blue-600"); ?>
+                            </div>
+                            <span><?= htmlspecialchars($feature) ?></span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+                <div class="flex flex-wrap gap-4">
+                    <a href="#" class="inline-block">
+                        <img
+                            src="/placeholder.svg?height=60&width=180"
+                            alt="Download on the App Store"
+                            width="180"
+                            height="60"
+                            class="rounded-lg" />
+                    </a>
+                    <a href="#" class="inline-block">
+                        <img
+                            src="/placeholder.svg?height=60&width=180"
+                            alt="Get it on Google Play"
+                            width="180"
+                            height="60"
+                            class="rounded-lg" />
+                    </a>
+                </div>
+            </div>
+            <div class="relative h-[500px]">
+                <img
+                    src="/placeholder.svg?height=1000&width=500"
+                    alt="SkyBooker mobile app"
+                    class="object-contain absolute inset-0 w-full h-full" />
+            </div>
+        </div>
+    </section>
+
+    <section class="bg-blue-600 text-white py-16">
+        <div class="container mx-auto px-4 text-center">
+            <h2 class="text-3xl font-bold mb-6">Join Our Newsletter</h2>
+            <p class="text-xl max-w-2xl mx-auto mb-8">
+                Subscribe to our newsletter and be the first to know about exclusive deals, travel tips, and special offers.
+            </p>
+            <div class="max-w-md mx-auto">
+                <form class="flex flex-col sm:flex-row gap-2">
+                    <input
+                        type="email"
+                        placeholder="Enter your email address"
+                        class="flex-1 px-4 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                    <button type="submit" class="bg-white text-blue-600 hover:bg-blue-50 px-6 py-3 rounded-lg font-medium transition-colors">
+                        Subscribe
+                    </button>
+                </form>
+                <p class="text-sm mt-4 text-blue-100">
+                    By subscribing, you agree to our Privacy Policy and consent to receive updates from SkyBooker.
+                </p>
+            </div>
+        </div>
+    </section>
+</main>
+
+<?php
+// Helper function for the check icon
+function renderCheck($className = "")
+{
+    return '<svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="' . $className . '">
+        <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>';
+}
+
+include_once 'templates/footer.php';
+?>
