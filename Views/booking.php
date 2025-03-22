@@ -19,12 +19,58 @@ $error = '';
 $success = '';
 $flight = null;
 
-// Check if there's a flight selection from search2.php
-if (isset($_POST['select_flight']) && !empty($_POST['flight_id'])) {
-    $_SESSION['selected_flight_id'] = $_POST['flight_id'];
+// Process initial flight selection from search2.php
+if (isset($_POST['select_flight'])) {
+    // Store form data in session
+    $_SESSION['selected_flight_api'] = $_POST['flight_api'] ?? null;
     $_SESSION['selected_flight_price'] = $_POST['price'];
-    $flightId = $_POST['flight_id'];
+    $_SESSION['selected_flight_data'] = $_POST; // Store all posted data
+    
+    $flightApiId = $_POST['flight_api'] ?? null;
+    $dbFlightId = $_POST['id'] ?? null;  // This is the DB ID if from database
     $flightPrice = $_POST['price'];
+    
+    // If we have a database ID, no need to save the flight again
+    if ($dbFlightId) {
+        $_SESSION['local_flight_id'] = $dbFlightId;
+        error_log("Using existing flight with DB ID: $dbFlightId");
+    } 
+    // Otherwise, save this flight to the database
+    else {
+        try {
+            // Create a Flight object with the form data
+            $flight = new Flight(
+                $_POST['flight_number'],
+                $_POST['departure'],
+                $_POST['arrival'],
+                $_POST['duration'] ?? 0,
+                $_POST['price']
+            );
+            
+            // Set additional flight properties
+            $flight->setFromArray([
+                'date' => $_POST['date'] ?? date('Y-m-d'),
+                'time' => $_POST['departure_time'] ?? date('H:i'),
+                'available_seats' => 100, // Default value
+                'airline' => $_POST['airline'] ?? 'Unknown Airline',
+                'status' => 'scheduled',
+                'flight_api' => $flightApiId // Important: Store the API flight ID
+            ]);
+            
+            // Save flight to the database - this should return a local flight ID
+            $localFlightId = $flight->save();
+            
+            if ($localFlightId) {
+                // Store local flight ID in session for later use in the booking form
+                $_SESSION['local_flight_id'] = $localFlightId;
+                error_log("Flight saved successfully with local ID: $localFlightId");
+            } else {
+                error_log("Failed to save flight to database");
+            }
+        } catch (Exception $e) {
+            error_log("Error saving flight: " . $e->getMessage());
+        }
+    }
 } 
 // If no direct POST, check if we have stored flight data in session
 else if (isset($_SESSION['selected_flight_id'])) {
@@ -47,103 +93,91 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_booking'])) {
         $error = "Please enter a valid email address.";
     } else {
         try {
-            // Get flight details
-            $apiClient = new ApiClient();
-            $flightData = $apiClient->getFlightById($flightId);
+            // Get the local flight ID from session
+            $localFlightId = $_SESSION['local_flight_id'] ?? null;
+            $flightApiId = $_SESSION['selected_flight_id'] ?? null;
             
-            if ($flightData) {
-                // Create a Flight object with the API data
-                $flight = new Flight(
-                    $flightData['flight_number'],
-                    $flightData['departure'],
-                    $flightData['arrival'],
-                    $flightData['duration'] ?? 0,
-                    $flightData['price']
-                );
+            if (!$localFlightId) {
+                // If we don't have a local ID, try to create the flight again
+                // This is a fallback in case the initial save didn't work
+                $flightData = $_SESSION['selected_flight_data'] ?? [];
                 
-                // Set additional flight properties
-                $flight->setFromArray([
-                    'date' => $flightData['date'],
-                    'time' => $flightData['time'],
-                    'available_seats' => $flightData['available_seats'] ?? 100,
-                    'airline' => $flightData['airline'] ?? '',
-                    'status' => $flightData['status'] ?? 'scheduled',
-                    'departure_terminal' => $flightData['departure_terminal'] ?? null,
-                    'departure_gate' => $flightData['departure_gate'] ?? null,
-                    'arrival_terminal' => $flightData['arrival_terminal'] ?? null,
-                    'arrival_gate' => $flightData['arrival_gate'] ?? null,
-                    'flight_api' => $flightId
-                ]);
-                
-                // Save flight to database
-                $localFlightId = $flight->save();
-                
-                if ($localFlightId) {
-                    // Update available seats
-                    $flight->updateSeats($_POST['passengers']);
-                    
-                    // Prepare booking details
-                    $bookingDetails = [
-                        'first_name' => $_POST['first_name'],
-                        'last_name' => $_POST['last_name'],
-                        'email' => $_POST['email'],
-                        'phone' => $_POST['phone'],
-                        'nationality' => $_POST['nationality'],
-                        'passengers' => (int)$_POST['passengers'],
-                        'flight_api' => $flightId,
-                        'special_requirements' => $_POST['special_requirements'] ?? ''
-                    ];
-                    
-                    // Create the booking
-                    $bookingObj = new Booking();
-                    
-                    // Calculate total price
-                    $totalPrice = $flightPrice * $bookingDetails['passengers'];
-                    
-                    // Create booking record
-                    $newBookingId = $bookingObj->createBooking(
-                        $userId, 
-                        $localFlightId, 
-                        [
-                            'name' => $bookingDetails['first_name'] . ' ' . $bookingDetails['last_name'],
-                            'email' => $bookingDetails['email'],
-                            'phone' => $bookingDetails['phone'],
-                            'passengers' => $bookingDetails['passengers'],
-                            'flight_api' => $bookingDetails['flight_api'],
-                            'price' => $flightPrice
-                        ],
-                        'pending'
+                if (!empty($flightData)) {
+                    $flight = new Flight(
+                        $flightData['flight_number'],
+                        $flightData['departure'],
+                        $flightData['arrival'],
+                        $flightData['duration'] ?? 0,
+                        $flightData['price']
                     );
                     
-                    if ($newBookingId) {
-                        // Store booking data in session
-                        $_SESSION['booking_id'] = $newBookingId;
-                        $_SESSION['booking_data'] = [
-                            'flight_id' => $localFlightId,
-                            'flight_api' => $flightId,
-                            'total_price' => $totalPrice,
-                            'customer_name' => $bookingDetails['first_name'] . ' ' . $bookingDetails['last_name'],
-                            'flight_number' => $flightData['flight_number'],
-                            'departure' => $flightData['departure'],
-                            'arrival' => $flightData['arrival'],
-                            'date' => $flightData['date'],
-                            'time' => $flightData['time']
-                        ];
-                        
-                        // Redirect to confirm booking page
-                        header("Location: confirmbooking.php");
-                        exit;
-                    } else {
-                        $error = "Failed to create booking. Please try again.";
+                    $flight->setFromArray([
+                        'date' => $flightData['date'] ?? date('Y-m-d'),
+                        'time' => $flightData['departure_time'] ?? date('H:i'),
+                        'available_seats' => 100,
+                        'airline' => $flightData['airline'] ?? 'Unknown Airline',
+                        'status' => 'scheduled',
+                        'flight_api' => $flightApiId
+                    ]);
+                    
+                    // Save flight to database
+                    $localFlightId = $flight->save();
+                    
+                    if (!$localFlightId) {
+                        throw new Exception("Could not save flight information to database.");
                     }
                 } else {
-                    $error = "Failed to save flight data. Please try again.";
+                    throw new Exception("Missing flight data. Please try selecting your flight again.");
                 }
+            }
+            
+            // Now we should have a valid local flight ID to use for booking
+            // Update available seats for the flight
+            $flightObj = new Flight(null, null, null);
+            $flightObj->updateSeatsById($localFlightId, $_POST['passengers']);
+            
+            // Prepare booking details
+            $bookingDetails = [
+                'name' => $_POST['first_name'] . ' ' . $_POST['last_name'],
+                'email' => $_POST['email'],
+                'phone' => $_POST['phone'],
+                'passengers' => (int)$_POST['passengers'],
+                'flight_api' => $flightApiId,
+                'price' => $_SESSION['selected_flight_price']
+            ];
+            
+            // Create the booking with local flight ID
+            $bookingObj = new Booking();
+            $newBookingId = $bookingObj->createBooking(
+                $userId, 
+                $localFlightId,
+                $bookingDetails,
+                'pending'
+            );
+            
+            if ($newBookingId) {
+                // Continue with your existing code...
+                $_SESSION['booking_id'] = $newBookingId;
+                $_SESSION['booking_data'] = [
+                    'flight_id' => $localFlightId,
+                    'flight_api' => $flightApiId,
+                    'total_price' => $bookingDetails['price'] * $bookingDetails['passengers'],
+                    'customer_name' => $bookingDetails['name'],
+                    'flight_number' => $flightData['flight_number'],
+                    'departure' => $flightData['departure'],
+                    'arrival' => $flightData['arrival'],
+                    'date' => $flightData['date'],
+                    'time' => $flightData['time']
+                ];
+                
+                // Redirect to confirm booking page
+                header("Location: confirmbooking.php");
+                exit;
             } else {
-                $error = "Could not retrieve flight details. Please try again.";
+                $error = "Failed to create booking. Please try again.";
             }
         } catch (Exception $e) {
-            $error = "An error occurred while processing your booking: " . $e->getMessage();
+            $error = "An error occurred: " . $e->getMessage();
             error_log("Booking error: " . $e->getMessage());
         }
     }
@@ -151,13 +185,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_booking'])) {
 
 // Get flight details for display
 try {
-    $apiClient = new ApiClient();
-    $flight = $apiClient->getFlightById($flightId);
+    // First priority: Get local flight from database using local_flight_id
+    $localFlightId = $_SESSION['local_flight_id'] ?? null;
     
-    if (!$flight) {
+    if ($localFlightId) {
+        // Get flight from database using the static method
+        $flightObj = new Flight(null, null, null);
+        $flight = Flight::findById($localFlightId);
+        
+        if ($flight) {
+            // If we have a flight object, access it through proper accessor methods
+            // or use the session data as fallback
+            $flightData = $_SESSION['selected_flight_data'] ?? [];
+            
+            // Build the flight array with safe fallbacks
+            $flight = [
+                'id' => $localFlightId,
+                'flight_number' => $flightData['flight_number'] ?? 'N/A',
+                'departure' => $flightData['departure'] ?? 'N/A',
+                'arrival' => $flightData['arrival'] ?? 'N/A',
+                'date' => $flightData['date'] ?? date('Y-m-d'),
+                'time' => $flightData['departure_time'] ?? 'N/A',
+                'price' => $flightData['price'] ?? 0,
+                'airline' => $flightData['airline'] ?? 'N/A'
+            ];
+        }
+    }
+    
+    // If database retrieval failed, try using session data directly
+    if (empty($flight) && isset($_SESSION['selected_flight_data'])) {
+        $flightData = $_SESSION['selected_flight_data'];
+        $flight = [
+            'id' => $localFlightId ?? $flightData['flight_id'] ?? 'N/A',
+            'flight_number' => $flightData['flight_number'] ?? 'N/A',
+            'departure' => $flightData['departure'] ?? 'N/A',
+            'arrival' => $flightData['arrival'] ?? 'N/A',
+            'date' => $flightData['date'] ?? date('Y-m-d'),
+            'time' => $flightData['departure_time'] ?? 'N/A',
+            'price' => $flightData['price'] ?? 0,
+            'airline' => $flightData['airline'] ?? 'N/A'
+        ];
+    }
+    
+    // Final fallback to API if all else fails
+    if (empty($flight)) {
+        $flightId = $_SESSION['selected_flight_api'] ?? null;
+        
+        if ($flightId) {
+            $apiClient = new ApiClient();
+            $flight = $apiClient->getFlightById($flightId);
+        }
+    }
+    
+    // Initialize important variables from the flight data
+    $flightPrice = $flight['price'] ?? ($_SESSION['selected_flight_price'] ?? 0);
+    
+    // If we still don't have flight data, show an error
+    if (empty($flight)) {
         $error = "Selected flight not found. Please try again.";
-        header('Location: search2.php');
-        exit;
     }
 } catch (Exception $e) {
     $error = "Error retrieving flight details: " . $e->getMessage();

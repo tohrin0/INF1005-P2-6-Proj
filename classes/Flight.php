@@ -350,12 +350,17 @@ class Flight {
      */
     public function save() {
         try {
+            error_log("Attempting to save flight: " . $this->flightNumber . " on date: " . $this->date);
+            
             // Check if flight already exists
             $stmt = $this->db->prepare("SELECT id FROM flights WHERE flight_number = ? AND date = ?");
             $stmt->execute([$this->flightNumber, $this->date]);
             $existingFlight = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($existingFlight) {
+                // Log that we found an existing flight
+                error_log("Found existing flight with ID: " . $existingFlight['id']);
+                
                 // Update existing flight
                 $stmt = $this->db->prepare(
                     "UPDATE flights SET 
@@ -382,9 +387,12 @@ class Flight {
                     $existingFlight['id']
                 ]);
                 
-                // Return flight ID as string
+                // Return flight ID as string (per your schema)
                 return (string)$existingFlight['id'];
             } else {
+                // Log that we're inserting a new flight
+                error_log("Inserting new flight: " . $this->flightNumber);
+                
                 // Insert new flight
                 $stmt = $this->db->prepare(
                     "INSERT INTO flights (
@@ -412,8 +420,15 @@ class Flight {
                     $this->arrivalTerminal
                 ]);
                 
-                // Return flight ID as string
-                return $result ? (string)$this->db->lastInsertId() : false;
+                if ($result) {
+                    $newId = $this->db->lastInsertId();
+                    error_log("New flight inserted with ID: " . $newId);
+                    // Return flight ID as string (per your schema)
+                    return (string)$newId;
+                } else {
+                    error_log("Failed to insert flight");
+                    return false;
+                }
             }
         } catch (PDOException $e) {
             error_log("Error saving flight: " . $e->getMessage());
@@ -449,6 +464,33 @@ class Flight {
             return false;
         } catch (PDOException $e) {
             error_log("Error updating seats: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Update available seats by flight ID
+     * 
+     * @param string $flightId Flight ID
+     * @param int $bookedSeats Number of seats to book
+     * @return bool True on success, false on failure
+     */
+    public function updateSeatsById($flightId, $bookedSeats = 1) {
+        try {
+            $stmt = $this->db->prepare(
+                "UPDATE flights SET available_seats = available_seats - ? 
+                 WHERE id = ? AND available_seats >= ?"
+            );
+            
+            $result = $stmt->execute([
+                $bookedSeats,
+                $flightId,
+                $bookedSeats
+            ]);
+            
+            return ($result && $stmt->rowCount() > 0);
+        } catch (PDOException $e) {
+            error_log("Error updating seats by ID: " . $e->getMessage());
             return false;
         }
     }

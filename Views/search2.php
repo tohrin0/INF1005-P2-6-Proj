@@ -15,7 +15,7 @@ $pagination = null;
 // Get search parameters
 $from = $_GET['from'] ?? ($_POST['from'] ?? '');
 $to = $_GET['to'] ?? ($_POST['to'] ?? '');
-$departDate = $_GET['departDate'] ?? ($_POST['departDate'] ?? '');
+$departDate = $_GET['departDate'] ?? ($_POST['departDate'] ?? date('Y-m-d'));
 $returnDate = $_GET['returnDate'] ?? ($_POST['returnDate'] ?? '');
 $cabinClass = $_GET['cabinClass'] ?? ($_POST['cabinClass'] ?? 'economy');
 $adults = $_GET['adults'] ?? ($_POST['adults'] ?? 1);
@@ -445,11 +445,10 @@ function getAirports() {
 
 // Function to render flight card
 function renderFlightCard($flight, $departDate = null) {
+    // Extract all variables first
     $flightId = $flight['id'] ?? '';
     $airline = $flight['airline'] ?? 'Unknown Airline';
-    // Fix field name to match the API/database format
     $flightNumber = $flight['flight_number'] ?? ($flight['flightNumber'] ?? 'N/A');
-    // Support both camelCase and snake_case formats for these fields
     $departureAirport = $flight['departureAirport'] ?? $flight['departure_airport'] ?? $flight['departure'] ?? 'N/A';
     $departureTime = $flight['departureTime'] ?? $flight['departure_time'] ?? $flight['time'] ?? '00:00';
     $arrivalAirport = $flight['arrivalAirport'] ?? $flight['arrival_airport'] ?? $flight['arrival'] ?? 'N/A';
@@ -464,13 +463,20 @@ function renderFlightCard($flight, $departDate = null) {
     $stops = $flight['stops'] ?? 0;
     $price = $flight['price'] ?? 0;
     
-    $stopsText = $stops === 0 ? 'Non-stop' : ($stops === 1 ? '1 Stop' : $stops . 'Stops');
+    $stopsText = $stops === 0 ? 'Non-stop' : ($stops === 1 ? '1 Stop' : $stops . ' Stops');
     $stopsClass = $stops === 0 ? 'bg-green-100 text-green-800' : ($stops === 1 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800');
     
     // Get first letter of airline name for the airline logo placeholder
     $airlineInitial = substr($airline, 0, 1);
     if (empty($airlineInitial)) $airlineInitial = 'U';
     
+    // Format the date for display if available
+    $formattedDate = !empty($departDate) ? date('D, M j, Y', strtotime($departDate)) : 'N/A';
+    
+    // First ensure all variables have valid defaults before the heredoc
+    $departDate = !empty($departDate) ? $departDate : date('Y-m-d');
+    
+    // Now build the HTML with interpolated variables
     return <<<HTML
     <div class="bg-white rounded-lg shadow-md p-5 mb-4 hover:shadow-lg transition-all">
         <div class="flex flex-col md:flex-row md:items-center justify-between">
@@ -484,6 +490,8 @@ function renderFlightCard($flight, $departDate = null) {
                 <div>
                     <div class="text-gray-900 font-medium">{$airline}</div>
                     <div class="text-xs text-gray-500">Flight {$flightNumber}</div>
+                    <!-- Add the date display here -->
+                    <div class="text-xs text-blue-600 font-semibold mt-1">{$formattedDate}</div>
                 </div>
                 
                 <div class="flex items-center gap-3 mt-2 md:mt-0 md:ml-4">
@@ -512,6 +520,11 @@ function renderFlightCard($flight, $departDate = null) {
                 <div class="text-sm text-gray-500 mb-2">per person</div>
                 <form action="booking.php" method="POST">
                     <input type="hidden" name="select_flight" value="1">
+                    
+                    <!-- The API flight ID always comes from the API source -->
+                    <input type="hidden" name="flight_api" value="{$flightId}">
+                    
+                    <!-- For flights from our DB, pass the database ID directly -->
                     <input type="hidden" name="flight_id" value="{$flightId}">
                     <input type="hidden" name="price" value="{$price}">
                     <!-- Add all required fields for booking -->
@@ -524,10 +537,8 @@ function renderFlightCard($flight, $departDate = null) {
                     <input type="hidden" name="duration" value="{$duration}">
                     <input type="hidden" name="stops" value="{$stops}">
                     
-                    <!-- Add date from search parameters if available -->
-                    <?php if (!empty($departDate)): ?>
-                    <input type="hidden" name="date" value="<?= htmlspecialchars($departDate) ?>">
-                    <?php endif; ?>
+                    <!-- Make sure date always has a value -->
+                    <input type="hidden" name="date" value="{$departDate}">
                     
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">
                         Select
@@ -536,7 +547,7 @@ function renderFlightCard($flight, $departDate = null) {
             </div>
         </div>
     </div>
-    HTML;
+HTML;
 }
 
 // Include header
@@ -789,13 +800,7 @@ include 'templates/header.php';
                 </div>
             </div>
 
-            <!-- Add this debugging section temporarily right below the search summary div to verify pagination data -->
-            <?php if (isset($pagination)): ?>
-            <div class="bg-blue-50 border border-blue-100 text-blue-700 px-4 py-3 rounded-md mb-2">
-                <p><strong>Offset:</strong> <?= $offset ?> | <strong>Page:</strong> <?= $page ?> of <?= ceil(($pagination['total'] ?? 0) / $perPage) ?></p>
-                <p><strong>Current Results:</strong> <?= count($flights) ?> | <strong>Total Results:</strong> <?= number_format($pagination['total'] ?? 0) ?></p>
-            </div>
-            <?php endif; ?>
+            
 
             <!-- Add this below the search summary div -->
             <?php if (isset($pagination) && $pagination['total'] > 0): ?>
@@ -828,7 +833,7 @@ include 'templates/header.php';
                 <?php
                 if (!empty($flights)) {
                     foreach ($flights as $flight) {
-                        // Pass the departDate as a second parameter
+                        // Make sure departDate is explicitly passed
                         echo renderFlightCard($flight, $departDate);
                     }
                 }

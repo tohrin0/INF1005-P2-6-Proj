@@ -1,5 +1,4 @@
 <?php
-
 class Passenger {
     private $db;
     
@@ -8,6 +7,13 @@ class Passenger {
         $this->db = $pdo;
     }
 
+    /**
+     * Add a new passenger to a booking
+     * 
+     * @param int $bookingId The booking ID
+     * @param array $passengerData The passenger details
+     * @return bool True on success, false on failure
+     */
     public function addPassenger($bookingId, $passengerData) {
         try {
             $stmt = $this->db->prepare(
@@ -34,6 +40,12 @@ class Passenger {
         }
     }
 
+    /**
+     * Get all passengers for a specific booking
+     * 
+     * @param int $bookingId The booking ID
+     * @return array Array of passengers
+     */
     public function getPassengersByBooking($bookingId) {
         try {
             $stmt = $this->db->prepare("SELECT * FROM passengers WHERE booking_id = ?");
@@ -45,6 +57,13 @@ class Passenger {
         }
     }
 
+    /**
+     * Update passenger information
+     * 
+     * @param int $passengerId The passenger ID
+     * @param array $passengerData The updated passenger details
+     * @return bool True on success, false on failure
+     */
     public function updatePassenger($passengerId, $passengerData) {
         try {
             $stmt = $this->db->prepare(
@@ -71,4 +90,38 @@ class Passenger {
             return false;
         }
     }
+
+    /**
+     * Delete a passenger
+     * 
+     * @param int $passengerId The passenger ID
+     * @return bool True on success, false on failure
+     */
+    public function deletePassenger($passengerId) {
+        try {
+            $stmt = $this->db->prepare("DELETE FROM passengers WHERE id = ?");
+            return $stmt->execute([$passengerId]);
+        } catch (PDOException $e) {
+            error_log("Error deleting passenger: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get passenger by ID
+     * 
+     * @param int $passengerId The passenger ID
+     * @return array|null Passenger data or null if not found
+     */
+    public function getPassengerById($passengerId) {
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM passengers WHERE id = ?");
+            $stmt->execute([$passengerId]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error getting passenger: " . $e->getMessage());
+            return null;
+        }
+    }
 }
+?>

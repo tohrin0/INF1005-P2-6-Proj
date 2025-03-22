@@ -78,35 +78,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
         $error = "Invalid expiry date. Please use MM/YY format.";
     } else {
         try {
-            // Create payment object
-            $payment = new Payment($booking['total_price'], 'USD', 'credit_card');
+            // Get selected payment method from form
+            $paymentMethod = isset($_POST['payment_method']) ? $_POST['payment_method'] : 'credit_card';
+            
+            // Create payment object with selected payment method
+            $payment = new Payment($booking['total_price'], 'USD', $paymentMethod);
             
             // Generate a unique transaction ID
             $transactionId = 'TX' . time() . rand(1000, 9999);
             
-            // Update booking status
+            // Update booking status - this already inserts the payment record internally
             if ($payment->updateBookingAfterPayment($bookingId, 'confirmed', $transactionId)) {
-                // Insert payment record
-                $stmt = $pdo->prepare(
-                    "INSERT INTO payments (booking_id, amount, payment_method, transaction_id, status) 
-                     VALUES (?, ?, ?, ?, 'completed')"
-                );
+                $success = "Payment processed successfully! Your booking is now confirmed.";
                 
-                if ($stmt->execute([
-                    $bookingId,
-                    $booking['total_price'],
-                    'credit_card',
-                    $transactionId
-                ])) {
-                    $success = "Payment processed successfully! Your booking is now confirmed.";
-                    
-                    // Clear session variables
-                    unset($_SESSION['payment_booking_id']);
-                } else {
-                    $error = "Payment was processed but could not record payment details.";
-                }
+                // Clear session variables
+                unset($_SESSION['payment_booking_id']);
             } else {
-                $error = "Failed to update booking status. Please try again.";
+                $error = "Failed to process payment. Please try again.";
             }
         } catch (Exception $e) {
             $error = "An error occurred during payment processing: " . $e->getMessage();
@@ -192,16 +180,16 @@ include 'templates/header.php';
                         <div class="mb-6">
                             <label class="block text-gray-700 font-medium mb-2">Payment Method</label>
                             <div class="grid grid-cols-4 gap-4">
-                                <div class="border rounded-md p-4 flex items-center justify-center bg-white shadow-sm cursor-pointer border-blue-500">
+                                <div class="payment-method border rounded-md p-4 flex items-center justify-center cursor-pointer transition-all hover:border-blue-300" data-method="visa">
                                     <img src="assets/images/visa.svg" alt="Visa" class="h-8" onerror="this.src='https://placehold.co/80x32?text=Visa'">
                                 </div>
-                                <div class="border rounded-md p-4 flex items-center justify-center bg-white shadow-sm cursor-pointer">
+                                <div class="payment-method border rounded-md p-4 flex items-center justify-center cursor-pointer transition-all hover:border-blue-300" data-method="mastercard">
                                     <img src="assets/images/mastercard.svg" alt="Mastercard" class="h-8" onerror="this.src='https://placehold.co/80x32?text=Mastercard'">
                                 </div>
-                                <div class="border rounded-md p-4 flex items-center justify-center bg-white shadow-sm cursor-pointer">
+                                <div class="payment-method border rounded-md p-4 flex items-center justify-center cursor-pointer transition-all hover:border-blue-300" data-method="amex">
                                     <img src="assets/images/amex.svg" alt="American Express" class="h-8" onerror="this.src='https://placehold.co/80x32?text=Amex'">
                                 </div>
-                                <div class="border rounded-md p-4 flex items-center justify-center bg-white shadow-sm cursor-pointer">
+                                <div class="payment-method border rounded-md p-4 flex items-center justify-center cursor-pointer transition-all hover:border-blue-300" data-method="paypal">
                                     <img src="assets/images/paypal.svg" alt="PayPal" class="h-8" onerror="this.src='https://placehold.co/80x32?text=PayPal'">
                                 </div>
                             </div>
@@ -254,7 +242,40 @@ include 'templates/header.php';
                         </div>
                         
                         <input type="hidden" name="booking_id" value="<?= htmlspecialchars($booking['id']) ?>">
+                        <!-- Hidden input to store selected payment method -->
+                        <input type="hidden" id="payment_method" name="payment_method" value="credit_card">
                     </form>
+                    
+                    <script>
+                        // Payment method selection
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const paymentMethods = document.querySelectorAll('.payment-method');
+                            const paymentMethodInput = document.getElementById('payment_method');
+                            
+                            // Set default selected method (first one)
+                            if (paymentMethods.length > 0) {
+                                paymentMethods[0].classList.add('border-blue-500', 'bg-blue-50');
+                                paymentMethodInput.value = paymentMethods[0].dataset.method || 'credit_card';
+                            }
+                            
+                            paymentMethods.forEach(method => {
+                                method.addEventListener('click', function() {
+                                    // Remove selection from all methods
+                                    paymentMethods.forEach(m => {
+                                        m.classList.remove('border-blue-500', 'bg-blue-50');
+                                        m.classList.add('border-gray-300', 'bg-white');
+                                    });
+                                    
+                                    // Add selection to clicked method
+                                    this.classList.remove('border-gray-300', 'bg-white');
+                                    this.classList.add('border-blue-500', 'bg-blue-50');
+                                    
+                                    // Update hidden input with selected method
+                                    paymentMethodInput.value = this.dataset.method || 'credit_card';
+                                });
+                            });
+                        });
+                    </script>
                     
                     <div class="mt-6 text-center">
                         <p class="text-xs text-gray-500">This is a demo payment form. No real payments will be processed.</p>

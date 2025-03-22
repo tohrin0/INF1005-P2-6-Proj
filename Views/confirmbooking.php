@@ -1,11 +1,12 @@
 <?php
 session_start();
-require_once 'inc/config.php';
-require_once 'inc/db.php';
-require_once 'inc/functions.php';
-require_once 'inc/auth.php';
-require_once 'classes/Booking.php';
-require_once 'classes/ApiClient.php';
+require_once __DIR__ . '/../inc/config.php';
+require_once __DIR__ . '/../inc/db.php';
+require_once __DIR__ . '/../inc/functions.php';
+require_once __DIR__ . '/../inc/auth.php';
+require_once __DIR__ . '/../classes/Booking.php';
+require_once __DIR__ . '/../classes/Flight.php';
+require_once __DIR__ . '/../classes/ApiClient.php';
 
 // Redirect if not logged in
 if (!isLoggedIn()) {
@@ -19,9 +20,8 @@ $booking = null;
 $flightStatus = null;
 
 // Check if we have booking ID from session
-if (isset($_SESSION['booking_id']) && isset($_SESSION['booking_data'])) {
+if (isset($_SESSION['booking_id'])) {
     $bookingId = $_SESSION['booking_id'];
-    $bookingData = $_SESSION['booking_data'];
     
     // Get booking details from database
     try {
@@ -32,27 +32,47 @@ if (isset($_SESSION['booking_id']) && isset($_SESSION['booking_data'])) {
             throw new Exception("Booking not found or you don't have permission to view it.");
         }
         
-        // Get real-time flight data if available
-        try {
-            $apiClient = new ApiClient();
-            if (isset($bookingData['flight_api']) && !empty($bookingData['flight_api'])) {
-                $flightData = $apiClient->getFlightById($bookingData['flight_api']);
-                if ($flightData) {
-                    // Enhance booking data with flight details
-                    $booking = array_merge($booking, [
-                        'flight_number' => $flightData['flight_number'] ?? $booking['flight_number'] ?? '',
-                        'departure' => $flightData['departure'] ?? $booking['departure'] ?? '',
-                        'arrival' => $flightData['arrival'] ?? $booking['arrival'] ?? '',
-                        'date' => $flightData['date'] ?? $booking['date'] ?? '',
-                        'time' => $flightData['time'] ?? $booking['time'] ?? '',
-                        'airline' => $flightData['airline'] ?? '',
-                    ]);
-                }
+        // Now fetch the flight information using the flight_id from the booking
+        $flightId = $booking['flight_id'] ?? null;
+        $flightDetails = null;
+        
+        if ($flightId) {
+            global $pdo;
+            $stmt = $pdo->prepare("SELECT * FROM flights WHERE id = ?");
+            $stmt->execute([$flightId]);
+            $flightDetails = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($flightDetails) {
+                // Add flight details to the booking array
+                $booking['flight_number'] = $flightDetails['flight_number'] ?? 'N/A';
+                $booking['departure'] = $flightDetails['departure'] ?? 'N/A';
+                $booking['arrival'] = $flightDetails['arrival'] ?? 'N/A';
+                $booking['date'] = $flightDetails['date'] ?? date('Y-m-d');
+                $booking['time'] = $flightDetails['time'] ?? date('H:i');
+                $booking['airline'] = $flightDetails['airline'] ?? 'N/A';
+                
+                // Other fields you might want to add:
+                $booking['departure_terminal'] = $flightDetails['departure_terminal'] ?? 'N/A';
+                $booking['departure_gate'] = $flightDetails['departure_gate'] ?? 'N/A';
+                $booking['arrival_terminal'] = $flightDetails['arrival_terminal'] ?? 'N/A';
+                $booking['arrival_gate'] = $flightDetails['arrival_gate'] ?? 'N/A';
+            } else {
+                error_log("Flight with ID $flightId not found in database");
             }
-        } catch (Exception $e) {
-            // Just log the error but continue
-            error_log("Error fetching flight data: " . $e->getMessage());
+        } else {
+            error_log("No flight_id found in booking record");
         }
+        
+        // Ensure all required fields have default values
+        $booking = array_merge([
+            'flight_number' => 'N/A',
+            'departure' => 'N/A',
+            'arrival' => 'N/A',
+            'date' => date('Y-m-d'),
+            'time' => date('H:i'),
+            'airline' => 'N/A'
+        ], $booking);
+        
     } catch (Exception $e) {
         $error = $e->getMessage();
         error_log("Error fetching booking: " . $e->getMessage());
@@ -104,22 +124,30 @@ include 'templates/header.php';
                             
                             <div class="flex justify-between">
                                 <span class="text-gray-600">Date:</span>
-                                <span class="font-medium"><?= htmlspecialchars(date('F j, Y', strtotime($booking['date']))) ?></span>
+                                <span class="font-medium">
+                                    <?= !empty($booking['date']) ? htmlspecialchars(date('F j, Y', strtotime($booking['date']))) : 'Not specified' ?>
+                                </span>
                             </div>
                             
                             <div class="flex justify-between">
                                 <span class="text-gray-600">Time:</span>
-                                <span class="font-medium"><?= htmlspecialchars($booking['time']) ?></span>
+                                <span class="font-medium">
+                                    <?= !empty($booking['time']) ? htmlspecialchars($booking['time']) : 'Not specified' ?>
+                                </span>
                             </div>
                             
                             <div class="flex justify-between">
                                 <span class="text-gray-600">From:</span>
-                                <span class="font-medium"><?= htmlspecialchars($booking['departure']) ?></span>
+                                <span class="font-medium">
+                                    <?= !empty($booking['departure']) ? htmlspecialchars($booking['departure']) : 'Not specified' ?>
+                                </span>
                             </div>
                             
                             <div class="flex justify-between">
                                 <span class="text-gray-600">To:</span>
-                                <span class="font-medium"><?= htmlspecialchars($booking['arrival']) ?></span>
+                                <span class="font-medium">
+                                    <?= !empty($booking['arrival']) ? htmlspecialchars($booking['arrival']) : 'Not specified' ?>
+                                </span>
                             </div>
                             
                             <?php if (!empty($booking['airline'])): ?>

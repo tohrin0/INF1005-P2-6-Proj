@@ -7,6 +7,21 @@ class Booking {
         $this->db = $pdo;
     }
     
+    // Add this static method to handle bookings by status
+    public static function getBookingsByStatus($status) {
+        global $pdo;
+        $stmt = $pdo->prepare(
+            "SELECT b.*, f.flight_number, f.departure, f.arrival, f.date, u.username 
+             FROM bookings b 
+             LEFT JOIN flights f ON b.flight_id = f.id 
+             LEFT JOIN users u ON b.user_id = u.id
+             WHERE b.status = ? 
+             ORDER BY b.booking_date DESC"
+        );
+        $stmt->execute([$status]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
     public function createBooking($userId, $flightId, $passengerDetails, $status = 'pending') {
         try {
             error_log("===== DEBUG: Starting createBooking =====");
@@ -88,9 +103,10 @@ class Booking {
     public static function getAllBookings() {
         global $pdo;
         $stmt = $pdo->query(
-            "SELECT b.*, f.flight_number, f.departure, f.arrival, f.date 
+            "SELECT b.*, f.flight_number, f.departure, f.arrival, f.date, u.username 
              FROM bookings b 
              LEFT JOIN flights f ON b.flight_id = f.id 
+             LEFT JOIN users u ON b.user_id = u.id
              ORDER BY b.booking_date DESC"
         );
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
