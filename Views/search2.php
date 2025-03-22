@@ -23,7 +23,8 @@ $children = $_GET['children'] ?? ($_POST['children'] ?? 0);
 $infants = $_GET['infants'] ?? ($_POST['infants'] ?? 0);
 $tripType = $_GET['tripType'] ?? ($_POST['tripType'] ?? 'oneway');
 $page = max(1, (int)($_GET['page'] ?? 1));
-$offset = ($page - 1) * 10; // 10 items per page
+$perPage = 100; // Match the API's limit
+$offset = ($page - 1) * $perPage; // Calculate correct offset
 
 // Sorting options
 $sortBy = $_GET['sortBy'] ?? 'price';
@@ -45,7 +46,15 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' |
         $apiClient = new ApiClient();
         $result = $apiClient->searchFlightsEnhanced($from, $to, $departDate, $offset);
         $flights = $result['flights'];
-        $pagination = $result['pagination'] ?? ['total_pages' => 5, 'current_page' => $page];
+        $pagination = $result['pagination'] ?? null;
+        
+        // Make sure pagination is properly set
+        if ($pagination) {
+            // Calculate total pages based on API's total count
+            $totalPages = ceil($pagination['total'] / $perPage);
+            $pagination['total_pages'] = $totalPages;
+            $pagination['current_page'] = $page;
+        }
         
         if (empty($flights)) {
             $error = "No flights found matching your criteria. Please try different search parameters.";
@@ -186,17 +195,19 @@ function getFeaturedFlightsFromDatabase() {
 
 // Extract unique airlines from flights
 function extractUniqueAirlines($flights) {
-    $airlines = [];
+    $airlineCounts = [];
     
     foreach ($flights as $flight) {
         $airline = $flight['airline'] ?? 'Unknown Airline';
-        if (!in_array($airline, $airlines) && !empty($airline)) {
-            $airlines[] = $airline;
+        if (!isset($airlineCounts[$airline])) {
+            $airlineCounts[$airline] = 0;
         }
+        $airlineCounts[$airline]++;
     }
     
-    sort($airlines); // Sort alphabetically
-    return $airlines;
+    // Sort by airline name
+    ksort($airlineCounts);
+    return $airlineCounts;
 }
 
 // Extract departure time ranges from flights
@@ -453,7 +464,7 @@ function renderFlightCard($flight) {
     $stops = $flight['stops'] ?? 0;
     $price = $flight['price'] ?? 0;
     
-    $stopsText = $stops === 0 ? 'Non-stop' : ($stops === 1 ? '1 Stop' : $stops . ' Stops');
+    $stopsText = $stops === 0 ? 'Non-stop' : ($stops === 1 ? '1 Stop' : $stops . 'Stops');
     $stopsClass = $stops === 0 ? 'bg-green-100 text-green-800' : ($stops === 1 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800');
     
     // Get first letter of airline name for the airline logo placeholder
@@ -617,26 +628,24 @@ include 'templates/header.php';
                         </div>
 
                         <!-- Airlines - Dynamically generated from available flights -->
-                        <?php if (!empty($availableAirlines)): ?>
-                        <div>
-                            <label class="text-sm font-medium mb-2 block">Airlines</label>
-                            <div class="space-y-2 max-h-48 overflow-y-auto">
-                                <?php foreach ($availableAirlines as $airline): ?>
-                                    <div class="flex">
-                                        <div class="w-5 flex justify-center mt-0.5">
-                                            <input type="checkbox" id="airline-<?= md5($airline) ?>" name="airlines[]"
-                                                value="<?= htmlspecialchars($airline) ?>"
-                                                <?= in_array($airline, (array)$selectedAirlines) ? 'checked' : '' ?>>
-                                        </div>
-                                        <label for="airline-<?= md5($airline) ?>" class="text-sm ml-2">
-                                            <?= htmlspecialchars($airline) ?>
-                                            <span class="text-xs text-gray-500">(<?= count(array_filter($flights, function($f) use ($airline) { return $f['airline'] == $airline; })) ?>)</span>
-                                        </label>
-                                    </div>
-                                <?php endforeach; ?>
+                        <?php 
+                        // Update this line where you call extractUniqueAirlines
+                        $airlineCounts = extractUniqueAirlines($flights); 
+                        ?>
+
+                        <?php foreach ($airlineCounts as $airline => $count): ?>
+                            <div class="flex">
+                                <div class="w-5 flex justify-center mt-0.5">
+                                    <input type="checkbox" id="airline-<?= md5($airline) ?>" name="airlines[]"
+                                        value="<?= htmlspecialchars($airline) ?>"
+                                        <?= in_array($airline, (array)$selectedAirlines) ? 'checked' : '' ?>>
+                                </div>
+                                <label for="airline-<?= md5($airline) ?>" class="text-sm ml-2">
+                                    <?= htmlspecialchars($airline) ?>
+                                    <span class="text-xs text-gray-500">(<?= $count ?>)</span>
+                                </label>
                             </div>
-                        </div>
-                        <?php endif; ?>
+                        <?php endforeach; ?>
 
                         <!-- Departure Time - Dynamically generated -->
                         <?php if (!empty($availableDepartureTimeRanges)): ?>
@@ -765,6 +774,28 @@ include 'templates/header.php';
                 </div>
             </div>
 
+            <!-- Add this debugging section temporarily right below the search summary div to verify pagination data -->
+            <?php if (isset($pagination)): ?>
+            <div class="bg-blue-50 border border-blue-100 text-blue-700 px-4 py-3 rounded-md mb-2">
+                <p><strong>Offset:</strong> <?= $offset ?> | <strong>Page:</strong> <?= $page ?> of <?= ceil(($pagination['total'] ?? 0) / $perPage) ?></p>
+                <p><strong>Current Results:</strong> <?= count($flights) ?> | <strong>Total Results:</strong> <?= number_format($pagination['total'] ?? 0) ?></p>
+            </div>
+            <?php endif; ?>
+
+            <!-- Add this below the search summary div -->
+            <?php if (isset($pagination) && $pagination['total'] > 0): ?>
+                <?php
+                // Calculate total pages
+                $totalPages = ceil($pagination['total'] / $perPage);
+                ?>
+                <div class="bg-blue-50 border border-blue-100 text-blue-700 px-4 py-3 rounded-md mb-6">
+                    Showing flights <?= ($offset + 1) ?> to <?= min($offset + count($flights), $pagination['total']) ?> of <?= number_format($pagination['total']) ?> total results
+                    <div class="mt-1">
+                        <span class="font-semibold">Page:</span> <?= $page ?> of <?= number_format($totalPages) ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <!-- Flight Results -->
             <?php if ($error): ?>
                 <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-6">
@@ -789,7 +820,7 @@ include 'templates/header.php';
             </div>
 
             <!-- Pagination -->
-            <?php if (!empty($flights) && isset($pagination) && isset($pagination['total_pages']) && $pagination['total_pages'] > 1): ?>
+            <?php if (!empty($flights) && isset($pagination) && isset($pagination['total']) && $pagination['total'] > 0): ?>
             <div class="flex justify-center mt-8">
                 <div class="flex space-x-2">
                     <?php if ($page > 1): ?>
@@ -800,18 +831,23 @@ include 'templates/header.php';
                     <?php endif; ?>
 
                     <?php 
-                    $startPage = max(1, min($page - 2, $pagination['total_pages'] - 4));
-                    $endPage = min($startPage + 4, $pagination['total_pages']);
+                    // Calculate total pages based on API's total count and our per-page limit
+                    $totalPages = ceil($pagination['total'] / $perPage);
                     
-                    for ($i = $startPage; $i <= $endPage; $i++): ?>
-                        <a href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>" 
-                           class="<?= $i === (int)$page ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 hover:bg-gray-50' ?> px-4 py-2 border border-gray-300 rounded-md">
+                    // Display a reasonable number of page links
+                    $startPage = max(1, min($page - 2, $totalPages - 4));
+                    $endPage = min($totalPages, $startPage + 4);
+                    
+                    for ($i = $startPage; $i <= $endPage; $i++): 
+                    ?>
+                        <a href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>"
+                           class="px-4 py-2 border <?= $i == $page ? 'bg-blue-600 text-white' : 'bg-white text-blue-600' ?> rounded-md">
                             <?= $i ?>
                         </a>
                     <?php endfor; ?>
 
-                    <?php if ($page < $pagination['total_pages']): ?>
-                        <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>" 
+                    <?php if ($page < $totalPages): ?>
+                        <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>"
                            class="px-4 py-2 bg-white text-blue-600 border border-gray-300 rounded-md hover:bg-gray-50">
                             Next
                         </a>

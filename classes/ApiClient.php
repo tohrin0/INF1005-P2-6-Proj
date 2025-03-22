@@ -446,54 +446,31 @@ class ApiClient
      * @return array Formatted flight results
      */
     public function searchFlightsEnhanced($from, $to, $date, $offset = 0)
-{
-    // Prepare parameters for AviationStack API
-    $params = [
-        'limit' => 100, // Request maximum allowed results per page
-        'offset' => $offset
-    ];
-    
-    // Format date to YYYY-MM-DD for the API
-    if (!empty($date)) {
-        $params['flight_date'] = date('Y-m-d', strtotime($date));
-    }
-    
-    // Extract IATA code if present in the format "Airport Name (CODE)"
-    $pattern = '/\(([A-Z]{3})\)$/';
-    
-    // Add departure filter
-    if (!empty($from)) {
-        if (preg_match($pattern, $from, $matches)) {
-            $params['dep_iata'] = $matches[1];
-        } else {
-            $params['dep_iata'] = substr($from, 0, 3);
-        }
-    }
-    
-    // Add arrival filter
-    if (!empty($to)) {
-        if (preg_match($pattern, $to, $matches)) {
-            $params['arr_iata'] = $matches[1];
-        } else {
-            $params['arr_iata'] = substr($to, 0, 3);
-        }
-    }
-
-    // Build API URL (without access_key - we'll add it in makeRequest)
-    $url = $this->apiUrl . '/flights?' . http_build_query($params);
-    error_log("API Request URL for flight search (without key): " . $url);
-
-    try {
-        $response = $this->makeRequest($url);
-        return [
-            'flights' => $this->formatEnhancedFlightResults($response),
-            'pagination' => $response['pagination'] ?? null
+    {
+        $params = [
+            'dep_iata' => $from,
+            'arr_iata' => $to,
+            'flight_date' => $date,
+            'limit' => 100,
+            'offset' => $offset // This needs to be passed correctly
         ];
-    } catch (Exception $e) {
-        error_log("Error in searchFlightsEnhanced: " . $e->getMessage());
-        return ['flights' => [], 'pagination' => null];
+        
+        // Build API URL (without access_key - we'll add it in makeRequest)
+        $url = $this->apiUrl . '/flights?' . http_build_query($params);
+        error_log("API Request with offset: " . $offset . ", params: " . json_encode($params));
+        
+        try {
+            $response = $this->makeRequest($url);
+            return [
+                'flights' => $this->formatEnhancedFlightResults($response),
+                'pagination' => $response['pagination'] ?? null
+            ];
+        } catch (Exception $e) {
+            error_log("Error in searchFlightsEnhanced: " . $e->getMessage());
+            return ['flights' => [], 'pagination' => null];
+        }
     }
-}
+
     /**
      * Format enhanced flight results from API
      * 
