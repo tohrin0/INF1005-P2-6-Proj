@@ -8,6 +8,10 @@
             <div class="footer-brand">
                 <h3>Flight Booking</h3>
                 <p class="tagline">Your journey begins with us</p>
+                <div class="footer-clock">
+                    <div id="clock" class="clock">00:00:00</div>
+                    <div class="timezone">UTC (Flight Times)</div>
+                </div>
             </div>
             <div class="footer-nav">
                 <h4>Navigation</h4>
@@ -77,6 +81,29 @@
         color: #b3c0d1;
         margin: 0;
         font-size: 13px;
+        margin-bottom: 12px;
+    }
+    
+    /* Clock styling */
+    .footer-clock {
+        margin-top: 15px;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        display: inline-block;
+    }
+    
+    .clock {
+        font-size: 16px;
+        font-weight: 600;
+        color: #ffffff;
+        font-family: "Courier New", monospace;
+    }
+    
+    .timezone {
+        font-size: 11px;
+        color: #b3c0d1;
+        margin-top: 2px;
     }
     
     .footer-nav {
@@ -193,3 +220,30 @@
 
 <script src="assets/js/main.js"></script>
 <script src="assets/js/api-client.js"></script>
+
+<!-- Add clock script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        updateUTCClock();
+    });
+    
+    function updateUTCClock() {
+        // Get current UTC time (used by AviationStack API)
+        const now = new Date();
+        const utcHours = String(now.getUTCHours()).padStart(2, '0');
+        const utcMinutes = String(now.getUTCMinutes()).padStart(2, '0');
+        const utcSeconds = String(now.getUTCSeconds()).padStart(2, '0');
+        
+        // Format time as HH:MM:SS
+        const timeString = `${utcHours}:${utcMinutes}:${utcSeconds}`;
+        
+        // Update the clock element with UTC time
+        const clockElement = document.getElementById('clock');
+        if (clockElement) {
+            clockElement.textContent = timeString;
+        }
+        
+        // Update every second
+        setTimeout(updateUTCClock, 1000);
+    }
+</script>
