@@ -101,18 +101,38 @@ include 'templates/header.php';
 
     <div class="bg-white rounded-lg shadow-md p-6 mb-8">
         <h2 class="text-xl font-semibold text-gray-800 mb-4">Booking Details</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div>
                 <p class="text-gray-600">Booking Reference:</p>
                 <p class="font-medium">#<?= htmlspecialchars($bookingId) ?></p>
             </div>
             <div>
+                <?php
+                // Get flight details from the flights table using the flight_id from booking
+                $flightDetails = null;
+                if (!empty($booking['flight_id'])) {
+                    $flightStmt = $pdo->prepare("SELECT * FROM flights WHERE id = ?");
+                    $flightStmt->execute([$booking['flight_id']]);
+                    $flightDetails = $flightStmt->fetch(PDO::FETCH_ASSOC);
+                }
+                ?>
                 <p class="text-gray-600">Flight:</p>
-                <p class="font-medium"><?= htmlspecialchars($booking['flight_number'] ?? 'N/A') ?></p>
+                <p class="font-medium">
+                    <?= $flightDetails ? htmlspecialchars($flightDetails['flight_number']) : 'N/A' ?>
+                    (<?= $flightDetails ? htmlspecialchars($flightDetails['departure'] . ' → ' . $flightDetails['arrival']) : 'N/A' ?>)
+                </p>
             </div>
             <div>
                 <p class="text-gray-600">Total Passengers:</p>
                 <p class="font-medium"><?= htmlspecialchars($booking['passengers']) ?></p>
+            </div>
+            <div>
+                <p class="text-gray-600">Flight Date:</p>
+                <p class="font-medium"><?= $flightDetails ? date('F j, Y', strtotime($flightDetails['date'])) : 'N/A' ?></p>
+            </div>
+            <div>
+                <p class="text-gray-600">Flight Time:</p>
+                <p class="font-medium"><?= $flightDetails ? htmlspecialchars($flightDetails['time']) : 'N/A' ?></p>
             </div>
             <div>
                 <p class="text-gray-600">Remaining Passengers to Add:</p>
