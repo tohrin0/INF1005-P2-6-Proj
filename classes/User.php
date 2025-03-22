@@ -128,4 +128,62 @@ class User {
         $stmt->execute([$role]);
         return (int)$stmt->fetchColumn();
     }
+
+    /**
+     * Get user by username
+     * 
+     * @param string $username The username to search for
+     * @return array|false User data or false if not found
+     */
+    public function getUserByUsername($username) {
+        $stmt = $this->db->prepare("SELECT * FROM users WHERE username = ?");
+        $stmt->execute([$username]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Get user by email
+     * 
+     * @param string $email The email to search for
+     * @return array|false User data or false if not found
+     */
+    public function getUserByEmail($email) {
+        $stmt = $this->db->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Update a user's information
+     * 
+     * @param int $userId The user ID
+     * @param array $userData The user data to update
+     * @return bool Success or failure
+     */
+    public function updateUser($userId, $userData) {
+        try {
+            $fields = [];
+            $values = [];
+            
+            // Dynamically build the query based on provided fields
+            foreach ($userData as $field => $value) {
+                $fields[] = "$field = ?";
+                $values[] = $value;
+            }
+            
+            // Add updated_at timestamp
+            $fields[] = "updated_at = NOW()";
+            
+            // Add user ID to values array
+            $values[] = $userId;
+            
+            $query = "UPDATE users SET " . implode(", ", $fields) . " WHERE id = ?";
+            $stmt = $this->db->prepare($query);
+            
+            return $stmt->execute($values);
+        } catch (Exception $e) {
+            error_log("Error updating user: " . $e->getMessage());
+            return false;
+        }
+    }
 }

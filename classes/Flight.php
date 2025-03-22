@@ -512,4 +512,47 @@ class Flight {
             return false;
         }
     }
+
+    /**
+     * Update a flight's details
+     * 
+     * @param int $flightId The flight ID
+     * @param array $flightData The flight data to update
+     * @return bool Success or failure
+     */
+    public function update($flightId, $flightData) {
+        try {
+            $query = "UPDATE flights SET 
+                flight_number = ?,
+                airline = ?,
+                departure = ?,
+                arrival = ?,
+                date = ?,
+                time = ?,
+                duration = ?,
+                price = ?,
+                available_seats = ?,
+                status = ?,
+                updated_at = NOW()
+                WHERE id = ?";
+                
+            $stmt = $this->db->prepare($query);
+            return $stmt->execute([
+                $flightData['flight_number'],
+                $flightData['airline'],
+                $flightData['departure'],
+                $flightData['arrival'],
+                $flightData['date'],
+                $flightData['time'],
+                $flightData['duration'],
+                $flightData['price'],
+                $flightData['available_seats'],
+                $flightData['status'],
+                $flightId
+            ]);
+        } catch (PDOException $e) {
+            error_log("Error updating flight: " . $e->getMessage());
+            return false;
+        }
+    }
 }

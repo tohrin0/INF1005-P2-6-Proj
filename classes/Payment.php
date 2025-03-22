@@ -190,4 +190,21 @@ class Payment {
         $stmt->execute([$bookingId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    /**
+     * Get payment information by booking ID
+     * 
+     * @param int $bookingId The booking ID
+     * @return array|null Payment details or null if not found
+     */
+    public function getPaymentByBookingId($bookingId) {
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM payments WHERE booking_id = ? ORDER BY payment_date DESC LIMIT 1");
+            $stmt->execute([$bookingId]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Error getting payment: " . $e->getMessage());
+            return null;
+        }
+    }
 }

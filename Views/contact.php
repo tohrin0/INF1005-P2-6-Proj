@@ -3,31 +3,43 @@ session_start();
 require_once 'inc/config.php';
 require_once 'inc/db.php';
 require_once 'inc/functions.php';
+require_once 'classes/ContactMessage.php';
 
 include 'templates/header.php';
 
 $successMessage = '';
 $errorMessage = '';
+$name = '';
+$email = '';
+$message = '';
+$subject = '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['submit_contact'])) {
     $name = trim($_POST['name']);
     $email = trim($_POST['email']);
     $message = trim($_POST['message']);
+    $subject = isset($_POST['subject']) ? trim($_POST['subject']) : 'Contact Message';
     
-    if (empty($name) || empty($email) || empty($message)) {
-        $errorMessage = 'Please fill in all the required fields.';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errorMessage = 'Please enter a valid email address.';
-    } else {
-        try {
-            $stmt = $pdo->prepare("INSERT INTO contact_messages (name, email, message) VALUES (?, ?, ?)");
-            $stmt->execute([$name, $email, $message]);
+    // Create a new ContactMessage object
+    $contactMessage = new ContactMessage();
+    $contactMessage->setFromForm([
+        'name' => $name,
+        'email' => $email,
+        'message' => $message,
+        'subject' => $subject
+    ]);
+    
+    // Validate the form data
+    list($isValid, $errorMessage) = $contactMessage->validate();
+    
+    if ($isValid) {
+        // Save the message to the database
+        if ($contactMessage->save()) {
             $successMessage = 'Thank you! Your message has been sent successfully. We will get back to you soon.';
-            
-            $name = $email = $message = '';
-        } catch (PDOException $e) {
+            // Clear form data after successful submission
+            $name = $email = $message = $subject = '';
+        } else {
             $errorMessage = 'Sorry, there was a problem sending your message. Please try again later.';
-            error_log("Database error in contact form: " . $e->getMessage());
         }
     }
 }
@@ -60,20 +72,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['submit_contact'])) {
             <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post" class="space-y-6">
                 <div>
                     <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
-                    <input type="text" id="name" name="name" value="<?php echo htmlspecialchars($name ?? ''); ?>" required 
+                    <input type="text" id="name" name="name" value="<?php echo htmlspecialchars($name); ?>" required 
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Your Email</label>
-                    <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($email ?? ''); ?>" required
+                    <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label for="subject" class="block text-sm font-medium text-gray-700 mb-1">Subject (Optional)</label>
+                    <input type="text" id="subject" name="subject" value="<?php echo htmlspecialchars($subject); ?>"
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 
                 <div>
                     <label for="message" class="block text-sm font-medium text-gray-700 mb-1">Your Message</label>
                     <textarea id="message" name="message" rows="5" required
-                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"><?php echo htmlspecialchars($message ?? ''); ?></textarea>
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"><?php echo htmlspecialchars($message); ?></textarea>
                 </div>
                 
                 <button type="submit" name="submit_contact" 

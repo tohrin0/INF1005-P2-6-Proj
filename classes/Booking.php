@@ -92,6 +92,40 @@ class Booking {
         }
     }
     
+    /**
+     * Update booking information
+     * 
+     * @param int $bookingId The booking ID
+     * @param array $bookingData The booking data to update
+     * @return bool Success or failure
+     */
+    public function updateBooking($bookingId, $bookingData) {
+        try {
+            $fields = [];
+            $values = [];
+            
+            // Dynamically build the query based on provided fields
+            foreach ($bookingData as $field => $value) {
+                $fields[] = "$field = ?";
+                $values[] = $value;
+            }
+            
+            // Add updated_at timestamp
+            $fields[] = "updated_at = NOW()";
+            
+            // Add booking ID to values array
+            $values[] = $bookingId;
+            
+            $query = "UPDATE bookings SET " . implode(", ", $fields) . " WHERE id = ?";
+            $stmt = $this->db->prepare($query);
+            
+            return $stmt->execute($values);
+        } catch (Exception $e) {
+            error_log("Error updating booking: " . $e->getMessage());
+            return false;
+        }
+    }
+    
     public function getUserBookings($userId) {
         $query = "SELECT * FROM bookings WHERE user_id = ? ORDER BY created_at DESC";
         $stmt = $this->db->prepare($query);
