@@ -8,7 +8,7 @@ class Payment {
     private $transactionId;
 
     // Update constructor to initialize database connection
-    public function __construct($amount = null, $currency = 'USD', $paymentMethod = null) {
+    public function __construct($amount = 0, $currency = 'USD', $paymentMethod = 'credit_card') {
         global $pdo;
         $this->db = $pdo;
         $this->amount = $amount;
@@ -94,33 +94,47 @@ class Payment {
      * @param string $transactionId Optional transaction ID
      * @return bool Success or failure
      */
-    public function updateBookingAfterPayment($bookingId, $status = 'confirmed', $transactionId = null) {
+    public function updateBookingAfterPayment($bookingId, $status, $transactionId) {
         try {
+            // Start transaction
             $this->db->beginTransaction();
             
-            // Debug line
-            error_log("Updating booking status: $bookingId to $status");
-            
             // Update booking status
-            $stmt = $this->db->prepare("UPDATE bookings SET status = ? WHERE id = ?");
-            $bookingResult = $stmt->execute([$status, $bookingId]);
+            $bookingStmt = $this->db->prepare("UPDATE bookings SET status = ? WHERE id = ?");
+            $bookingResult = $bookingStmt->execute([$status, $bookingId]);
             
-            // Record payment if we have a transaction ID
-            if ($bookingResult && $transactionId) {
-                $paymentResult = $this->recordPayment($bookingId, $transactionId);
+            if ($bookingResult) {
+                // Get booking amount
+                $bookingQuery = $this->db->prepare("SELECT total_price FROM bookings WHERE id = ?");
+                $bookingQuery->execute([$bookingId]);
+                $booking = $bookingQuery->fetch(PDO::FETCH_ASSOC);
+                $amount = $booking ? $booking['total_price'] : $this->amount;
+                
+                // Insert payment record
+                $paymentStmt = $this->db->prepare(
+                    "INSERT INTO payments (booking_id, amount, payment_method, transaction_id, status) 
+                     VALUES (?, ?, ?, ?, 'completed')"
+                );
+                
+                $paymentResult = $paymentStmt->execute([
+                    $bookingId,
+                    $amount,
+                    $this->paymentMethod,
+                    $transactionId
+                ]);
+                
                 if ($paymentResult) {
                     $this->db->commit();
-                    error_log("Payment recorded successfully");
                     return true;
                 }
             }
             
+            // If we got here, something went wrong
             $this->db->rollBack();
-            error_log("Failed to record payment");
             return false;
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             $this->db->rollBack();
-            error_log("Error updating booking status: " . $e->getMessage());
+            error_log("Error processing payment: " . $e->getMessage());
             return false;
         }
     }
@@ -169,5 +183,11 @@ class Payment {
 
     public function getPaymentMethod() {
         return $this->paymentMethod;
+    }
+
+    public function getPaymentsByBookingId($bookingId) {
+        $stmt = $this->db->prepare("SELECT * FROM payments WHERE booking_id = ? ORDER BY payment_date DESC");
+        $stmt->execute([$bookingId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

@@ -444,7 +444,7 @@ function getAirports() {
 }
 
 // Function to render flight card
-function renderFlightCard($flight) {
+function renderFlightCard($flight, $departDate = null) {
     $flightId = $flight['id'] ?? '';
     $airline = $flight['airline'] ?? 'Unknown Airline';
     // Fix field name to match the API/database format
@@ -510,10 +510,25 @@ function renderFlightCard($flight) {
             <div class="flex flex-col items-end">
                 <div class="text-2xl font-bold text-blue-600">\${$price}</div>
                 <div class="text-sm text-gray-500 mb-2">per person</div>
-                <form action="passenger-details.php" method="POST">
+                <form action="booking.php" method="POST">
                     <input type="hidden" name="select_flight" value="1">
                     <input type="hidden" name="flight_id" value="{$flightId}">
                     <input type="hidden" name="price" value="{$price}">
+                    <!-- Add all required fields for booking -->
+                    <input type="hidden" name="flight_number" value="{$flightNumber}">
+                    <input type="hidden" name="departure" value="{$departureAirport}">
+                    <input type="hidden" name="arrival" value="{$arrivalAirport}">
+                    <input type="hidden" name="departure_time" value="{$departureTime}">
+                    <input type="hidden" name="arrival_time" value="{$arrivalTime}">
+                    <input type="hidden" name="airline" value="{$airline}">
+                    <input type="hidden" name="duration" value="{$duration}">
+                    <input type="hidden" name="stops" value="{$stops}">
+                    
+                    <!-- Add date from search parameters if available -->
+                    <?php if (!empty($departDate)): ?>
+                    <input type="hidden" name="date" value="<?= htmlspecialchars($departDate) ?>">
+                    <?php endif; ?>
+                    
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">
                         Select
                     </button>
@@ -813,7 +828,8 @@ include 'templates/header.php';
                 <?php
                 if (!empty($flights)) {
                     foreach ($flights as $flight) {
-                        echo renderFlightCard($flight);
+                        // Pass the departDate as a second parameter
+                        echo renderFlightCard($flight, $departDate);
                     }
                 }
                 ?>

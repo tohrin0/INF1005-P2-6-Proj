@@ -359,23 +359,14 @@ class Flight {
                 // Update existing flight
                 $stmt = $this->db->prepare(
                     "UPDATE flights SET 
-                    departure = ?,
-                    arrival = ?,
-                    time = ?,
-                    duration = ?,
-                    price = ?,
-                    available_seats = ?,
-                    airline = ?,
-                    departure_gate = ?,
-                    arrival_gate = ?,
-                    departure_terminal = ?,
-                    arrival_terminal = ?,
-                    status = ?,
-                    flight_api = ?
+                    flight_api = ?, departure = ?, arrival = ?, time = ?, duration = ?, 
+                    price = ?, available_seats = ?, airline = ?, status = ?,
+                    departure_gate = ?, arrival_gate = ?, departure_terminal = ?, arrival_terminal = ?
                     WHERE id = ?"
                 );
                 
                 $result = $stmt->execute([
+                    $this->flightApi,
                     $this->departure,
                     $this->arrival,
                     $this->time,
@@ -383,29 +374,29 @@ class Flight {
                     $this->price,
                     $this->availableSeats,
                     $this->airline,
+                    $this->status,
                     $this->departureGate,
                     $this->arrivalGate,
                     $this->departureTerminal,
                     $this->arrivalTerminal,
-                    $this->status,
-                    $this->flightApi ?? null, // Add flight_api
                     $existingFlight['id']
                 ]);
                 
-                return $result ? $existingFlight['id'] : false;
+                // Return flight ID as string
+                return (string)$existingFlight['id'];
             } else {
                 // Insert new flight
                 $stmt = $this->db->prepare(
                     "INSERT INTO flights (
                         flight_number, flight_api, departure, arrival, date, time, duration, price, 
-                        available_seats, airline, departure_gate, arrival_gate, 
-                        departure_terminal, arrival_terminal, status
+                        available_seats, airline, status, departure_gate, arrival_gate, 
+                        departure_terminal, arrival_terminal
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
                 );
                 
                 $result = $stmt->execute([
                     $this->flightNumber,
-                    $this->flightApi ?? null, // Add flight_api
+                    $this->flightApi,
                     $this->departure,
                     $this->arrival,
                     $this->date,
@@ -414,14 +405,15 @@ class Flight {
                     $this->price,
                     $this->availableSeats,
                     $this->airline,
+                    $this->status,
                     $this->departureGate,
                     $this->arrivalGate,
                     $this->departureTerminal,
-                    $this->arrivalTerminal,
-                    $this->status
+                    $this->arrivalTerminal
                 ]);
                 
-                return $result ? $this->db->lastInsertId() : false;
+                // Return flight ID as string
+                return $result ? (string)$this->db->lastInsertId() : false;
             }
         } catch (PDOException $e) {
             error_log("Error saving flight: " . $e->getMessage());

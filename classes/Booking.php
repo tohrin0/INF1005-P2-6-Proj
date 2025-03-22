@@ -10,31 +10,25 @@ class Booking {
     public function createBooking($userId, $flightId, $passengerDetails, $status = 'pending') {
         try {
             error_log("===== DEBUG: Starting createBooking =====");
-            error_log("userId: " . $userId);
-            error_log("flightId: " . $flightId);
-            error_log("status: " . $status);
-            error_log("passengerDetails: " . print_r($passengerDetails, true));
             
-            // Use passenger count from the form; default to 1 if not set
+            // Get values needed for the booking
             $passengerCount = isset($passengerDetails['passengers']) ? (int)$passengerDetails['passengers'] : 1;
-            
-            // Get the price directly from form
             $price = isset($passengerDetails['price']) ? floatval($passengerDetails['price']) : 0;
             $totalPrice = $price * $passengerCount;
-            
-            // Get flight_api from flightData if available
             $flightApiId = isset($passengerDetails['flight_api']) ? $passengerDetails['flight_api'] : null;
             
             // Prepare the INSERT query using all required fields
+            // Note: Using "NONE" instead of empty string for return_flight_id to satisfy NOT NULL constraint
             $query = "INSERT INTO bookings 
-                (user_id, flight_id, flight_api, status, customer_name, customer_email, customer_phone, passengers, total_price)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                (user_id, flight_id, return_flight_id, flight_api, status, customer_name, customer_email, 
+                customer_phone, passengers, total_price)
+                VALUES (?, ?, 'NONE', ?, ?, ?, ?, ?, ?, ?)";
             
             error_log("SQL Query: " . $query);
             
             $params = [
                 $userId,
-                $flightId,
+                $flightId,  // This should already be a string from Flight::save()
                 $flightApiId,
                 $status,
                 isset($passengerDetails['name']) ? $passengerDetails['name'] : '',
@@ -43,23 +37,17 @@ class Booking {
                 $passengerCount,
                 $totalPrice
             ];
-            error_log("Query parameters: " . print_r($params, true));
             
             $stmt = $this->db->prepare($query);
             $result = $stmt->execute($params);
             
             if ($result) {
-                $newId = $this->db->lastInsertId();
-                error_log("New booking ID: " . $newId);
-                return $newId;
+                return $this->db->lastInsertId();
             }
             
-            error_log("ERROR: Insert failed");
-            error_log("PDO error info: " . print_r($stmt->errorInfo(), true));
             return false;
         } catch (Exception $e) {
-            error_log("EXCEPTION in createBooking: " . $e->getMessage());
-            error_log("Exception trace: " . $e->getTraceAsString());
+            error_log("Error creating booking: " . $e->getMessage());
             return false;
         }
     }
@@ -80,9 +68,13 @@ class Booking {
     }
     
     public function updateBookingStatus($bookingId, $status) {
-        $query = "UPDATE bookings SET status = ? WHERE id = ?";
-        $stmt = $this->db->prepare($query);
-        return $stmt->execute([$status, $bookingId]);
+        try {
+            $stmt = $this->db->prepare("UPDATE bookings SET status = ? WHERE id = ?");
+            return $stmt->execute([$status, $bookingId]);
+        } catch (Exception $e) {
+            error_log("Error updating booking status: " . $e->getMessage());
+            return false;
+        }
     }
     
     public function getUserBookings($userId) {
@@ -95,13 +87,13 @@ class Booking {
     
     public static function getAllBookings() {
         global $pdo;
-        try {
-            $stmt = $pdo->query("SELECT * FROM bookings");
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error in getAllBookings: " . $e->getMessage());
-            return [];
-        }
+        $stmt = $pdo->query(
+            "SELECT b.*, f.flight_number, f.departure, f.arrival, f.date 
+             FROM bookings b 
+             LEFT JOIN flights f ON b.flight_id = f.id 
+             ORDER BY b.booking_date DESC"
+        );
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
 ?>
