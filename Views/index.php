@@ -23,48 +23,89 @@ include_once 'templates/header.php';
     </div>
 
     <div class="container mx-auto px-4 -mt-24 relative z-10 mb-16">
-        <?php include 'components/flight-search.php'; ?>
+        <!-- Updated search form to match search2.php functionality -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <form action="search2.php" method="GET" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label for="departure" class="block text-sm font-medium text-gray-700 mb-1">From</label>
+                    <input type="text" id="departure" name="departure" placeholder="City or Airport" required
+                           class="w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                
+                <div>
+                    <label for="arrival" class="block text-sm font-medium text-gray-700 mb-1">To</label>
+                    <input type="text" id="arrival" name="arrival" placeholder="City or Airport" required
+                           class="w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                
+                <div>
+                    <label for="departDate" class="block text-sm font-medium text-gray-700 mb-1">Departure Date</label>
+                    <input type="date" id="departDate" name="departDate" min="<?= date('Y-m-d') ?>" required
+                           class="w-full p-2 border border-gray-300 rounded-md">
+                </div>
+                
+                <div>
+                    <label for="passengers" class="block text-sm font-medium text-gray-700 mb-1">Passengers</label>
+                    <div class="flex gap-2">
+                        <select id="adults" name="adults" class="flex-1 p-2 border border-gray-300 rounded-md">
+                            <option value="1">1 Adult</option>
+                            <option value="2">2 Adults</option>
+                            <option value="3">3 Adults</option>
+                            <option value="4">4 Adults</option>
+                        </select>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-md">
+                            Search
+                        </button>
+                    </div>
+                </div>
+
+                <input type="hidden" name="tripType" value="one-way">
+                <input type="hidden" name="children" value="0">
+                <input type="hidden" name="infants" value="0">
+            </form>
+        </div>
     </div>
 
+    <!-- Update the destinations section with larger, rectangular cards -->
     <section class="container mx-auto px-4 py-12">
         <h2 class="text-3xl font-bold mb-8 text-center">Featured Destinations</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"> <!-- Increased gap -->
             <?php
             $destinations = [
-                ["name" => "New York", "image" => "/placeholder.svg?height=400&width=600", "price" => 349],
-                ["name" => "London", "image" => "/placeholder.svg?height=400&width=600", "price" => 429],
-                ["name" => "Paris", "image" => "/placeholder.svg?height=400&width=600", "price" => 399],
-                ["name" => "Tokyo", "image" => "/placeholder.svg?height=400&width=600", "price" => 689],
-                ["name" => "Dubai", "image" => "/placeholder.svg?height=400&width=600", "price" => 499],
-                ["name" => "Sydney", "image" => "/placeholder.svg?height=400&width=600", "price" => 799]
+                ["name" => "New York", "image" => "/placeholder.svg?height=400&width=700", "price" => 349],
+                ["name" => "London", "image" => "/placeholder.svg?height=400&width=700", "price" => 429],
+                ["name" => "Paris", "image" => "/placeholder.svg?height=400&width=700", "price" => 399],
+                ["name" => "Tokyo", "image" => "/placeholder.svg?height=400&width=700", "price" => 549],
+                ["name" => "Sydney", "image" => "/placeholder.svg?height=400&width=700", "price" => 649],
+                ["name" => "Dubai", "image" => "/placeholder.svg?height=400&width=700", "price" => 499]
             ];
-
+            
             foreach ($destinations as $destination):
-                $destinationUrl = 'destinations/' . strtolower($destination['name']);
             ?>
-                <a href="<?= htmlspecialchars($destinationUrl) ?>" class="group">
-                    <div class="relative h-64 rounded-xl overflow-hidden shadow-md transition-transform group-hover:shadow-lg group-hover:-translate-y-1">
+                <a href="search2.php?departure=&arrival=<?= htmlspecialchars($destination['name']) ?>" class="group">
+                    <div class="relative h-96 overflow-hidden rounded-xl"> <!-- Increased height from h-72 to h-96 -->
                         <img
-                            src="<?= htmlspecialchars($destination['image'] ?: '/placeholder.svg') ?>"
+                            src="<?= htmlspecialchars($destination['image']) ?>"
                             alt="<?= htmlspecialchars($destination['name']) ?>"
-                            class="object-cover w-full h-full absolute inset-0 transition-transform group-hover:scale-105" />
+                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy" />
                         <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6">
-                            <h3 class="text-xl font-bold text-white"><?= htmlspecialchars($destination['name']) ?></h3>
-                            <div class="flex justify-between items-center mt-2">
-                                <span class="text-white/80">From</span>
-                                <span class="text-white font-bold text-lg">$<?= htmlspecialchars($destination['price']) ?></span>
+                            <h3 class="text-2xl font-bold text-white"><?= htmlspecialchars($destination['name']) ?></h3> <!-- Increased text size -->
+                            <div class="flex justify-between items-center mt-3"> <!-- Increased margin -->
+                                <span class="text-white/80 text-lg">From</span> <!-- Increased text size -->
+                                <span class="text-white font-bold text-xl">$<?= htmlspecialchars($destination['price']) ?></span> <!-- Increased text size -->
                             </div>
                         </div>
                     </div>
                 </a>
             <?php endforeach; ?>
         </div>
-        <div class="flex justify-center mt-8">
+        <div class="flex justify-center mt-10"> <!-- Increased margin -->
             <a
-                href="destinations"
-                class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-full transition-colors">
+                href="search2.php"
+                class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white py-3 px-8 rounded-full transition-colors text-lg"> <!-- Increased padding and text size -->
                 View All Destinations
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2 h-4 w-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2 h-5 w-5"> <!-- Increased icon size -->
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                     <polyline points="12 5 19 12 12 19"></polyline>
                 </svg>
@@ -220,5 +261,5 @@ function renderCheck($className = "")
     </svg>';
 }
 
-include_once 'templates/footer.php';
+include 'templates/footer.php';
 ?>
