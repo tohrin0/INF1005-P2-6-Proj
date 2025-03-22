@@ -21,7 +21,7 @@ try {
     <title>Frequently Asked Questions - Flight Booking Website</title>
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/responsive.css">
-    <link rel="stylesheet" href="assets/css/pages.css">
+    <link rel="stylesheet" href="assets/css/tailwind.css">
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
@@ -29,29 +29,34 @@ try {
 <body>
     <?php include 'templates/header.php'; ?>
 
-    <div class="page-header">
-        <div class="container">
-            <h1>Frequently Asked Questions</h1>
-            <p>Find answers to common questions about our flight booking services</p>
+    <div class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white py-16 px-4 mb-8">
+        <div class="container mx-auto">
+            <h1 class="text-4xl font-bold mb-4">Frequently Asked Questions</h1>
+            <p class="text-xl text-blue-100">Find answers to common questions about our flight booking services</p>
         </div>
     </div>
 
-    <div class="container">
-        <div class="content-section">
-            <h2>Booking & Reservations</h2>
+    <div class="container mx-auto px-4 mb-16">
+        <div class="bg-white rounded-xl shadow-sm mb-8 p-8">
+            <h2 class="text-2xl font-bold mb-6">Booking & Reservations</h2>
 
             <?php if (empty($faqs)): ?>
-                <p>No FAQ items found. Please check back later.</p>
+                <p class="text-gray-600">No FAQ items found. Please check back later.</p>
             <?php else: ?>
-                <div class="faq-container">
+                <div class="space-y-4">
                     <?php foreach ($faqs as $index => $faq): ?>
-                        <div class="faq-item">
-                            <div class="faq-question" onclick="toggleFaq(<?php echo $index; ?>)">
-                                <?php echo htmlspecialchars($faq['question']); ?>
-                                <i class="fas fa-chevron-down" style="float: right;"></i>
+                        <div class="border border-gray-200 rounded-md overflow-hidden">
+                            <div class="flex justify-between items-center bg-gray-50 p-4 cursor-pointer hover:bg-gray-100 transition-colors"
+                                 onclick="toggleFaq(<?php echo $index; ?>)">
+                                <h3 class="text-lg font-semibold text-gray-800">
+                                    <?php echo htmlspecialchars($faq['question']); ?>
+                                </h3>
+                                <i class="fas fa-chevron-down text-gray-500 transition-transform duration-300"></i>
                             </div>
-                            <div class="faq-answer" id="faq-<?php echo $index; ?>" style="display: none;">
-                                <?php echo htmlspecialchars($faq['answer']); ?>
+                            <div id="faq-<?php echo $index; ?>" class="p-4 bg-white hidden">
+                                <p class="text-gray-700 leading-relaxed">
+                                    <?php echo htmlspecialchars($faq['answer']); ?>
+                                </p>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -59,13 +64,13 @@ try {
             <?php endif; ?>
         </div>
 
-        <div class="content-section">
-            <h2>Still Have Questions?</h2>
-            <p>If you couldn't find the answer to your question, please don't hesitate to contact our customer support team.</p>
+        <div class="bg-white rounded-xl shadow-sm p-8">
+            <h2 class="text-2xl font-bold mb-4">Still Have Questions?</h2>
+            <p class="text-gray-700 mb-6">If you couldn't find the answer to your question, please don't hesitate to contact our customer support team.</p>
 
-            <div style="text-align: center; margin-top: 20px;">
-                <a href="contact.php" class="submit-btn">
-                    <i class="fas fa-envelope"></i> Contact Us
+            <div class="text-center">
+                <a href="contact.php" class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-md transition-colors">
+                    <i class="fas fa-envelope mr-2"></i> Contact Us
                 </a>
             </div>
         </div>
@@ -77,13 +82,11 @@ try {
             const questions = document.querySelectorAll('.faq-question');
             const arrows = document.querySelectorAll('.fa-chevron-down');
 
-            if (answer.style.display === 'none') {
-                answer.style.display = 'block';
-                questions[index].style.backgroundColor = '#e9ecef';
+            if (answer.classList.contains('hidden')) {
+                answer.classList.remove('hidden');
                 arrows[index].style.transform = 'rotate(180deg)';
             } else {
-                answer.style.display = 'none';
-                questions[index].style.backgroundColor = '#f8f9fa';
+                answer.classList.add('hidden');
                 arrows[index].style.transform = 'rotate(0deg)';
             }
         }

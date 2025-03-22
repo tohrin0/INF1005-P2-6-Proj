@@ -37,7 +37,8 @@ class ApiClient
                 // If input contains IATA code in parentheses, extract it
                 $params['dep_iata'] = $matches[1];
             } else {
-                // Otherwise, use the first 3 characters as the IATA code
+                // Otherwise, use first 3 characters (or the full city name)
+                // AviationStack will handle the matching
                 $params['dep_iata'] = strtoupper(substr($departure, 0, 3));
             }
         }
@@ -53,17 +54,22 @@ class ApiClient
 
         // Build API URL (without access_key - we'll add it in makeRequest)
         $url = $this->apiUrl . '/flights?' . http_build_query($params);
-        error_log("API Request URL (without key): " . $url);
+        error_log("API Request URL for flight search (without key): " . $url);
 
-        $response = $this->makeRequest($url);
-        
-        if (empty($response['data']) || !isset($response['data'])) {
-            error_log("Empty API response or no flight data");
-            // Return dummy data that matches the search criteria
+        try {
+            $response = $this->makeRequest($url);
+            
+            if (empty($response['data']) || !isset($response['data'])) {
+                error_log("Empty API response or no flight data");
+                // Return dummy data that matches the search criteria
+                return $this->getDummyFlightData($departure, $arrival, $date);
+            }
+            
+            return $this->formatFlightResults($response);
+        } catch (Exception $e) {
+            error_log("Error searching flights: " . $e->getMessage());
             return $this->getDummyFlightData($departure, $arrival, $date);
         }
-        
-        return $this->formatFlightResults($response);
     }
 
     public function getFlightSchedules($params = [])
@@ -74,17 +80,26 @@ class ApiClient
         return $this->formatFlightResults($response);
     }
 
-    public function getAvailableFlights()
+    public function getAvailableFlights($offset = 0)
     {
         $params = [
-            'flight_status' => 'scheduled',
-            'limit' => 20
+            'limit' => 100,  // Maximum allowed by the free plan
+            'offset' => $offset
         ];
 
         $url = $this->apiUrl . '/flights?' . http_build_query($params);
-        $response = $this->makeRequest($url);
-        
-        return $this->formatFlightResults($response);
+        error_log("API Request URL for available flights (without key): " . $url);
+
+        try {
+            $response = $this->makeRequest($url);
+            return [
+                'flights' => $this->formatFlightResults($response),
+                'pagination' => $response['pagination'] ?? null
+            ];
+        } catch (Exception $e) {
+            error_log("Error in getAvailableFlights: " . $e->getMessage());
+            return ['flights' => [], 'pagination' => null];
+        }
     }
 
     private function makeRequest($url)
@@ -174,13 +189,14 @@ class ApiClient
             $arrivalAirport = $flight['arrival']['airport'] ?? 'Unknown';
             $arrivalCity = $this->extractCityFromAirport($arrivalAirport);
             
+            // Format departure and arrival times
             $departureTime = isset($flight['departure']['scheduled']) ? 
-                             date('H:i', strtotime($flight['departure']['scheduled'])) : 
-                             date('H:i');
-                             
+                            date('H:i', strtotime($flight['departure']['scheduled'])) : 
+                            date('H:i');
+                            
             $arrivalTime = isset($flight['arrival']['scheduled']) ? 
-                           date('H:i', strtotime($flight['arrival']['scheduled'])) : 
-                           date('H:i', strtotime('+2 hours'));
+                          date('H:i', strtotime($flight['arrival']['scheduled'])) : 
+                          date('H:i', strtotime('+2 hours'));
             
             // Calculate duration in minutes
             $duration = 0;
@@ -198,7 +214,7 @@ class ApiClient
                          date('Y-m-d', strtotime($flight['departure']['scheduled'])) : 
                          date('Y-m-d'));
             
-            // Generate a unique ID based on flight number and date
+            // Generate a unique ID for this flight
             $id = isset($flight['flight']['iata']) ? 
                   md5($flight['flight']['iata'] . $flightDate) : 
                   uniqid('flight_');
@@ -211,15 +227,23 @@ class ApiClient
                 'departure' => $departureCity,
                 'departure_airport' => $flight['departure']['iata'] ?? substr($departureAirport, 0, 3),
                 'departure_time' => $departureTime,
+                'departure_terminal' => $flight['departure']['terminal'] ?? null,
+                'departure_gate' => $flight['departure']['gate'] ?? null,
+                'departure_delay' => $flight['departure']['delay'] ?? 0,
                 'arrival' => $arrivalCity,
                 'arrival_airport' => $flight['arrival']['iata'] ?? substr($arrivalAirport, 0, 3),
                 'arrival_time' => $arrivalTime,
+                'arrival_terminal' => $flight['arrival']['terminal'] ?? null,
+                'arrival_gate' => $flight['arrival']['gate'] ?? null,
+                'arrival_delay' => $flight['arrival']['delay'] ?? 0,
                 'status' => $flight['flight_status'] ?? 'scheduled',
                 'date' => $flightDate,
                 'time' => $departureTime,
                 'duration' => $duration > 0 ? $duration : rand(45, 360),
                 'price' => rand(99, 999), // Random price as AviationStack doesn't provide pricing
-                'available_seats' => rand(10, 150) // Random seats as AviationStack doesn't provide seating
+                'available_seats' => rand(10, 150), // Random seats as AviationStack doesn't provide seating
+                'aircraft_registration' => $flight['aircraft']['registration'] ?? null,
+                'aircraft_type' => $flight['aircraft']['iata'] ?? null
             ];
 
             $formattedFlights[] = $formattedFlight;
@@ -353,7 +377,35 @@ class ApiClient
         $flights = $this->getAvailableFlights();
         
         foreach ($flights as $flight) {
-            if ($flight['id'] == $flightId) {
+            if ($flight['id'] == $flightId || $flight['flight_api'] == $flightId) {
+                // If we find the flight by ID, try to enhance it with real-time data
+                try {
+                    if (isset($flight['flight_number'])) {
+                        $params = [
+                            'flight_iata' => $flight['flight_number'],
+                            'flight_date' => $flight['date'] ?? date('Y-m-d')
+                        ];
+                        
+                        $realTimeData = $this->getFlightStatus($params);
+                        
+                        if (!empty($realTimeData)) {
+                            // Enhance with real-time data (status, gates, terminals, etc.)
+                            $rtf = $realTimeData[0];
+                            
+                            $flight['status'] = $rtf['flight_status'] ?? $flight['status'] ?? 'scheduled';
+                            $flight['departure_terminal'] = $rtf['departure']['terminal'] ?? $flight['departure_terminal'] ?? null;
+                            $flight['departure_gate'] = $rtf['departure']['gate'] ?? $flight['departure_gate'] ?? null;
+                            $flight['arrival_terminal'] = $rtf['arrival']['terminal'] ?? $flight['arrival_terminal'] ?? null;
+                            $flight['arrival_gate'] = $rtf['arrival']['gate'] ?? $flight['arrival_gate'] ?? null;
+                            $flight['aircraft_registration'] = $rtf['aircraft']['registration'] ?? null;
+                            $flight['aircraft_type'] = $rtf['aircraft']['iata'] ?? null;
+                        }
+                    }
+                } catch (Exception $e) {
+                    // Just log the error but continue with the basic flight info
+                    error_log("Error enhancing flight with real-time data: " . $e->getMessage());
+                }
+                
                 return $flight;
             }
         }
@@ -381,5 +433,185 @@ class ApiClient
             error_log("Error getting flight status: " . $e->getMessage());
             return [];
         }
+    }
+
+    // Add this new method to the ApiClient class
+
+    /**
+     * Enhanced flight search that extracts more information from the API
+     * 
+     * @param string $departure Departure city or airport
+     * @param string $arrival Arrival city or airport
+     * @param string $date Date in YYYY-MM-DD format
+     * @return array Formatted flight results
+     */
+    public function searchFlightsEnhanced($from, $to, $date, $offset = 0)
+{
+    // Prepare parameters for AviationStack API
+    $params = [
+        'limit' => 100, // Request maximum allowed results per page
+        'offset' => $offset
+    ];
+    
+    // Format date to YYYY-MM-DD for the API
+    if (!empty($date)) {
+        $params['flight_date'] = date('Y-m-d', strtotime($date));
+    }
+    
+    // Extract IATA code if present in the format "Airport Name (CODE)"
+    $pattern = '/\(([A-Z]{3})\)$/';
+    
+    // Add departure filter
+    if (!empty($from)) {
+        if (preg_match($pattern, $from, $matches)) {
+            $params['dep_iata'] = $matches[1];
+        } else {
+            $params['dep_iata'] = substr($from, 0, 3);
+        }
+    }
+    
+    // Add arrival filter
+    if (!empty($to)) {
+        if (preg_match($pattern, $to, $matches)) {
+            $params['arr_iata'] = $matches[1];
+        } else {
+            $params['arr_iata'] = substr($to, 0, 3);
+        }
+    }
+
+    // Build API URL (without access_key - we'll add it in makeRequest)
+    $url = $this->apiUrl . '/flights?' . http_build_query($params);
+    error_log("API Request URL for flight search (without key): " . $url);
+
+    try {
+        $response = $this->makeRequest($url);
+        return [
+            'flights' => $this->formatEnhancedFlightResults($response),
+            'pagination' => $response['pagination'] ?? null
+        ];
+    } catch (Exception $e) {
+        error_log("Error in searchFlightsEnhanced: " . $e->getMessage());
+        return ['flights' => [], 'pagination' => null];
+    }
+}
+    /**
+     * Format enhanced flight results from API
+     * 
+     * @param array $response API response
+     * @return array Formatted flight data
+     */
+    private function formatEnhancedFlightResults($response)
+    {
+        if (!isset($response['data']) || empty($response['data'])) {
+            error_log("No flight data in API response for enhanced format");
+            return [];
+        }
+
+        $formattedFlights = [];
+        foreach ($response['data'] as $flight) {
+            // Generate a unique ID for this flight
+            $flightDate = isset($flight['flight_date']) ? 
+                         $flight['flight_date'] : 
+                         (isset($flight['departure']['scheduled']) ? 
+                         date('Y-m-d', strtotime($flight['departure']['scheduled'])) : 
+                         date('Y-m-d'));
+                         
+            $id = isset($flight['flight']['iata']) ? 
+                  md5($flight['flight']['iata'] . $flightDate) : 
+                  uniqid('flight_');
+                  
+            // Extract departure info
+            $departureTime = isset($flight['departure']['scheduled']) ? 
+                date('H:i', strtotime($flight['departure']['scheduled'])) : 
+                date('H:i');
+                
+            $departureAirport = isset($flight['departure']['iata']) ? 
+                $flight['departure']['iata'] : 
+                (isset($flight['departure']['airport']) ? substr($flight['departure']['airport'], 0, 3) : 'N/A');
+                
+            $departureTerminal = $flight['departure']['terminal'] ?? null;
+            $departureGate = $flight['departure']['gate'] ?? null;
+            $departureDelay = $flight['departure']['delay'] ?? 0;
+            
+            // Extract arrival info
+            $arrivalTime = isset($flight['arrival']['scheduled']) ? 
+                date('H:i', strtotime($flight['arrival']['scheduled'])) : 
+                date('H:i', strtotime('+2 hours'));
+                
+            $arrivalAirport = isset($flight['arrival']['iata']) ? 
+                $flight['arrival']['iata'] : 
+                (isset($flight['arrival']['airport']) ? substr($flight['arrival']['airport'], 0, 3) : 'N/A');
+                
+            $arrivalTerminal = $flight['arrival']['terminal'] ?? null;
+            $arrivalGate = $flight['arrival']['gate'] ?? null;
+            $arrivalDelay = $flight['arrival']['delay'] ?? 0;
+            
+            // Calculate duration in minutes
+            $durationMinutes = 0;
+            if (isset($flight['departure']['scheduled']) && isset($flight['arrival']['scheduled'])) {
+                $depTime = strtotime($flight['departure']['scheduled']);
+                $arrTime = strtotime($flight['arrival']['scheduled']);
+                if ($depTime && $arrTime) {
+                    $durationMinutes = round(($arrTime - $depTime) / 60);
+                }
+            } else {
+                // If we can't calculate, provide a reasonable default
+                $durationMinutes = rand(90, 240);
+            }
+            
+            // Format a nice duration string (e.g., "2h 15m")
+            $durationFormatted = $this->formatDuration($durationMinutes);
+            
+            // Extract aircraft info
+            $aircraft = isset($flight['aircraft']) ? 
+                       ($flight['aircraft']['iata'] ?? $flight['aircraft']['icao'] ?? null) : 
+                       null;
+
+            // Generate a random price since API doesn't provide it
+            $basePrice = rand(89, 299);
+            $price = $basePrice + ($durationMinutes / 10); // Longer flights cost more
+            
+            // Assume direct flight unless indicated otherwise
+            $stops = 0;
+            
+            $formattedFlights[] = [
+                'airline' => $flight['airline']['name'] ?? ($flight['airline']['iata'] ?? 'Unknown Airline'),
+                'flight_number' => $flight['flight']['iata'] ?? $flight['flight']['icao'] ?? 'N/A',
+                'departureTime' => $departureTime,
+                'departureAirport' => $departureAirport,
+                'departureTerminal' => $departureTerminal,
+                'departureGate' => $departureGate,
+                'departureDelay' => $departureDelay,
+                'arrivalTime' => $arrivalTime,
+                'arrivalAirport' => $arrivalAirport,
+                'arrivalTerminal' => $arrivalTerminal,
+                'arrivalGate' => $arrivalGate,
+                'arrivalDelay' => $arrivalDelay,
+                'duration' => $durationFormatted,
+                'durationMinutes' => $durationMinutes,
+                'stops' => $stops,
+                'aircraft' => $aircraft,
+                'status' => $flight['flight_status'] ?? 'scheduled',
+                'price' => $price,
+                'date' => $flightDate,
+                'source' => 'api',
+                'flight_id' => $id
+            ];
+        }
+        
+        return $formattedFlights;
+    }
+
+    /**
+     * Format duration minutes into human-readable string
+     * 
+     * @param int $minutes Duration in minutes
+     * @return string Formatted duration (e.g., "2h 15m")
+     */
+    private function formatDuration($minutes) 
+    {
+        $hours = floor($minutes / 60);
+        $mins = $minutes % 60;
+        return $hours . 'h ' . str_pad($mins, 2, '0', STR_PAD_LEFT) . 'm';
     }
 }
