@@ -60,7 +60,8 @@ $routes = [
     'reset-password' => 'reset-password.php',
     'search2' => 'search2.php',
     'services' => 'services.php',
-    'terms' => 'terms.php'
+    'terms' => 'terms.php',
+    'membership' => 'membership.php'
 ];
 
 

@@ -131,6 +131,7 @@
                         <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
                             <li><a href="admin/dashboard.php" class="admin-link">Admin Dashboard</a></li>
                         <?php endif; ?>
+                        <li><a href="membership.php">Privileges & Miles</a></li>
                         <li><a href="account.php">My Account</a></li>
                         <li><a href="logout.php">Logout</a></li>
                     <?php else: ?>
