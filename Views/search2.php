@@ -192,7 +192,80 @@ function calculateArrivalTime($departureTime, $durationMinutes) {
     return $departure->format('H:i');
 }
 
-
+/**
+ * Get a list of major airports worldwide sorted alphabetically
+ * @return array Array of airports with name and IATA code
+ */
+function getAirports() {
+    return [
+        ['name' => 'Amsterdam Airport Schiphol', 'code' => 'AMS'],
+        ['name' => 'Athens International Airport', 'code' => 'ATH'],
+        ['name' => 'Auckland Airport', 'code' => 'AKL'],
+        ['name' => 'Bangkok Suvarnabhumi Airport', 'code' => 'BKK'],
+        ['name' => 'Barcelona–El Prat Airport', 'code' => 'BCN'],
+        ['name' => 'Beijing Capital International Airport', 'code' => 'PEK'],
+        ['name' => 'Berlin Brandenburg Airport', 'code' => 'BER'],
+        ['name' => 'Boston Logan International Airport', 'code' => 'BOS'],
+        ['name' => 'Cairo International Airport', 'code' => 'CAI'],
+        ['name' => 'Cancún International Airport', 'code' => 'CUN'],
+        ['name' => 'Cape Town International Airport', 'code' => 'CPT'],
+        ['name' => 'Charles de Gaulle Airport (Paris)', 'code' => 'CDG'],
+        ['name' => 'Changi Airport (Singapore)', 'code' => 'SIN'],
+        ['name' => 'Chicago O\'Hare International Airport', 'code' => 'ORD'],
+        ['name' => 'Copenhagen Airport', 'code' => 'CPH'],
+        ['name' => 'Dallas/Fort Worth International Airport', 'code' => 'DFW'],
+        ['name' => 'Denver International Airport', 'code' => 'DEN'],
+        ['name' => 'Dubai International Airport', 'code' => 'DXB'],
+        ['name' => 'Dublin Airport', 'code' => 'DUB'],
+        ['name' => 'Frankfurt Airport', 'code' => 'FRA'],
+        ['name' => 'Geneva Airport', 'code' => 'GVA'],
+        ['name' => 'Hamad International Airport (Doha)', 'code' => 'DOH'],
+        ['name' => 'Haneda Airport (Tokyo)', 'code' => 'HND'],
+        ['name' => 'Hartsfield–Jackson Atlanta International Airport', 'code' => 'ATL'],
+        ['name' => 'Helsinki Airport', 'code' => 'HEL'],
+        ['name' => 'Hong Kong International Airport', 'code' => 'HKG'],
+        ['name' => 'Incheon International Airport (Seoul)', 'code' => 'ICN'],
+        ['name' => 'Istanbul Airport', 'code' => 'IST'],
+        ['name' => 'John F. Kennedy International Airport (New York)', 'code' => 'JFK'],
+        ['name' => 'Kuala Lumpur International Airport', 'code' => 'KUL'],
+        ['name' => 'Las Vegas Harry Reid International Airport', 'code' => 'LAS'],
+        ['name' => 'Leonardo da Vinci International Airport (Rome)', 'code' => 'FCO'],
+        ['name' => 'Lima Jorge Chávez International Airport', 'code' => 'LIM'],
+        ['name' => 'Lisbon Airport', 'code' => 'LIS'],
+        ['name' => 'London Gatwick Airport', 'code' => 'LGW'],
+        ['name' => 'London Heathrow Airport', 'code' => 'LHR'],
+        ['name' => 'Los Angeles International Airport', 'code' => 'LAX'],
+        ['name' => 'Madrid–Barajas Airport', 'code' => 'MAD'],
+        ['name' => 'Manchester Airport', 'code' => 'MAN'],
+        ['name' => 'Melbourne Airport', 'code' => 'MEL'],
+        ['name' => 'Mexico City International Airport', 'code' => 'MEX'],
+        ['name' => 'Miami International Airport', 'code' => 'MIA'],
+        ['name' => 'Milan Malpensa Airport', 'code' => 'MXP'],
+        ['name' => 'Montréal–Trudeau International Airport', 'code' => 'YUL'],
+        ['name' => 'Moscow Sheremetyevo International Airport', 'code' => 'SVO'],
+        ['name' => 'Munich Airport', 'code' => 'MUC'],
+        ['name' => 'Mumbai Chhatrapati Shivaji Maharaj International Airport', 'code' => 'BOM'],
+        ['name' => 'Narita International Airport (Tokyo)', 'code' => 'NRT'],
+        ['name' => 'Newark Liberty International Airport', 'code' => 'EWR'],
+        ['name' => 'Oslo Airport', 'code' => 'OSL'],
+        ['name' => 'Palma de Mallorca Airport', 'code' => 'PMI'],
+        ['name' => 'Phoenix Sky Harbor International Airport', 'code' => 'PHX'],
+        ['name' => 'Portland International Airport', 'code' => 'PDX'],
+        ['name' => 'San Diego International Airport', 'code' => 'SAN'],
+        ['name' => 'San Francisco International Airport', 'code' => 'SFO'],
+        ['name' => 'São Paulo/Guarulhos International Airport', 'code' => 'GRU'],
+        ['name' => 'Seattle–Tacoma International Airport', 'code' => 'SEA'],
+        ['name' => 'Shanghai Pudong International Airport', 'code' => 'PVG'],
+        ['name' => 'Suvarnabhumi Airport (Bangkok)', 'code' => 'BKK'],
+        ['name' => 'Sydney Kingsford Smith Airport', 'code' => 'SYD'],
+        ['name' => 'Taiwan Taoyuan International Airport', 'code' => 'TPE'],
+        ['name' => 'Toronto Pearson International Airport', 'code' => 'YYZ'],
+        ['name' => 'Vancouver International Airport', 'code' => 'YVR'],
+        ['name' => 'Vienna International Airport', 'code' => 'VIE'],
+        ['name' => 'Washington Dulles International Airport', 'code' => 'IAD'],
+        ['name' => 'Zurich Airport', 'code' => 'ZRH'],
+    ];
+}
 
 // Include header
 include 'templates/header.php';
@@ -204,19 +277,40 @@ include 'templates/header.php';
         <h1 class="text-white text-2xl font-bold mb-4">Find Your Flight</h1>
         
         <form method="POST" action="search2.php" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div>
                     <label for="from" class="block text-white font-medium mb-1 text-sm">From</label>
-                    <input type="text" id="from" name="from" placeholder="City or Airport" 
-                           value="<?php echo htmlspecialchars($from); ?>"
-                           class="w-full px-3 py-2 rounded-md text-sm border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200">
+                    <select id="from" name="from" 
+                            class="w-full px-3 py-2 rounded-md text-sm border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200">
+                        <option value="">Select departure airport</option>
+                        <?php 
+                        $airports = getAirports();
+                        foreach ($airports as $airport): 
+                            $airportValue = $airport['name'] . ' (' . $airport['code'] . ')';
+                            $selected = ($from === $airportValue) ? 'selected' : '';
+                        ?>
+                            <option value="<?= htmlspecialchars($airportValue) ?>" <?= $selected ?>>
+                                <?= htmlspecialchars($airport['name']) ?> (<?= htmlspecialchars($airport['code']) ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
                 
                 <div>
                     <label for="to" class="block text-white font-medium mb-1 text-sm">To</label>
-                    <input type="text" id="to" name="to" placeholder="City or Airport" 
-                           value="<?php echo htmlspecialchars($to); ?>"
-                           class="w-full px-3 py-2 rounded-md text-sm border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200">
+                    <select id="to" name="to"
+                            class="w-full px-3 py-2 rounded-md text-sm border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200">
+                        <option value="">Select arrival airport</option>
+                        <?php 
+                        foreach ($airports as $airport): 
+                            $airportValue = $airport['name'] . ' (' . $airport['code'] . ')';
+                            $selected = ($to === $airportValue) ? 'selected' : '';
+                        ?>
+                            <option value="<?= htmlspecialchars($airportValue) ?>" <?= $selected ?>>
+                                <?= htmlspecialchars($airport['name']) ?> (<?= htmlspecialchars($airport['code']) ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
                 
                 <div>
@@ -236,8 +330,8 @@ include 'templates/header.php';
                     </select>
                 </div>
 
-                <div class="self-end">
-                    <button type="submit" class="bg-white text-blue-700 w-full font-bold py-2 px-4 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-700 transition-colors">
+                <div class="md:col-span-2 lg:col-span-4">
+                    <button type="submit" class="bg-white text-blue-700 font-bold py-2 px-4 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-700 transition-colors">
                         <i class="fas fa-search mr-2"></i> Search Flights
                     </button>
                 </div>
@@ -449,6 +543,69 @@ include 'templates/header.php';
         grid-template-columns: repeat(1, minmax(0, 1fr));
     }
 }
+
+/* Styles for the airport select */
+#from, #to {
+    max-height: 38px; /* Keep consistent with other form elements */
+}
+
+/* Custom styling for dropdown options */
+select option {
+    padding: 10px;
+}
+
+/* Improve dropdown readability on mobile */
+@media (max-width: 640px) {
+    select {
+        font-size: 16px; /* Prevents iOS zoom on focus */
+    }
+}
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add search functionality to dropdowns
+    const airportSelects = document.querySelectorAll('#from, #to');
+    
+    airportSelects.forEach(select => {
+        // Store original options
+        const originalOptions = Array.from(select.options);
+        
+        // Add event listener for typing in select
+        select.addEventListener('keyup', function(e) {
+            const searchText = e.target.value.toLowerCase();
+            
+            // If backspace or delete is pressed and searchText is empty, restore all options
+            if ((e.key === 'Backspace' || e.key === 'Delete') && searchText === '') {
+                select.innerHTML = '';
+                originalOptions.forEach(option => {
+                    select.appendChild(option.cloneNode(true));
+                });
+                return;
+            }
+            
+            // Filter options based on typed text
+            const filteredOptions = originalOptions.filter(option => {
+                return option.text.toLowerCase().includes(searchText);
+            });
+            
+            // Update select options
+            select.innerHTML = '';
+            filteredOptions.forEach(option => {
+                select.appendChild(option.cloneNode(true));
+            });
+        });
+    });
+    
+    // Prevent form submission when pressing Enter in selects
+    airportSelects.forEach(select => {
+        select.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+            }
+        });
+    });
+});
+</script>
 
 <?php include 'templates/footer.php'; ?>
