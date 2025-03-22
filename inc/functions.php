@@ -389,21 +389,10 @@ function updateFlightSeats($flightId, $bookedSeats = 1) {
  * @param int $durationMinutes Duration in minutes
  * @return string Formatted duration string (e.g. "2h 30m")
  */
-function formatDuration($durationMinutes) {
-    if (!is_numeric($durationMinutes)) {
-        return "N/A";
-    }
-    
-    $hours = floor($durationMinutes / 60);
-    $minutes = $durationMinutes % 60;
-    
-    if ($hours > 0 && $minutes > 0) {
-        return $hours . "h " . $minutes . "m";
-    } elseif ($hours > 0) {
-        return $hours . "h";
-    } else {
-        return $minutes . "m";
-    }
+function formatDuration($minutes) {
+    $hours = floor($minutes / 60);
+    $mins = $minutes % 60;
+    return $hours . 'h ' . str_pad($mins, 2, '0', STR_PAD_LEFT) . 'm';
 }
 
 /**

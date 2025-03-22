@@ -124,7 +124,7 @@
                     <!-- Removed "Home" menu item since logo now links to home -->
                     <li><a href="index.php">Home</a></li>
                     <li><a href="globe.php">World Map</a></li>
-                    <li><a href="search.php">Search Flights</a></li>
+                    <li><a href="search2.php">Search Flights</a></li>
                     <li><a href="contact.php">Contact</a></li>
                     <li><a href="my-bookings.php">Bookings</a></li>
                     <?php if (isset($_SESSION['user_id'])): ?>

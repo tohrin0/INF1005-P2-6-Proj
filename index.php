@@ -57,6 +57,7 @@ $routes = [
     'register' => 'register.php',
     'reset-password' => 'reset-password.php',
     'search' => 'search.php',
+    'search2' => 'search2.php',
     'services' => 'services.php',
     'terms' => 'terms.php'
 ];
