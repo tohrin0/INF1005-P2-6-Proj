@@ -37,42 +37,38 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' |
         $pagination = $result['pagination'];
         
         if (empty($flights)) {
-            // If API fails or returns no results, fall back to database
-            $flights = searchFlightsFromDatabase($from, $to, $departDate);
-            
-            if (empty($flights)) {
-                $error = 'No flights found for your search criteria.';
-            }
+            $error = "No flights found matching your criteria. Please try different search parameters.";
         }
     } catch (Exception $e) {
         error_log("API search error: " . $e->getMessage());
         // API failed, fall back to database
         try {
             $flights = searchFlightsFromDatabase($from, $to, $departDate);
-            
             if (empty($flights)) {
-                $error = 'No flights found for your search criteria.';
+                $error = "No flights found. Please try different search parameters.";
             }
         } catch (Exception $dbEx) {
-            $error = 'An error occurred while searching for flights.';
-            error_log($dbEx->getMessage());
+            $error = "Search error: " . $dbEx->getMessage();
         }
     }
 } else {
-    // If no search performed, load featured flights
+    // Always load flights on page load (even if no search performed)
     try {
         $apiClient = new ApiClient();
         $result = $apiClient->getAvailableFlights();
+        
         if (is_array($result) && isset($result['flights'])) {
             $flights = $result['flights'];
-            $pagination = $result['pagination'];
+            $pagination = $result['pagination'] ?? null;
         } else {
-            $flights = $result;
+            $flights = $result; // In case it directly returns an array of flights
         }
         
         if (empty($flights)) {
-            // Fall back to database for featured flights
             $flights = getFeaturedFlightsFromDatabase();
+            if (empty($flights)) {
+                $error = "Unable to load featured flights. Please try searching for specific routes.";
+            }
         }
     } catch (Exception $e) {
         error_log("Error fetching featured flights: " . $e->getMessage());
@@ -88,11 +84,8 @@ function searchFlightsFromDatabase($from, $to, $date) {
         // Search for flights in the local database
         $stmt = $pdo->prepare(
             "SELECT * FROM flights 
-             WHERE departure LIKE ? 
-             AND arrival LIKE ? 
-             AND date = ? 
-             AND available_seats > 0
-             ORDER BY time"
+             WHERE departure LIKE ? AND arrival LIKE ? AND date = ?
+             ORDER BY time ASC LIMIT 100"
         );
         
         // Use wildcards for partial matching on departure/arrival
@@ -102,30 +95,19 @@ function searchFlightsFromDatabase($from, $to, $date) {
         // Format database flights to match API format
         $formattedFlights = [];
         foreach ($dbFlights as $flight) {
-            // Extract airport codes if available, otherwise use first 3 letters
-            $departureCode = substr($flight['departure'], 0, 3);
-            $arrivalCode = substr($flight['arrival'], 0, 3);
-            
+            // Convert database fields to match API format
             $formattedFlights[] = [
-                'airline' => $flight['airline'] ?? 'Local Airline',
-                'flightNumber' => $flight['flight_number'],
+                'id' => $flight['id'],
+                'flight_number' => $flight['flight_number'],
+                'airline' => $flight['airline'] ?? 'Unknown Airline',
+                'departureAirport' => $flight['departure'],
                 'departureTime' => $flight['time'],
-                'departureAirport' => $departureCode,
-                'departureTerminal' => $flight['departure_terminal'] ?? '',
-                'departureGate' => $flight['departure_gate'] ?? '',
-                'arrivalTime' => calculateArrivalTime($flight['time'], $flight['duration']),
-                'arrivalAirport' => $arrivalCode,
-                'arrivalTerminal' => $flight['arrival_terminal'] ?? '',
-                'arrivalGate' => $flight['arrival_gate'] ?? '',
-                'duration' => formatDuration($flight['duration']),
-                'durationMinutes' => $flight['duration'],
-                'status' => $flight['status'] ?? 'scheduled',
-                'stops' => 0, // Assuming direct flights in database
-                'aircraft' => $flight['aircraft_type'] ?? '',
-                'price' => (float)$flight['price'],
-                'date' => $flight['date'],
-                'source' => 'database',
-                'flight_id' => $flight['id']
+                'arrivalAirport' => $flight['arrival'],
+                'arrivalTime' => calculateArrivalTime($flight['time'], $flight['duration_minutes']),
+                'duration' => floor($flight['duration_minutes'] / 60) . 'h ' . ($flight['duration_minutes'] % 60) . 'm',
+                'price' => $flight['price'],
+                'stops' => $flight['stops'] ?? 0,
+                'source' => 'database'
             ];
         }
         return $formattedFlights;
@@ -143,38 +125,26 @@ function getFeaturedFlightsFromDatabase() {
         $stmt = $pdo->query(
             "SELECT * FROM flights 
              WHERE date >= CURDATE() 
-             AND available_seats > 0 
-             ORDER BY date, time 
-             LIMIT 10"
+             ORDER BY featured DESC, date ASC 
+             LIMIT 100"
         );
         $dbFlights = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         // Format the flights 
         $formattedFlights = [];
         foreach ($dbFlights as $flight) {
-            $departureCode = substr($flight['departure'], 0, 3);
-            $arrivalCode = substr($flight['arrival'], 0, 3);
-            
             $formattedFlights[] = [
-                'airline' => $flight['airline'] ?? 'Featured Airline',
-                'flightNumber' => $flight['flight_number'],
+                'id' => $flight['id'],
+                'flight_number' => $flight['flight_number'],
+                'airline' => $flight['airline'] ?? 'Unknown Airline',
+                'departureAirport' => $flight['departure'],
                 'departureTime' => $flight['time'],
-                'departureAirport' => $departureCode,
-                'departureTerminal' => $flight['departure_terminal'] ?? '',
-                'departureGate' => $flight['departure_gate'] ?? '',
-                'arrivalTime' => calculateArrivalTime($flight['time'], $flight['duration']),
-                'arrivalAirport' => $arrivalCode,
-                'arrivalTerminal' => $flight['arrival_terminal'] ?? '',
-                'arrivalGate' => $flight['arrival_gate'] ?? '',
-                'duration' => formatDuration($flight['duration']),
-                'durationMinutes' => $flight['duration'],
-                'status' => $flight['status'] ?? 'scheduled',
-                'stops' => 0,
-                'aircraft' => $flight['aircraft_type'] ?? '',
-                'price' => (float)$flight['price'],
-                'date' => $flight['date'],
-                'source' => 'database',
-                'flight_id' => $flight['id']
+                'arrivalAirport' => $flight['arrival'],
+                'arrivalTime' => calculateArrivalTime($flight['time'], $flight['duration_minutes']),
+                'duration' => floor($flight['duration_minutes'] / 60) . 'h ' . ($flight['duration_minutes'] % 60) . 'm',
+                'price' => $flight['price'],
+                'stops' => $flight['stops'] ?? 0,
+                'source' => 'database'
             ];
         }
         
@@ -205,7 +175,7 @@ function getAirports() {
         ['name' => 'Barcelona–El Prat Airport', 'code' => 'BCN'],
         ['name' => 'Beijing Capital International Airport', 'code' => 'PEK'],
         ['name' => 'Berlin Brandenburg Airport', 'code' => 'BER'],
-        ['name' => 'Boston Logan International Airport', 'code' => 'BOS'],
+        ['name' => 'Boston Logan International Airport', 'code' =>'BOS'],
         ['name' => 'Cairo International Airport', 'code' => 'CAI'],
         ['name' => 'Cancún International Airport', 'code' => 'CUN'],
         ['name' => 'Cape Town International Airport', 'code' => 'CPT'],
@@ -229,289 +199,236 @@ function getAirports() {
         ['name' => 'John F. Kennedy International Airport (New York)', 'code' => 'JFK'],
         ['name' => 'Kuala Lumpur International Airport', 'code' => 'KUL'],
         ['name' => 'Las Vegas Harry Reid International Airport', 'code' => 'LAS'],
-        ['name' => 'Leonardo da Vinci International Airport (Rome)', 'code' => 'FCO'],
-        ['name' => 'Lima Jorge Chávez International Airport', 'code' => 'LIM'],
-        ['name' => 'Lisbon Airport', 'code' => 'LIS'],
-        ['name' => 'London Gatwick Airport', 'code' => 'LGW'],
-        ['name' => 'London Heathrow Airport', 'code' => 'LHR'],
-        ['name' => 'Los Angeles International Airport', 'code' => 'LAX'],
-        ['name' => 'Madrid–Barajas Airport', 'code' => 'MAD'],
-        ['name' => 'Manchester Airport', 'code' => 'MAN'],
-        ['name' => 'Melbourne Airport', 'code' => 'MEL'],
-        ['name' => 'Mexico City International Airport', 'code' => 'MEX'],
-        ['name' => 'Miami International Airport', 'code' => 'MIA'],
-        ['name' => 'Milan Malpensa Airport', 'code' => 'MXP'],
-        ['name' => 'Montréal–Trudeau International Airport', 'code' => 'YUL'],
-        ['name' => 'Moscow Sheremetyevo International Airport', 'code' => 'SVO'],
-        ['name' => 'Munich Airport', 'code' => 'MUC'],
-        ['name' => 'Mumbai Chhatrapati Shivaji Maharaj International Airport', 'code' => 'BOM'],
-        ['name' => 'Narita International Airport (Tokyo)', 'code' => 'NRT'],
-        ['name' => 'Newark Liberty International Airport', 'code' => 'EWR'],
-        ['name' => 'Oslo Airport', 'code' => 'OSL'],
-        ['name' => 'Palma de Mallorca Airport', 'code' => 'PMI'],
-        ['name' => 'Phoenix Sky Harbor International Airport', 'code' => 'PHX'],
-        ['name' => 'Portland International Airport', 'code' => 'PDX'],
-        ['name' => 'San Diego International Airport', 'code' => 'SAN'],
-        ['name' => 'San Francisco International Airport', 'code' => 'SFO'],
-        ['name' => 'São Paulo/Guarulhos International Airport', 'code' => 'GRU'],
-        ['name' => 'Seattle–Tacoma International Airport', 'code' => 'SEA'],
-        ['name' => 'Shanghai Pudong International Airport', 'code' => 'PVG'],
-        ['name' => 'Suvarnabhumi Airport (Bangkok)', 'code' => 'BKK'],
-        ['name' => 'Sydney Kingsford Smith Airport', 'code' => 'SYD'],
-        ['name' => 'Taiwan Taoyuan International Airport', 'code' => 'TPE'],
-        ['name' => 'Toronto Pearson International Airport', 'code' => 'YYZ'],
-        ['name' => 'Vancouver International Airport', 'code' => 'YVR'],
-        ['name' => 'Vienna International Airport', 'code' => 'VIE'],
-        ['name' => 'Washington Dulles International Airport', 'code' => 'IAD'],
-        ['name' => 'Zurich Airport', 'code' => 'ZRH'],
     ];
+}
+
+// Function to render flight card
+function renderFlightCard($flight) {
+    $flightId = $flight['id'] ?? '';
+    $airline = $flight['airline'] ?? 'Unknown Airline';
+    $flightNumber = $flight['flight_number'] ?? 'N/A';
+    $departureAirport = $flight['departureAirport'] ?? 'N/A';
+    $departureTime = $flight['departureTime'] ?? '00:00';
+    $arrivalAirport = $flight['arrivalAirport'] ?? 'N/A';
+    $arrivalTime = $flight['arrivalTime'] ?? '00:00';
+    $duration = $flight['duration'] ?? 'N/A';
+    $stops = $flight['stops'] ?? 0;
+    $price = $flight['price'] ?? 0;
+    
+    $stopsText = $stops === 0 ? 'Non-stop' : ($stops === 1 ? '1 Stop' : $stops . ' Stops');
+    $stopsClass = $stops === 0 ? 'bg-green-100 text-green-800' : ($stops === 1 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800');
+    
+    return <<<HTML
+    <div class="flight-card bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-all">
+        <div class="flex justify-between items-center mb-3 pb-3 border-b border-gray-100">
+            <div class="flex items-center">
+                <div class="w-8 h-8 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11.43a1 1 0 01.725-.962l5-1.429a1 1 0 001.17-1.409l-7-14z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <span class="text-sm font-medium text-gray-900">{$airline}</span>
+                    <span class="text-xs text-gray-500 ml-2">{$flightNumber}</span>
+                </div>
+            </div>
+            <span class="px-2 py-1 text-xs font-medium rounded-full {$stopsClass}">{$stopsText}</span>
+        </div>
+        
+        <div class="flex justify-between mb-4">
+            <div class="text-center">
+                <div class="text-xl font-bold">{$departureTime}</div>
+                <div class="text-sm text-gray-500">{$departureAirport}</div>
+            </div>
+            
+            <div class="flex-1 flex flex-col items-center justify-center px-4">
+                <div class="w-full h-[1px] bg-gray-300 relative">
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-full"></div>
+                </div>
+                <span class="text-xs text-gray-500 mt-1">{$duration}</span>
+            </div>
+            
+            <div class="text-center">
+                <div class="text-xl font-bold">{$arrivalTime}</div>
+                <div class="text-sm text-gray-500">{$arrivalAirport}</div>
+            </div>
+        </div>
+        
+        <div class="flex justify-between items-center">
+            <div class="text-lg font-bold text-green-600">\${$price}</div>
+            <form action="passenger-details.php" method="POST">
+                <input type="hidden" name="flight_id" value="{$flightId}">
+                <input type="hidden" name="price" value="{$price}">
+                <button type="submit" name="select_flight" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    Select Flight
+                </button>
+            </form>
+        </div>
+    </div>
+    HTML;
 }
 
 // Include header
 include 'templates/header.php';
 ?>
 
-<div class="container mx-auto px-4 py-4">
+<div class="container mx-auto px-4 py-6">
     <!-- Search Form Section -->
-    <div class="bg-gradient-to-r from-blue-700 to-indigo-800 rounded-xl p-4 shadow-lg mb-6">
-        <h1 class="text-white text-2xl font-bold mb-4">Find Your Flight</h1>
+    <div class="bg-gradient-to-r from-blue-700 to-indigo-800 rounded-xl p-6 shadow-lg mb-8">
+        <h2 class="text-2xl font-bold text-white mb-6">Find Your Flight</h2>
         
-        <form method="POST" action="search2.php" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                <div>
-                    <label for="from" class="block text-white font-medium mb-1 text-sm">From</label>
-                    <select id="from" name="from" 
-                            class="w-full px-3 py-2 rounded-md text-sm border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200">
-                        <option value="">Select departure airport</option>
-                        <?php 
-                        $airports = getAirports();
-                        foreach ($airports as $airport): 
-                            $airportValue = $airport['name'] . ' (' . $airport['code'] . ')';
-                            $selected = ($from === $airportValue) ? 'selected' : '';
-                        ?>
-                            <option value="<?= htmlspecialchars($airportValue) ?>" <?= $selected ?>>
-                                <?= htmlspecialchars($airport['name']) ?> (<?= htmlspecialchars($airport['code']) ?>)
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                
-                <div>
-                    <label for="to" class="block text-white font-medium mb-1 text-sm">To</label>
-                    <select id="to" name="to"
-                            class="w-full px-3 py-2 rounded-md text-sm border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200">
-                        <option value="">Select arrival airport</option>
-                        <?php 
-                        foreach ($airports as $airport): 
-                            $airportValue = $airport['name'] . ' (' . $airport['code'] . ')';
-                            $selected = ($to === $airportValue) ? 'selected' : '';
-                        ?>
-                            <option value="<?= htmlspecialchars($airportValue) ?>" <?= $selected ?>>
-                                <?= htmlspecialchars($airport['name']) ?> (<?= htmlspecialchars($airport['code']) ?>)
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                
-                <div>
-                    <label for="departDate" class="block text-white font-medium mb-1 text-sm">Departure Date</label>
-                    <input type="date" id="departDate" name="departDate" 
-                           value="<?php echo htmlspecialchars($departDate); ?>"
-                           class="w-full px-3 py-2 rounded-md text-sm border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200">
-                </div>
-
-                <div>
-                    <label for="cabinClass" class="block text-white font-medium mb-1 text-sm">Cabin Class</label>
-                    <select id="cabinClass" name="cabinClass" class="w-full px-3 py-2 rounded-md text-sm border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200">
-                        <option value="economy" <?php echo $cabinClass === 'economy' ? 'selected' : ''; ?>>Economy</option>
-                        <option value="premium" <?php echo $cabinClass === 'premium' ? 'selected' : ''; ?>>Premium Economy</option>
-                        <option value="business" <?php echo $cabinClass === 'business' ? 'selected' : ''; ?>>Business</option>
-                        <option value="first" <?php echo $cabinClass === 'first' ? 'selected' : ''; ?>>First Class</option>
-                    </select>
-                </div>
-
-                <div class="md:col-span-2 lg:col-span-4">
-                    <button type="submit" class="bg-white text-blue-700 font-bold py-2 px-4 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-700 transition-colors">
-                        <i class="fas fa-search mr-2"></i> Search Flights
-                    </button>
-                </div>
+        <form action="search2.php" method="POST" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- From Airport -->
+            <div>
+                <label for="from" class="block text-sm font-medium text-white mb-1">From</label>
+                <select id="from" name="from" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                    <option value="">Select departure airport</option>
+                    <?php foreach (getAirports() as $airport): ?>
+                        <option value="<?= $airport['code'] ?>" <?= $from === $airport['code'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($airport['name']) ?> (<?= htmlspecialchars($airport['code']) ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            
+            <!-- To Airport -->
+            <div>
+                <label for="to" class="block text-sm font-medium text-white mb-1">To</label>
+                <select id="to" name="to" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                    <option value="">Select arrival airport</option>
+                    <?php foreach (getAirports() as $airport): ?>
+                        <option value="<?= $airport['code'] ?>" <?= $to === $airport['code'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($airport['name']) ?> (<?= htmlspecialchars($airport['code']) ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            
+            <!-- Departure Date -->
+            <div>
+                <label for="departDate" class="block text-sm font-medium text-white mb-1">Departure Date</label>
+                <input type="date" id="departDate" name="departDate" value="<?= htmlspecialchars($departDate) ?>" min="<?= date('Y-m-d') ?>" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+            </div>
+            
+            <!-- Cabin Class -->
+            <div>
+                <label for="cabinClass" class="block text-sm font-medium text-white mb-1">Cabin Class</label>
+                <select id="cabinClass" name="cabinClass" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                    <option value="economy" <?= $cabinClass === 'economy' ? 'selected' : '' ?>>Economy</option>
+                    <option value="premium" <?= $cabinClass === 'premium' ? 'selected' : '' ?>>Premium Economy</option>
+                    <option value="business" <?= $cabinClass === 'business' ? 'selected' : '' ?>>Business</option>
+                    <option value="first" <?= $cabinClass === 'first' ? 'selected' : '' ?>>First Class</option>
+                </select>
+            </div>
+            
+            <!-- Search Button (spans full width on mobile, right-aligned on desktop) -->
+            <div class="col-span-1 md:col-span-2 lg:col-span-4 flex justify-end mt-2">
+                <button type="submit" class="bg-white hover:bg-gray-100 text-blue-700 font-semibold py-2 px-6 rounded-lg shadow transition-colors flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                    </svg>
+                    Search Flights
+                </button>
             </div>
         </form>
     </div>
     
     <!-- Results Section -->
-    <?php if ($searchPerformed): ?>
-        <div class="mb-6">
-            <div class="flex flex-wrap items-center justify-between mb-4">
-                <h2 class="text-xl font-bold"><?php 
-                    echo !empty($flights) ? 
-                        'Found ' . count($flights) . ' of ' . ($pagination['total'] ?? count($flights)) . ' ' . (($pagination['total'] ?? count($flights)) == 1 ? 'flight' : 'flights') : 
-                        'Search Results'; 
-                ?></h2>
-                
-                <?php if (!empty($flights)): ?>
-                <div class="text-sm text-gray-500">
-                    Page <?= $page ?> of <?= ceil(($pagination['total'] ?? count($flights)) / ($pagination['limit'] ?? 100)) ?>
-                </div>
-                <?php endif; ?>
+    <div class="mb-8">
+        <?php if ($searchPerformed): ?>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Search Results</h2>
+            <p class="text-gray-600 mb-6">Showing flights from <?= htmlspecialchars($from) ?> to <?= htmlspecialchars($to) ?></p>
+        <?php else: ?>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Featured Flights</h2>
+            <p class="text-gray-600 mb-6">Explore our best available flight options</p>
+        <?php endif; ?>
+        
+        <?php if (!empty($error)): ?>
+            <div class="bg-red-100 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-6">
+                <?= htmlspecialchars($error) ?>
+            </div>
+        <?php endif; ?>
+        
+        <?php if (!empty($flights)): ?>
+            <!-- Flight Results Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <?php foreach ($flights as $flight): ?>
+                    <?= renderFlightCard($flight) ?>
+                <?php endforeach; ?>
             </div>
             
-            <?php if (!empty($error)): ?>
-                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
-                    <p><?php echo htmlspecialchars($error); ?></p>
+            <!-- Pagination -->
+            <?php if ($pagination && isset($pagination['total_pages']) && $pagination['total_pages'] > 1): ?>
+                <div class="flex justify-center mt-8">
+                    <div class="flex space-x-1">
+                        <?php if ($page > 1): ?>
+                            <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>" 
+                               class="px-4 py-2 bg-white text-blue-600 border border-gray-300 rounded-md hover:bg-gray-50">
+                                Previous
+                            </a>
+                        <?php endif; ?>
+                        
+                        <?php 
+                        $startPage = max(1, $page - 2);
+                        $endPage = min($pagination['total_pages'], $page + 2);
+                        
+                        if ($startPage > 1) {
+                            echo '<span class="px-4 py-2">...</span>';
+                        }
+                        
+                        for ($i = $startPage; $i <= $endPage; $i++): 
+                        ?>
+                            <a href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>" 
+                               class="px-4 py-2 <?= $i === $page ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border border-gray-300 hover:bg-gray-50' ?> rounded-md">
+                                <?= $i ?>
+                            </a>
+                        <?php endfor; ?>
+                        
+                        <?php if ($endPage < $pagination['total_pages']): ?>
+                            <span class="px-4 py-2">...</span>
+                        <?php endif; ?>
+                        
+                        <?php if ($page < $pagination['total_pages']): ?>
+                            <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>" 
+                               class="px-4 py-2 bg-white text-blue-600 border border-gray-300 rounded-md hover:bg-gray-50">
+                                Next
+                            </a>
+                        <?php endif; ?>
+                    </div>
                 </div>
             <?php endif; ?>
-            
-            <?php if (!empty($flights)): ?>
-                <div class="flight-results grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    <?php foreach ($flights as $index => $flight): ?>
-                        <div class="flight-card bg-white rounded-md shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-shadow">
-                            <div class="p-2">
-                                <!-- Airline & Flight Info Header -->
-                                <div class="flex items-center justify-between mb-1">
-                                    <div class="flex items-center">
-                                        <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mr-1">
-                                            <span class="text-xs font-bold"><?php echo htmlspecialchars($flight['airline'][0] ?? 'A'); ?></span>
-                                        </div>
-                                        <div>
-                                            <div class="font-medium text-xs"><?php echo htmlspecialchars($flight['airline']); ?></div>
-                                            <div class="text-xs text-gray-500"><?php echo htmlspecialchars($flight['flightNumber']); ?></div>
-                                        </div>
-                                    </div>
-                                    <div class="px-1 py-0.5 rounded text-xs font-medium <?php echo $flight['source'] === 'database' ? 'bg-gray-200 text-gray-700' : 'bg-blue-100 text-blue-700'; ?>">
-                                        <?php echo $flight['source'] === 'database' ? 'DB' : 'API'; ?>
-                                    </div>
-                                </div>
-                                
-                                <!-- Flight Route -->
-                                <div class="flex items-center justify-between mb-2">
-                                    <div class="text-center">
-                                        <div class="text-sm font-bold"><?php echo htmlspecialchars($flight['departureTime']); ?></div>
-                                        <div class="text-xs"><?php echo htmlspecialchars($flight['departureAirport']); ?></div>
-                                    </div>
-                                    
-                                    <div class="flex flex-col items-center flex-1 mx-1">
-                                        <div class="text-xs text-gray-500"><?php echo htmlspecialchars($flight['duration']); ?></div>
-                                        <div class="relative w-full h-px bg-gray-300 my-1">
-                                            <div class="absolute top-1/2 left-0 w-1 h-1 bg-blue-600 rounded-full transform -translate-y-1/2"></div>
-                                            <div class="absolute top-1/2 right-0 w-1 h-1 bg-blue-600 rounded-full transform -translate-y-1/2"></div>
-                                            <?php if ($flight['stops'] > 0): ?>
-                                                <div class="absolute top-1/2 left-1/2 w-1 h-1 bg-yellow-500 rounded-full transform -translate-x-1/2 -translate-y-1/2"></div>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div class="text-xs <?php echo $flight['stops'] === 0 ? 'text-green-600' : 'text-yellow-600'; ?> font-medium">
-                                            <?php 
-                                            echo $flight['stops'] === 0 ? 'Direct' : 
-                                                ($flight['stops'] === 1 ? '1 Stop' : $flight['stops'] . ' Stops'); 
-                                            ?>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="text-center">
-                                        <div class="text-sm font-bold"><?php echo htmlspecialchars($flight['arrivalTime']); ?></div>
-                                        <div class="text-xs"><?php echo htmlspecialchars($flight['arrivalAirport']); ?></div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Price & Booking -->
-                                <div class="flex items-center justify-between border-t border-gray-200 pt-1 mt-1">
-                                    <div class="text-base font-bold text-blue-600">$<?php echo number_format($flight['price'], 2); ?></div>
-                                    <form action="passenger-details.php" method="POST">
-                                        <input type="hidden" name="select_flight" value="1">
-                                        <input type="hidden" name="flight_id" value="<?php echo htmlspecialchars($flight['flight_id'] ?? ''); ?>">
-                                        <input type="hidden" name="price" value="<?php echo htmlspecialchars($flight['price']); ?>">
-                                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium py-1 px-2 rounded transition-colors">
-                                            Book Now
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-
-                <!-- Pagination -->
-                <?php if ($pagination && isset($pagination['total']) && $pagination['total'] > $pagination['limit']): ?>
-                    <div class="mt-4 flex justify-center">
-                        <div class="inline-flex rounded-md shadow">
-                            <?php
-                            $totalPages = ceil($pagination['total'] / $pagination['limit']);
-                            $maxVisiblePages = 5; // Show maximum 5 page numbers at once
-                            
-                            // Calculate the range of page numbers to display
-                            $startPage = max(1, min($page - floor($maxVisiblePages / 2), $totalPages - $maxVisiblePages + 1));
-                            $endPage = min($totalPages, $startPage + $maxVisiblePages - 1);
-                            
-                            // Previous page button
-                            if ($page > 1): 
-                            ?>
-                                <a href="?from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>&departDate=<?= urlencode($departDate) ?>&page=<?= ($page - 1) ?>&cabinClass=<?= urlencode($cabinClass) ?>" 
-                                   class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                                    <span class="sr-only">Previous</span>
-                                    &laquo;
-                                </a>
-                            <?php endif; ?>
-                            
-                            <?php if ($startPage > 1): ?>
-                                <a href="?from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>&departDate=<?= urlencode($departDate) ?>&page=1&cabinClass=<?= urlencode($cabinClass) ?>" 
-                                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-                                    1
-                                </a>
-                                <?php if ($startPage > 2): ?>
-                                    <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                                        ...
-                                    </span>
-                                <?php endif; ?>
-                            <?php endif; ?>
-                            
-                            <?php for ($i = $startPage; $i <= $endPage; $i++): ?>
-                                <a href="?from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>&departDate=<?= urlencode($departDate) ?>&page=<?= $i ?>&cabinClass=<?= urlencode($cabinClass) ?>" 
-                                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 <?= $i === $page ? 'bg-blue-50 text-blue-600' : 'bg-white text-gray-700 hover:bg-gray-50' ?> text-sm font-medium">
-                                    <?= $i ?>
-                                </a>
-                            <?php endfor; ?>
-                            
-                            <?php if ($endPage < $totalPages): ?>
-                                <?php if ($endPage < $totalPages - 1): ?>
-                                    <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                                        ...
-                                    </span>
-                                <?php endif; ?>
-                                <a href="?from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>&departDate=<?= urlencode($departDate) ?>&page=<?= $totalPages ?>&cabinClass=<?= urlencode($cabinClass) ?>" 
-                                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-                                    <?= $totalPages ?>
-                                </a>
-                            <?php endif; ?>
-                            
-                            <?php if ($page < $totalPages): ?>
-                                <a href="?from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>&departDate=<?= urlencode($departDate) ?>&page=<?= ($page + 1) ?>&cabinClass=<?= urlencode($cabinClass) ?>" 
-                                   class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                                    <span class="sr-only">Next</span>
-                                    &raquo;
-                                </a>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                    
-                    <!-- Pagination Info -->
-                    <div class="mt-2 text-center text-sm text-gray-500">
-                        Showing <?= (($page - 1) * $pagination['limit']) + 1 ?> - <?= min($page * $pagination['limit'], $pagination['total']) ?> of <?= $pagination['total'] ?> flights
-                    </div>
-                <?php endif; ?>
-            <?php else: ?>
-                <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-md text-center">
-                    No flights found matching your criteria. Please try different search parameters.
-                </div>
-            <?php endif; ?>
+        <?php else: ?>
+            <div class="bg-gray-50 rounded-xl p-8 text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <h3 class="text-xl font-semibold text-gray-700 mb-2">No Flights Found</h3>
+                <p class="text-gray-500">Try adjusting your search criteria or check back later</p>
+            </div>
+        <?php endif; ?>
+    </div>
+    
+    <!-- Travel Tips Section -->
+    <div class="bg-blue-50 rounded-xl p-6 border border-blue-100">
+        <h3 class="text-xl font-bold text-blue-800 mb-4">Travel Tips</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="bg-white p-4 rounded-lg shadow-sm">
+                <div class="text-blue-600 text-xl mb-2">✓</div>
+                <h4 class="font-semibold mb-2">Book Early</h4>
+                <p class="text-sm text-gray-600">Booking flights 1-3 months in advance often results in the best prices.</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm">
+                <div class="text-blue-600 text-xl mb-2">✓</div>
+                <h4 class="font-semibold mb-2">Be Flexible</h4>
+                <p class="text-sm text-gray-600">Flights on Tuesdays, Wednesdays, and Saturdays are typically cheaper.</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm">
+                <div class="text-blue-600 text-xl mb-2">✓</div>
+                <h4 class="font-semibold mb-2">Check Documents</h4>
+                <p class="text-sm text-gray-600">Ensure your passport is valid for at least 6 months beyond your travel dates.</p>
+            </div>
         </div>
-    <?php else: ?>
-        <div class="text-center py-10">
-            <div class="text-2xl font-bold mb-4">Search for Available Flights</div>
-            <p class="text-gray-500 max-w-xl mx-auto">
-                Enter your departure and destination cities along with your preferred travel date to find available flights.
-            </p>
-        </div>
-    <?php endif; ?>
+    </div>
 </div>
 
 <style>
@@ -537,23 +454,6 @@ include 'templates/header.php';
     font-size: 0.9rem;
 }
 
-/* Make pagination more compact for mobile */
-@media (max-width: 640px) {
-    .flight-results {
-        grid-template-columns: repeat(1, minmax(0, 1fr));
-    }
-}
-
-/* Styles for the airport select */
-#from, #to {
-    max-height: 38px; /* Keep consistent with other form elements */
-}
-
-/* Custom styling for dropdown options */
-select option {
-    padding: 10px;
-}
-
 /* Improve dropdown readability on mobile */
 @media (max-width: 640px) {
     select {
@@ -568,32 +468,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const airportSelects = document.querySelectorAll('#from, #to');
     
     airportSelects.forEach(select => {
-        // Store original options
-        const originalOptions = Array.from(select.options);
-        
-        // Add event listener for typing in select
-        select.addEventListener('keyup', function(e) {
-            const searchText = e.target.value.toLowerCase();
+        select.addEventListener('input', function() {
+            const filter = this.value.toUpperCase();
+            const options = this.querySelectorAll('option');
             
-            // If backspace or delete is pressed and searchText is empty, restore all options
-            if ((e.key === 'Backspace' || e.key === 'Delete') && searchText === '') {
-                select.innerHTML = '';
-                originalOptions.forEach(option => {
-                    select.appendChild(option.cloneNode(true));
-                });
-                return;
+            for (let i = 0; i < options.length; i++) {
+                const txtValue = options[i].textContent || options[i].innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    options[i].style.display = "";
+                } else {
+                    options[i].style.display = "none";
+                }
             }
-            
-            // Filter options based on typed text
-            const filteredOptions = originalOptions.filter(option => {
-                return option.text.toLowerCase().includes(searchText);
-            });
-            
-            // Update select options
-            select.innerHTML = '';
-            filteredOptions.forEach(option => {
-                select.appendChild(option.cloneNode(true));
-            });
         });
     });
     

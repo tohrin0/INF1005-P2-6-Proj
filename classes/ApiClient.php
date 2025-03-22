@@ -575,8 +575,8 @@ class ApiClient
             $stops = 0;
             
             $formattedFlights[] = [
-                'airline' => $flight['airline']['name'] ?? 'Unknown Airline',
-                'flightNumber' => $flight['flight']['iata'] ?? $flight['flight']['icao'] ?? 'N/A',
+                'airline' => $flight['airline']['name'] ?? ($flight['airline']['iata'] ?? 'Unknown Airline'),
+                'flight_number' => $flight['flight']['iata'] ?? $flight['flight']['icao'] ?? 'N/A',
                 'departureTime' => $departureTime,
                 'departureAirport' => $departureAirport,
                 'departureTerminal' => $departureTerminal,
