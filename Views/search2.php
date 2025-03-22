@@ -379,6 +379,7 @@ function convertDurationToMinutes($duration) {
     return $hours * 60 + $minutes;
 }
 
+
 function convertTimeToMinutes($time) {
     $parts = explode(':', $time);
     return (int)$parts[0] * 60 + (isset($parts[1]) ? (int)$parts[1] : 0);
@@ -442,7 +443,13 @@ function renderFlightCard($flight) {
     $departureTime = $flight['departureTime'] ?? $flight['departure_time'] ?? $flight['time'] ?? '00:00';
     $arrivalAirport = $flight['arrivalAirport'] ?? $flight['arrival_airport'] ?? $flight['arrival'] ?? 'N/A';
     $arrivalTime = $flight['arrivalTime'] ?? $flight['arrival_time'] ?? '00:00';
+    
+    // Format duration properly from minutes if needed
     $duration = $flight['duration'] ?? 'N/A';
+    if (is_numeric($duration)) {
+        $duration = formatDuration($duration);
+    }
+    
     $stops = $flight['stops'] ?? 0;
     $price = $flight['price'] ?? 0;
     
@@ -615,12 +622,13 @@ include 'templates/header.php';
                             <label class="text-sm font-medium mb-2 block">Airlines</label>
                             <div class="space-y-2 max-h-48 overflow-y-auto">
                                 <?php foreach ($availableAirlines as $airline): ?>
-                                    <div class="flex items-start">
-                                        <input type="checkbox" id="airline-<?= md5($airline) ?>" name="airlines[]"
-                                            value="<?= htmlspecialchars($airline) ?>"
-                                            <?= in_array($airline, (array)$selectedAirlines) ? 'checked' : '' ?>
-                                            class="mt-1 mr-2">
-                                        <label for="airline-<?= md5($airline) ?>" class="text-sm text-left">
+                                    <div class="flex">
+                                        <div class="w-5 flex justify-center mt-0.5">
+                                            <input type="checkbox" id="airline-<?= md5($airline) ?>" name="airlines[]"
+                                                value="<?= htmlspecialchars($airline) ?>"
+                                                <?= in_array($airline, (array)$selectedAirlines) ? 'checked' : '' ?>>
+                                        </div>
+                                        <label for="airline-<?= md5($airline) ?>" class="text-sm ml-2">
                                             <?= htmlspecialchars($airline) ?>
                                             <span class="text-xs text-gray-500">(<?= count(array_filter($flights, function($f) use ($airline) { return $f['airline'] == $airline; })) ?>)</span>
                                         </label>
@@ -636,12 +644,13 @@ include 'templates/header.php';
                             <label class="text-sm font-medium mb-2 block">Departure Time</label>
                             <div class="space-y-2">
                                 <?php foreach (array_keys($availableDepartureTimeRanges) as $timeRange): ?>
-                                    <div class="flex items-start">
-                                        <input type="checkbox" id="departure-<?= md5($timeRange) ?>" name="departureTimes[]"
-                                            value="<?= htmlspecialchars($timeRange) ?>"
-                                            <?= in_array($timeRange, (array)$selectedDepartureTimes) ? 'checked' : '' ?>
-                                            class="mt-1 mr-2">
-                                        <label for="departure-<?= md5($timeRange) ?>" class="text-sm text-left">
+                                    <div class="flex">
+                                        <div class="w-5 flex justify-center mt-0.5">
+                                            <input type="checkbox" id="departure-<?= md5($timeRange) ?>" name="departureTimes[]"
+                                                value="<?= htmlspecialchars($timeRange) ?>"
+                                                <?= in_array($timeRange, (array)$selectedDepartureTimes) ? 'checked' : '' ?>>
+                                        </div>
+                                        <label for="departure-<?= md5($timeRange) ?>" class="text-sm ml-2">
                                             <?= htmlspecialchars($timeRange) ?> 
                                             <span class="text-xs text-gray-500">(<?= $availableDepartureTimeRanges[$timeRange] ?>)</span>
                                         </label>
@@ -657,12 +666,13 @@ include 'templates/header.php';
                             <label class="text-sm font-medium mb-2 block">Arrival Time</label>
                             <div class="space-y-2">
                                 <?php foreach (array_keys($availableArrivalTimeRanges) as $timeRange): ?>
-                                    <div class="flex items-start">
-                                        <input type="checkbox" id="arrival-<?= md5($timeRange) ?>" name="arrivalTimes[]"
-                                            value="<?= htmlspecialchars($timeRange) ?>"
-                                            <?= in_array($timeRange, (array)$selectedArrivalTimes) ? 'checked' : '' ?>
-                                            class="mt-1 mr-2">
-                                        <label for="arrival-<?= md5($timeRange) ?>" class="text-sm text-left">
+                                    <div class="flex">
+                                        <div class="w-5 flex justify-center mt-0.5">
+                                            <input type="checkbox" id="arrival-<?= md5($timeRange) ?>" name="arrivalTimes[]"
+                                                value="<?= htmlspecialchars($timeRange) ?>"
+                                                <?= in_array($timeRange, (array)$selectedArrivalTimes) ? 'checked' : '' ?>>
+                                        </div>
+                                        <label for="arrival-<?= md5($timeRange) ?>" class="text-sm ml-2">
                                             <?= htmlspecialchars($timeRange) ?>
                                             <span class="text-xs text-gray-500">(<?= $availableArrivalTimeRanges[$timeRange] ?>)</span>
                                         </label>
