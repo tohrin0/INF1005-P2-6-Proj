@@ -22,12 +22,12 @@ $flight = null;
 // Process initial flight selection from search2.php
 if (isset($_POST['select_flight'])) {
     // Store form data in session
-    $_SESSION['selected_flight_api'] = $_POST['flight_api'] ?? null;
+    $_SESSION['selected_flight_id'] = $_POST['flight_api'] ?? null;
     $_SESSION['selected_flight_price'] = $_POST['price'];
     $_SESSION['selected_flight_data'] = $_POST; // Store all posted data
     
     $flightApiId = $_POST['flight_api'] ?? null;
-    $dbFlightId = $_POST['id'] ?? null;  // This is the DB ID if from database
+    $dbFlightId = $_POST['flight_id'] ?? null;   // This is the DB ID if from database
     $flightPrice = $_POST['price'];
     
     // If we have a database ID, no need to save the flight again
@@ -45,6 +45,7 @@ if (isset($_POST['select_flight'])) {
                 $_POST['arrival'],
                 $_POST['duration'] ?? 0,
                 $_POST['price']
+                
             );
             
             // Set additional flight properties
@@ -95,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_booking'])) {
         try {
             // Get the local flight ID from session
             $localFlightId = $_SESSION['local_flight_id'] ?? null;
-            $flightApiId = $_SESSION['selected_flight_id'] ?? null;
+            $flightApiId = $_SESSION['selected_flight_api'] ?? null;
             
             if (!$localFlightId) {
                 // If we don't have a local ID, try to create the flight again
