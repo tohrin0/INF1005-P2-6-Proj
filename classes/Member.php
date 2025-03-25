@@ -21,7 +21,6 @@ class Member extends User {
 	public function calculateMiles() {
 		$stmt = $this->db->prepare("SELECT SUM(miles) AS total_miles FROM bookings WHERE user_id = ?");
 		$stmt->execute([$this->user_id]);
-<<<<<<< HEAD
 		$result = $stmt->fetch(PDO::FETCH_ASSOC);
 		$this->miles = $result["total_miles"] ?? 0;
 	}
@@ -38,11 +37,6 @@ class Member extends User {
 		$stmt->execute([$this->user_id]);
 		return $stmt->fetchAll(PDO::FETCH_ASSOC);
 	}
-=======
-		$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-		$this->miles = $result["total_miles"] ?? 0;
-	}
->>>>>>> d2a22176a4ac234908ab49bfe72f0647e0668797
 }
 
 ?>
