@@ -30,14 +30,15 @@ class Booking {
             $passengerCount = isset($passengerDetails['passengers']) ? (int)$passengerDetails['passengers'] : 1;
             $price = isset($passengerDetails['price']) ? floatval($passengerDetails['price']) : 0;
             $totalPrice = $price * $passengerCount;
+            $miles = $totalPrice / 10;
             $flightApiId = isset($passengerDetails['flight_api']) ? $passengerDetails['flight_api'] : null;
             
             // Prepare the INSERT query using all required fields
             // Note: Using "NONE" instead of empty string for return_flight_id to satisfy NOT NULL constraint
             $query = "INSERT INTO bookings 
                 (user_id, flight_id, return_flight_id, flight_api, status, customer_name, customer_email, 
-                customer_phone, passengers, total_price)
-                VALUES (?, ?, 'NONE', ?, ?, ?, ?, ?, ?, ?)";
+                customer_phone, passengers, total_price, miles)
+                VALUES (?, ?, 'NONE', ?, ?, ?, ?, ?, ?, ?, ?)";
             
             error_log("SQL Query: " . $query);
             
@@ -50,7 +51,8 @@ class Booking {
                 isset($passengerDetails['email']) ? $passengerDetails['email'] : '',
                 isset($passengerDetails['phone']) ? $passengerDetails['phone'] : '',
                 $passengerCount,
-                $totalPrice
+                $totalPrice,
+                $miles
             ];
             
             $stmt = $this->db->prepare($query);
