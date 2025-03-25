@@ -19,6 +19,7 @@ if (!isLoggedIn()) {
 
 $user_id = $_SESSION['user_id'];
 $error = "";
+<<<<<<< HEAD
 $member = new Member($pdo, $user_id, 0);
 
 $member->calculateMiles();
@@ -43,6 +44,9 @@ $progressBarColors = [
 
 $cardClass = $cardClasses[$level] ?? "bg-white border-gray-300 text-gray-700";
 $progressBarColor = $progressBarColors[$membershipLevel] ?? "bg-gray-300";
+=======
+$member = new Member($pdo, 0, $user_id);
+>>>>>>> d2a22176a4ac234908ab49bfe72f0647e0668797
 ?>
 
 <!DOCTYPE html>
@@ -59,6 +63,7 @@ $progressBarColor = $progressBarColors[$membershipLevel] ?? "bg-gray-300";
 	</head>
 	<body>
 		<?php include 'templates/header.php'; ?>
+<<<<<<< HEAD
 		<main class="container mx-auto p-4">
 			<h1 class="text-2xl font-semibold text-blue-900 mb-4">Good Day, <?php echo $_SESSION['username']; ?>!</h1>
 
@@ -117,6 +122,14 @@ $progressBarColor = $progressBarColors[$membershipLevel] ?? "bg-gray-300";
 				<?php endif; ?>
 			</div>
 		</main>
+=======
+		<p>hello hi this is my membership point: 
+			<?php 
+				$member->calculateMiles();
+				echo $member->getMiles();
+			?>
+		</p>
+>>>>>>> d2a22176a4ac234908ab49bfe72f0647e0668797
 		<?php include 'templates/footer.php'; ?>
 	</body>
 </html>
