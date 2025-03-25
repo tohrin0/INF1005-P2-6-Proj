@@ -15,7 +15,7 @@ define('FLIGHT_API_URL', 'https://api.aviationstack.com/v1');
 
 // Multiple API keys - when one is capped/fails, the system will try the next one
 define('FLIGHT_API_KEYS', json_encode([
-    'dc4f6e5615b4b12d94f6f2b97633b8be', // Primary key
+    'b91884a48229a79eccab91adffedc82a', // Primary key
     '16cebcc9041492c90f3eb7ff50e66d94',
     '16cebcc9041492c90f3eb7ff50e66d94',
     '16cebcc9041492c90f3eb7ff50e66d94',

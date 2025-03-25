@@ -77,6 +77,9 @@ else if (isset($_SESSION['selected_flight_id'])) {
 } 
 // No flight selected, redirect to search
 else {
+    error_log("POST Data: " . print_r($_POST, true));
+    error_log("Session Data: " . print_r($_SESSION, true));
+    error_log("Is it failing here?");
     header('Location: search2.php');
     exit;
 }
