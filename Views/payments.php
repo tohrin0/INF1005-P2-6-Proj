@@ -180,16 +180,16 @@ include 'templates/header.php';
                         <div class="mb-6">
                             <label class="block text-gray-700 font-medium mb-2">Payment Method</label>
                             <div class="grid grid-cols-4 gap-4">
-                                <div class="payment-method border rounded-md p-4 flex items-center justify-center cursor-pointer transition-all hover:border-blue-300" data-method="visa">
+                                <div class="payment-method border border-gray-300 bg-white rounded-md p-4 flex items-center justify-center cursor-pointer transition-all duration-200 hover:border-blue-300" data-method="visa">
                                     <img src="assets/images/visa.svg" alt="Visa" class="h-8" onerror="this.src='https://placehold.co/80x32?text=Visa'">
                                 </div>
-                                <div class="payment-method border rounded-md p-4 flex items-center justify-center cursor-pointer transition-all hover:border-blue-300" data-method="mastercard">
+                                <div class="payment-method border border-gray-300 bg-white rounded-md p-4 flex items-center justify-center cursor-pointer transition-all duration-200 hover:border-blue-300" data-method="mastercard">
                                     <img src="assets/images/mastercard.svg" alt="Mastercard" class="h-8" onerror="this.src='https://placehold.co/80x32?text=Mastercard'">
                                 </div>
-                                <div class="payment-method border rounded-md p-4 flex items-center justify-center cursor-pointer transition-all hover:border-blue-300" data-method="amex">
+                                <div class="payment-method border border-gray-300 bg-white rounded-md p-4 flex items-center justify-center cursor-pointer transition-all duration-200 hover:border-blue-300" data-method="amex">
                                     <img src="assets/images/amex.svg" alt="American Express" class="h-8" onerror="this.src='https://placehold.co/80x32?text=Amex'">
                                 </div>
-                                <div class="payment-method border rounded-md p-4 flex items-center justify-center cursor-pointer transition-all hover:border-blue-300" data-method="paypal">
+                                <div class="payment-method border border-gray-300 bg-white rounded-md p-4 flex items-center justify-center cursor-pointer transition-all duration-200 hover:border-blue-300" data-method="paypal">
                                     <img src="assets/images/paypal.svg" alt="PayPal" class="h-8" onerror="this.src='https://placehold.co/80x32?text=PayPal'">
                                 </div>
                             </div>
@@ -247,31 +247,34 @@ include 'templates/header.php';
                     </form>
                     
                     <script>
-                        // Payment method selection
+                        // Enhanced payment method selection with stronger visual indication
                         document.addEventListener('DOMContentLoaded', function() {
                             const paymentMethods = document.querySelectorAll('.payment-method');
                             const paymentMethodInput = document.getElementById('payment_method');
                             
                             // Set default selected method (first one)
                             if (paymentMethods.length > 0) {
-                                paymentMethods[0].classList.add('border-blue-500', 'bg-blue-50');
+                                highlightSelectedMethod(paymentMethods[0]);
                                 paymentMethodInput.value = paymentMethods[0].dataset.method || 'credit_card';
+                            }
+                            
+                            function highlightSelectedMethod(selectedMethod) {
+                                // Reset all methods first
+                                paymentMethods.forEach(method => {
+                                    method.classList.remove('border-blue-500', 'bg-blue-50', 'ring-2', 'ring-blue-500', 'shadow-md');
+                                    method.classList.add('border-gray-300', 'bg-white');
+                                });
+                                
+                                // Add stronger highlight to selected method
+                                selectedMethod.classList.remove('border-gray-300', 'bg-white');
+                                selectedMethod.classList.add('border-blue-500', 'bg-blue-50', 'ring-2', 'ring-blue-500', 'shadow-md');
                             }
                             
                             paymentMethods.forEach(method => {
                                 method.addEventListener('click', function() {
-                                    // Remove selection from all methods
-                                    paymentMethods.forEach(m => {
-                                        m.classList.remove('border-blue-500', 'bg-blue-50');
-                                        m.classList.add('border-gray-300', 'bg-white');
-                                    });
-                                    
-                                    // Add selection to clicked method
-                                    this.classList.remove('border-gray-300', 'bg-white');
-                                    this.classList.add('border-blue-500', 'bg-blue-50');
-                                    
-                                    // Update hidden input with selected method
+                                    highlightSelectedMethod(this);
                                     paymentMethodInput.value = this.dataset.method || 'credit_card';
+                                    console.log('Selected payment method:', this.dataset.method);
                                 });
                             });
                         });

@@ -18,17 +18,23 @@ class Flight {
     private $flightApi; // New property for API flight ID
     private $db;
 
-    public function __construct($flightNumber, $departure, $arrival, $duration = 0, $price = 0) {
+    public function __construct($flightNumber = null, $departure = null, $arrival = null, $duration = null, $price = null) {
         global $pdo;
-        $this->db = $pdo;
+        $this->db = $pdo; // Ensure database connection is set
+        
         $this->flightNumber = $flightNumber;
         $this->departure = $departure;
         $this->arrival = $arrival;
         $this->duration = $duration;
         $this->price = $price;
-        $this->availableSeats = 100; // Default value
-        $this->status = 'scheduled'; // Default value
-        $this->flightApi = null; // Default value
+        
+        // Set default values for other fields
+        $this->date = date('Y-m-d');
+        $this->time = date('H:i');
+        $this->availableSeats = 100;
+        $this->status = 'scheduled';
+        
+        error_log("Flight object initialized with number: $flightNumber");
     }
 
     // Getters
@@ -352,6 +358,11 @@ class Flight {
         try {
             error_log("Attempting to save flight: " . $this->flightNumber . " on date: " . $this->date);
             
+            if (!$this->db) {
+                error_log("Database connection not set in Flight class");
+                $this->db = $GLOBALS['pdo']; // Try to get the global PDO connection
+            }
+            
             // Check if flight already exists
             $stmt = $this->db->prepare("SELECT id FROM flights WHERE flight_number = ? AND date = ?");
             $stmt->execute([$this->flightNumber, $this->date]);
@@ -392,6 +403,14 @@ class Flight {
             } else {
                 // Log that we're inserting a new flight
                 error_log("Inserting new flight: " . $this->flightNumber);
+                error_log("Flight data: " . json_encode([
+                    'departure' => $this->departure,
+                    'arrival' => $this->arrival,
+                    'date' => $this->date,
+                    'time' => $this->time,
+                    'duration' => $this->duration,
+                    'price' => $this->price
+                ]));
                 
                 // Insert new flight
                 $stmt = $this->db->prepare(
@@ -426,12 +445,15 @@ class Flight {
                     // Return flight ID as string (per your schema)
                     return (string)$newId;
                 } else {
-                    error_log("Failed to insert flight");
+                    error_log("Flight insertion failed");
                     return false;
                 }
             }
         } catch (PDOException $e) {
-            error_log("Error saving flight: " . $e->getMessage());
+            error_log("Database error in Flight::save(): " . $e->getMessage());
+            return false;
+        } catch (Exception $e) {
+            error_log("Error in Flight::save(): " . $e->getMessage());
             return false;
         }
     }

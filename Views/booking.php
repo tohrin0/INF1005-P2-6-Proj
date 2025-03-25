@@ -26,51 +26,48 @@ if (isset($_POST['select_flight'])) {
     $_SESSION['selected_flight_price'] = $_POST['price'];
     $_SESSION['selected_flight_data'] = $_POST; // Store all posted data
     
-    $flightApiId = $_POST['flight_api'] ?? null;
-    $dbFlightId = $_POST['flight_id'] ?? null;   // This is the DB ID if from database
-    $flightPrice = $_POST['price'];
+    // Add this line to properly store the flight_api value
+    $_SESSION['selected_flight_api'] = $_POST['flight_api'] ?? null;
     
-    // If we have a database ID, no need to save the flight again
-    if ($dbFlightId) {
-        $_SESSION['local_flight_id'] = $dbFlightId;
-        error_log("Using existing flight with DB ID: $dbFlightId");
-    } 
-    // Otherwise, save this flight to the database
-    else {
-        try {
-            // Create a Flight object with the form data
-            $flight = new Flight(
-                $_POST['flight_number'],
-                $_POST['departure'],
-                $_POST['arrival'],
-                $_POST['duration'] ?? 0,
-                $_POST['price']
-                
-            );
-            
-            // Set additional flight properties
-            $flight->setFromArray([
-                'date' => $_POST['date'] ?? date('Y-m-d'),
-                'time' => $_POST['departure_time'] ?? date('H:i'),
-                'available_seats' => 100, // Default value
-                'airline' => $_POST['airline'] ?? 'Unknown Airline',
-                'status' => 'scheduled',
-                'flight_api' => $flightApiId // Important: Store the API flight ID
-            ]);
-            
-            // Save flight to the database - this should return a local flight ID
-            $localFlightId = $flight->save();
-            
-            if ($localFlightId) {
-                // Store local flight ID in session for later use in the booking form
-                $_SESSION['local_flight_id'] = $localFlightId;
-                error_log("Flight saved successfully with local ID: $localFlightId");
-            } else {
-                error_log("Failed to save flight to database");
-            }
-        } catch (Exception $e) {
-            error_log("Error saving flight: " . $e->getMessage());
+    error_log("Flight selection received: " . json_encode($_POST));
+
+    // Attempt to create a Flight object and save it to the database
+    try {
+        $flightApiId = $_POST['flight_api'] ?? null; 
+        
+        $flight = new Flight(
+            $_POST['flight_number'],
+            $_POST['departure'],
+            $_POST['arrival'],
+            $_POST['duration'] ?? 0,
+            $_POST['price']
+        );
+        
+        error_log("Flight object created");
+        
+        $flight->setFromArray([
+            'date' => $_POST['date'],
+            'time' => $_POST['departure_time'],
+            'available_seats' => 100, // Default value
+            'airline' => $_POST['airline'] ?? 'Unknown Airline',
+            'status' => 'scheduled',
+            'flight_api' => $flightApiId // Important: Store the API flight ID
+        ]);
+        
+        error_log("Additional flight properties set");
+        
+        // Save flight to the database - this should return a local flight ID
+        $localFlightId = $flight->save();
+        
+        if ($localFlightId) {
+            // Store local flight ID in session for later use in the booking form
+            $_SESSION['local_flight_id'] = $localFlightId;
+            error_log("Flight saved successfully with local ID: $localFlightId");
+        } else {
+            error_log("Failed to save flight to database - check Flight::save() method");
         }
+    } catch (Exception $e) {
+        error_log("Error saving flight: " . $e->getMessage() . "\n" . $e->getTraceAsString());
     }
 } 
 // If no direct POST, check if we have stored flight data in session
@@ -96,7 +93,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_booking'])) {
         try {
             // Get the local flight ID from session
             $localFlightId = $_SESSION['local_flight_id'] ?? null;
+            // Update this line to properly retrieve the flight_api
             $flightApiId = $_SESSION['selected_flight_api'] ?? null;
+            
+            // Add debug logging
+            error_log("Using flight_api ID for booking: " . ($flightApiId ?? 'NULL'));
             
             if (!$localFlightId) {
                 // If we don't have a local ID, try to create the flight again
