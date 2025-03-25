@@ -61,7 +61,9 @@ try {
                 }
             }
         }
+        unset($booking); // Unset inner loop reference
     }
+    unset($bookings); // Unset outer loop reference
 } catch (Exception $e) {
     $error = "Error retrieving bookings: " . $e->getMessage();
     error_log($error);

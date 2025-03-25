@@ -43,7 +43,7 @@ CREATE TABLE flights (
 CREATE TABLE IF NOT EXISTS bookings (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    flight_id VARCHAR(255) NOT NULL,
+    flight_id INT NOT NULL,
     return_flight_id VARCHAR(20) NOT NULL,
     flight_api VARCHAR(255) NULL COMMENT 'Flight ID from the API provider',
     status VARCHAR(20) NOT NULL DEFAULT 'pending',
