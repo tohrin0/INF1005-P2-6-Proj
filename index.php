@@ -42,6 +42,7 @@ $request_path = str_replace('.php', '', $request_path);
 $routes = [
     'home' => 'home.php',
     'index' => 'index.php',
+    'unsubscribe' => 'unsubscribe.php',
     'about' => 'about.php',
     'account' => 'account.php',
     'confirmation' => 'confirmation.php',
@@ -62,6 +63,7 @@ $routes = [
     'search2' => 'search2.php',
     'services' => 'services.php',
     'terms' => 'terms.php',
+    'privacy-policy' => 'privacy-policy.php',
     'membership' => 'membership.php'
 ];
 

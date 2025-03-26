@@ -28,7 +28,16 @@ CREATE TABLE password_history (
     INDEX (user_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
-
+-- Newsletter subscribers table
+CREATE TABLE newsletter_subscribers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    first_name VARCHAR(50) NULL,
+    status ENUM('subscribed', 'unsubscribed') DEFAULT 'subscribed',
+    unsubscribe_token VARCHAR(64) NOT NULL,
+    subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 -- Flights table - enhanced for Aviation Stack API
 CREATE TABLE flights (
     id INT AUTO_INCREMENT PRIMARY KEY,

@@ -97,6 +97,39 @@ class EmailNotification {
     }
     
     /**
+     * Send a custom email
+     * 
+     * @param string $email The recipient email
+     * @param string $subject The email subject
+     * @param string $body The email body (HTML format)
+     * @return boolean Whether the email was sent successfully
+     */
+    public function sendCustomEmail($email, $subject, $body) {
+        try {
+            // Set who the message is to be sent to
+            $this->mailer->clearAddresses(); // Clear any previous addresses
+            $this->mailer->addAddress($email);
+            
+            // Set the subject line
+            $this->mailer->Subject = $subject;
+            
+            // Set the HTML content
+            $this->mailer->isHTML(true);
+            $this->mailer->Body = $body;
+            
+            // Set plain text version for non-HTML mail clients
+            $this->mailer->AltBody = strip_tags(str_replace(['<br>', '<p>', '</p>'], ["\n", "\n", "\n\n"], $body));
+            
+            // Send the email
+            $this->mailer->send();
+            return true;
+        } catch (\Exception $e) {
+            error_log("Email sending failed: " . $this->mailer->ErrorInfo);
+            return false;
+        }
+    }
+    
+    /**
      * Get the HTML template for pending payment notification
      */
     private function getPendingPaymentTemplate($booking, $flight) {

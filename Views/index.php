@@ -225,17 +225,27 @@ include_once 'templates/header.php';
                 Subscribe to our newsletter and be the first to know about exclusive deals, travel tips, and special offers.
             </p>
             <div class="max-w-md mx-auto">
-                <form class="flex flex-col sm:flex-row gap-2">
-                    <input
-                        type="email"
-                        placeholder="Enter your email address"
-                        class="flex-1 px-4 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                <form id="newsletter-form" class="flex flex-col gap-3">
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input
+                            type="text"
+                            name="first_name"
+                            placeholder="First Name (Optional)"
+                            class="flex-1 px-4 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                        <input
+                            type="email"
+                            name="email"
+                            placeholder="Enter your email address"
+                            class="flex-1 px-4 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                            required />
+                    </div>
                     <button type="submit" class="bg-white text-blue-600 hover:bg-blue-50 px-6 py-3 rounded-lg font-medium transition-colors">
                         Subscribe
                     </button>
                 </form>
+                <p id="newsletter-message" class="hidden text-sm mt-4 text-blue-100"></p>
                 <p class="text-sm mt-4 text-blue-100">
-                    By subscribing, you agree to our Privacy Policy and consent to receive updates from SkyBooker.
+                    By subscribing, you agree to our <a href="privacy-policy.php" class="underline hover:text-white transition-colors">Privacy Policy</a> and consent to receive updates from Sky International Travels.
                 </p>
             </div>
         </div>
@@ -263,3 +273,101 @@ function renderCheck($className = "")
 
 include 'templates/footer.php';
 ?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const newsletterForm = document.getElementById('newsletter-form');
+    
+    if (newsletterForm) {
+        newsletterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const emailInput = this.querySelector('input[name="email"]');
+            const submitButton = this.querySelector('button[type="submit"]');
+            const nameInput = this.querySelector('input[name="first_name"]') || null;
+            const messageElement = document.getElementById('newsletter-message');
+            
+            // Basic validation
+            if (!emailInput.value.trim() || !emailInput.value.includes('@')) {
+                showMessage('Please enter a valid email address.', 'error');
+                return;
+            }
+            
+            // Disable button and show loading state
+            submitButton.disabled = true;
+            const originalButtonText = submitButton.innerHTML;
+            submitButton.innerHTML = '<span class="inline-block animate-spin mr-2">⟳</span> Subscribing...';
+            
+            // Prepare data
+            const formData = new FormData();
+            formData.append('email', emailInput.value.trim());
+            if (nameInput && nameInput.value) {
+                formData.append('first_name', nameInput.value.trim());
+            }
+            
+            // Send AJAX request
+            fetch('api/subscribe.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                // Log the raw response for debugging
+                console.log("Response status:", response.status, response.statusText);
+                return response.text().then(text => {
+                    // Try to parse as JSON, but handle text if not valid JSON
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error("Failed to parse JSON:", text);
+                        throw new Error("Invalid response format");
+                    }
+                });
+            })
+            .then(data => {
+                // Reset form
+                newsletterForm.reset();
+                
+                console.log("Response data:", data);
+                
+                // Show message
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                } else {
+                    showMessage(data.message || 'An error occurred', 'error');
+                }
+                
+                // Restore button
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalButtonText;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('An error occurred. Please try again later.', 'error');
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalButtonText;
+            });
+            
+            function showMessage(text, type) {
+                if (messageElement) {
+                    messageElement.textContent = text;
+                    messageElement.className = '';
+                    
+                    if (type === 'success') {
+                        messageElement.classList.add('text-green-200', 'bg-green-900/30', 'p-2', 'rounded', 'mt-2');
+                    } else if (type === 'error') {
+                        messageElement.classList.add('text-red-200', 'bg-red-900/30', 'p-2', 'rounded', 'mt-2');
+                    }
+                    
+                    // Make the message visible
+                    messageElement.classList.remove('hidden');
+                    
+                    // Auto-hide after 5 seconds
+                    setTimeout(() => {
+                        messageElement.classList.add('hidden');
+                    }, 5000);
+                }
+            }
+        });
+    }
+});
+</script>
