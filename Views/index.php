@@ -5,11 +5,7 @@ include_once 'templates/header.php';
 
 <main class="flex min-h-screen flex-col">
     <div class="relative h-[600px] w-full overflow-hidden">
-        <img
-            src="assets/images/Plane1hero.jpg"
-            alt="Airplane flying over a beautiful landscape"
-            class="object-cover w-full h-full absolute inset-0"
-            loading="eager" />
+        <img src="assets/images/Plane1hero.jpg" alt="Airplane flying over a beautiful landscape" class="object-cover w-full h-full absolute inset-0" loading="eager"/>
         <div class="absolute inset-0 bg-gradient-to-r from-black/70 to-black/30 flex flex-col justify-center">
             <div class="container mx-auto px-4">
                 <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 max-w-2xl">
@@ -45,9 +41,9 @@ include_once 'templates/header.php';
                 </div>
                 
                 <div>
-                    <label for="passengers" class="block text-sm font-medium text-gray-700 mb-1">Passengers</label>
+                    <label for="adults" class="block text-sm font-medium text-gray-700 mb-1">Passengers</label>
                     <div class="flex gap-2">
-                        <select id="adults" name="adults" class="flex-1 p-2 border border-gray-300 rounded-md">
+                        <select id="adults" name="adults" aria-label="Number of Adult Passengers" class="flex-1 p-2 border border-gray-300 rounded-md">
                             <option value="1">1 Adult</option>
                             <option value="2">2 Adults</option>
                             <option value="3">3 Adults</option>
@@ -82,7 +78,7 @@ include_once 'templates/header.php';
             
             foreach ($destinations as $destination):
             ?>
-                <a href="search2.php?departure=&arrival=<?= htmlspecialchars($destination['name']) ?>" class="group">
+                <a href="search2.php?departure=&arrival=<?= urlencode(htmlspecialchars($destination['name'])) ?>" class="group">
                     <div class="relative h-96 overflow-hidden rounded-xl"> <!-- Increased height from h-72 to h-96 -->
                         <img
                             src="<?= htmlspecialchars($destination['image']) ?>"

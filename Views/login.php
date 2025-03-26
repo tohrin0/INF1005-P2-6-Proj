@@ -36,21 +36,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
     if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
         $error = "Invalid form submission.";
     } else {
-    $email = $_POST['email'] ?? '';
-    $password = $_POST['password'] ?? '';
+        $email = $_POST['email'] ?? '';
+        $password = $_POST['password'] ?? '';
 
-    if (empty($email) || empty($password)) {
-        $error = "Please enter both email and password.";
-    } else {
-        // Attempt to login
-        if ($user->login($email, $password)) {
-            // Redirect to home page after successful login
-            header("Location: index.php");
-            exit();
+        if (empty($email) || empty($password)) {
+            $error = "Please enter both email and password.";
         } else {
-            $error = "Invalid email or password.";
+            // Attempt to login
+            if ($user->login($email, $password)) {
+                // Redirect to home page after successful login
+                header("Location: index.php");
+                exit();
+            } else {
+                $error = "Invalid email or password.";
+            }
         }
-    }
     }
 }
 ?>

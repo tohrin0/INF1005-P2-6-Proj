@@ -74,42 +74,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
     if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
         $error = "Invalid form submission.";
     } else {
-    // Validate form data
-    if (empty($_POST['card_number']) || empty($_POST['card_name']) || 
-        empty($_POST['expiry_date']) || empty($_POST['cvv'])) {
-        $error = "Please fill in all payment fields.";
-    } else if (!preg_match('/^\d{16}$/', str_replace(' ', '', $_POST['card_number']))) {
-        $error = "Invalid card number. Please enter a 16-digit number.";
-    } else if (!preg_match('/^\d{3,4}$/', $_POST['cvv'])) {
-        $error = "Invalid CVV. Please enter a 3 or 4-digit number.";
-    } else if (!preg_match('/^\d{2}\/\d{2}$/', $_POST['expiry_date'])) {
-        $error = "Invalid expiry date. Please use MM/YY format.";
-    } else {
-        try {
-            // Get selected payment method from form
-            $paymentMethod = isset($_POST['payment_method']) ? $_POST['payment_method'] : 'credit_card';
-            
-            // Create payment object with selected payment method
-            $payment = new Payment($booking['total_price'], 'USD', $paymentMethod);
-            
-            // Generate a unique transaction ID
-            $transactionId = 'TX' . time() . rand(1000, 9999);
-            
-            // Update booking status - this already inserts the payment record internally
-            if ($payment->updateBookingAfterPayment($bookingId, 'confirmed', $transactionId)) {
-                $success = "Payment processed successfully! Your booking is now confirmed.";
+        // Validate form data
+        if (empty($_POST['card_number']) || empty($_POST['card_name']) || 
+            empty($_POST['expiry_date']) || empty($_POST['cvv'])) {
+            $error = "Please fill in all payment fields.";
+        } else if (!preg_match('/^\d{16}$/', str_replace(' ', '', $_POST['card_number']))) {
+            $error = "Invalid card number. Please enter a 16-digit number.";
+        } else if (!preg_match('/^\d{3,4}$/', $_POST['cvv'])) {
+            $error = "Invalid CVV. Please enter a 3 or 4-digit number.";
+        } else if (!preg_match('/^\d{2}\/\d{2}$/', $_POST['expiry_date'])) {
+            $error = "Invalid expiry date. Please use MM/YY format.";
+        } else {
+            try {
+                // Get selected payment method from form
+                $paymentMethod = isset($_POST['payment_method']) ? $_POST['payment_method'] : 'credit_card';
                 
-                // Clear session variables
-                unset($_SESSION['payment_booking_id']);
-            } else {
-                $error = "Failed to process payment. Please try again.";
+                // Create payment object with selected payment method
+                $payment = new Payment($booking['total_price'], 'USD', $paymentMethod);
+                
+                // Generate a unique transaction ID
+                $transactionId = 'TX' . time() . rand(1000, 9999);
+                
+                // Update booking status - this already inserts the payment record internally
+                if ($payment->updateBookingAfterPayment($bookingId, 'confirmed', $transactionId)) {
+                    $success = "Payment processed successfully! Your booking is now confirmed.";
+                    
+                    // Clear session variables
+                    unset($_SESSION['payment_booking_id']);
+                } else {
+                    $error = "Failed to process payment. Please try again.";
+                }
+            } catch (Exception $e) {
+                $error = "An error occurred during payment processing: " . $e->getMessage();
+                error_log("Payment error: " . $e->getMessage());
             }
-        } catch (Exception $e) {
-            $error = "An error occurred during payment processing: " . $e->getMessage();
-            error_log("Payment error: " . $e->getMessage());
         }
     }
-}
 }
 
 include 'templates/header.php';
