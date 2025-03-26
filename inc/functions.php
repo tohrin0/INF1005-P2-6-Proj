@@ -459,4 +459,30 @@ function updateApiKeyStatus($keyIndex, $isWorking, $errorMessage = '') {
         return false;
     }
 }
+
+/**
+ * Validate password strength against policy requirements
+ * 
+ * @param string $password Password to validate
+ * @return array [isValid: bool, message: string] Validation result with message
+ */
+function validatePasswordStrength($password) {
+    // Check minimum length
+    if (strlen($password) < 8) {
+        return [false, "Password must be at least 8 characters long."];
+    }
+    
+    // Check for at least one uppercase letter
+    if (!preg_match('/[A-Z]/', $password)) {
+        return [false, "Password must contain at least one uppercase letter."];
+    }
+    
+    // Check for at least one symbol/special character
+    if (!preg_match('/[!@#$%^&*(),.?":{}|<>]/', $password)) {
+        return [false, "Password must contain at least one special character (!@#$%^&*(),.?\":{}|<>)."];
+    }
+    
+    // All checks passed
+    return [true, "Password meets strength requirements."];
+}
 ?>

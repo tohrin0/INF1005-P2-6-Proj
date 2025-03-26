@@ -109,45 +109,49 @@ else if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['reset_password'])
         $messageType = "error";
         $showNewPasswordForm = true;
         if ($admin_reset) $isAdminReset = true;
-    } else if (strlen($password) < 6) {
-        $message = "Password must be at least 6 characters long.";
-        $messageType = "error";
-        $showNewPasswordForm = true;
-        if ($admin_reset) $isAdminReset = true;
     } else {
-        // Make sure we have the user's email from session
-        if (isset($_SESSION['reset_email'])) {
-            $email = $_SESSION['reset_email'];
-            
-            // Use the updated resetPassword method that checks history
-            $result = $passwordReset->resetPassword($email, $password);
-            
-            if ($result['success']) {
-                // Clear all form flags
-                $showOtpForm = false;
-                $showNewPasswordForm = false;
-                
-                // If this was an admin reset, clear the token
-                if ($admin_reset) {
-                    $passwordReset->clearAdminResetToken($email);
-                }
-                
-                // Add success message to session to display on login page
-                $_SESSION['login_message'] = $result['message'];
-                $_SESSION['login_message_type'] = "success";
-                
-                // Redirect to login immediately
-                header("Location: login.php");
-                exit(); // Stop script execution to ensure redirect
-            } else {
-                $message = $result['message'];
-                $messageType = "error";
-                $showNewPasswordForm = true;
-                if ($admin_reset) $isAdminReset = true;
-            }
-        } else {
-            $message = "Session expired. Please restart the password reset process.";
+        // Replace the minimum length check with a full policy validation
+        list($isValidPassword, $passwordMessage) = validatePasswordStrength($password);
+        if (!$isValidPassword) {
+            $message = $passwordMessage;
             $messageType = "error";
+            $showNewPasswordForm = true;
+            if ($admin_reset) $isAdminReset = true;
+        } else {
+            // Make sure we have the user's email from session
+            if (isset($_SESSION['reset_email'])) {
+                $email = $_SESSION['reset_email'];
+                
+                // Use the updated resetPassword method that checks history
+                $result = $passwordReset->resetPassword($email, $password);
+                
+                if ($result['success']) {
+                    // Clear all form flags
+                    $showOtpForm = false;
+                    $showNewPasswordForm = false;
+                    
+                    // If this was an admin reset, clear the token
+                    if ($admin_reset) {
+                        $passwordReset->clearAdminResetToken($email);
+                    }
+                    
+                    // Add success message to session to display on login page
+                    $_SESSION['login_message'] = $result['message'];
+                    $_SESSION['login_message_type'] = "success";
+                    
+                    // Redirect to login immediately
+                    header("Location: login.php");
+                    exit(); // Stop script execution to ensure redirect
+                } else {
+                    $message = $result['message'];
+                    $messageType = "error";
+                    $showNewPasswordForm = true;
+                    if ($admin_reset) $isAdminReset = true;
+                }
+            } else {
+                $message = "Session expired. Please restart the password reset process.";
+                $messageType = "error";
+            }
         }
     }
 }
@@ -206,7 +210,7 @@ include 'templates/header.php';
                                     </div>
                                     <input type="password" id="password" name="password" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter new password" required>
                                 </div>
-                                <p class="mt-1 text-xs text-gray-500">Must be at least 6 characters and different from previous passwords</p>
+                                <p class="mt-1 text-xs text-gray-500">Must be at least 8 characters with 1 uppercase letter and 1 special character</p>
                             </div>
                             
                             <div>

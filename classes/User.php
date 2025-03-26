@@ -251,7 +251,16 @@ class User {
      */
     public function changePassword($userId, $oldPassword, $newPassword) {
         try {
-            // Get user data
+            // Validate password strength
+            list($isValid, $message) = validatePasswordStrength($newPassword);
+            if (!$isValid) {
+                return [
+                    'success' => false,
+                    'message' => $message
+                ];
+            }
+            
+            // Get user's current password hash
             $stmt = $this->db->prepare("SELECT password FROM users WHERE id = ?");
             $stmt->execute([$userId]);
             $user = $stmt->fetch(\PDO::FETCH_ASSOC);

@@ -1,10 +1,10 @@
 <?php
 session_start();
-require_once '../inc/config.php';
-require_once '../inc/db.php';
-require_once '../inc/functions.php';
-require_once '../inc/auth.php';
-require_once '../classes/Booking.php';
+require_once __DIR__ . '/../inc/config.php';
+require_once __DIR__ . '/../inc/db.php';
+require_once __DIR__ . '/../inc/functions.php';
+require_once __DIR__ . '/../inc/auth.php';
+require_once __DIR__ . '/../classes/Booking.php';
 
 // Ensure user is logged in
 if (!isLoggedIn()) {
@@ -50,19 +50,16 @@ try {
         exit;
     }
     
-    // Update booking status to cancelled
-    $updateData = [
-        'status' => 'canceled'
-    ];
-    
-    if ($bookingObj->updateBooking($bookingId, $updateData)) {
-        echo json_encode(['success' => true, 'message' => 'Booking has been cancelled successfully.']);
+    // Update booking status to cancelled - this will trigger the email notification
+    if ($bookingObj->updateBookingStatus($bookingId, 'canceled')) {
+        echo json_encode(['success' => true, 'message' => 'Booking has been cancelled successfully. A confirmation email has been sent.']);
     } else {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Failed to cancel booking. Please try again.']);
     }
     
 } catch (Exception $e) {
+    error_log("Cancel booking error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
 }

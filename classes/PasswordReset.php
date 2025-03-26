@@ -182,6 +182,15 @@ class PasswordReset {
      */
     public function resetPassword($email, $newPassword) {
         try {
+            // Validate password strength
+            list($isValid, $message) = validatePasswordStrength($newPassword);
+            if (!$isValid) {
+                return [
+                    'success' => false,
+                    'message' => $message
+                ];
+            }
+            
             // Check if password is reused
             if ($this->isPasswordReused($email, $newPassword)) {
                 return [

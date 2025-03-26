@@ -28,17 +28,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "All fields are required.";
     } elseif ($password !== $confirm_password) {
         $error = "Passwords do not match.";
-    } elseif (strlen($password) < 6) {
-        $error = "Password must be at least 6 characters long.";
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = "Invalid email format.";
     } else {
-        // Register user
-        if ($user->register($username, $password, $email)) {
-            header("Location: login.php?success=Registration successful. Please log in.");
-            exit;
+        // Validate password strength
+        list($isValidPassword, $passwordMessage) = validatePasswordStrength($password);
+        if (!$isValidPassword) {
+            $error = $passwordMessage;
         } else {
-            $error = "Registration failed. Email or username may already exist.";
+            // Register user
+            if ($user->register($username, $password, $email)) {
+                header("Location: login.php?success=Registration successful. Please log in.");
+                exit;
+            } else {
+                $error = "Registration failed. Email or username may already exist.";
+            }
         }
     }
 }
@@ -110,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </div>
                                 <input type="password" id="password" name="password" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Create a password" required>
                             </div>
-                            <p class="mt-1 text-xs text-gray-500">Must be at least 6 characters</p>
+                            <p class="mt-1 text-xs text-gray-500">Must be at least 8 characters with 1 uppercase letter and 1 special character</p>
                         </div>
                         
                         <div>

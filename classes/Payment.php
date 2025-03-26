@@ -125,6 +125,11 @@ class Payment {
                 
                 if ($paymentResult) {
                     $this->db->commit();
+                    
+                    // Send confirmation email
+                    $bookingObj = new Booking();
+                    $bookingObj->updateBookingStatus($bookingId, $status); // This will trigger the email
+                    
                     return true;
                 }
             }
