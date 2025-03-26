@@ -328,6 +328,9 @@
                 <a href="settings.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'settings.php' ? 'active' : ''; ?>">
                     <i class="fas fa-cog"></i> Settings
                 </a>
+                <a href="cron-jobs.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'cron-jobs.php' ? 'active' : ''; ?>">
+                    <i class="fas fa-clock"></i> Cron Jobs
+                </a>
 
                 <p class="menu-category">Other</p>
                 <a href="../index.php" class="menu-item">
@@ -407,4 +410,4 @@
                 </div>
             </div>
 
-            <main class="admin-main">
+            <main class="admin-main"></main>

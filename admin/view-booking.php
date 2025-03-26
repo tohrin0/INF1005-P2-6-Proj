@@ -64,7 +64,7 @@ include 'includes/header.php';
         </div>
         <div class="flex space-x-2">
             <a href="bookings.php" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors flex items-center">
-                &larr; Back to Bookings
+                <i class="fas fa-arrow-left mr-1"></i> Back to Bookings
             </a>
             <a href="edit-booking.php?id=<?= htmlspecialchars($bookingId) ?>" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center">
                 <i class="fas fa-edit mr-1"></i> Edit Booking

@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $mail->Password = 'vjks aktz vheu arse'; // Use environment variables in production
         $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = 587;
-        $mail->setFrom('augmenso.to@gmail.com', 'Flight Booking Admin');
+        $mail->setFrom('augmenso.to@gmail.com', 'Sky International Travels Admin');
         $mail->addAddress($email);
         $mail->isHTML(true);
         $mail->Subject = 'Password Reset Requested by Administrator';

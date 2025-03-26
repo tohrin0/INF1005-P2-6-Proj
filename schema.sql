@@ -13,6 +13,8 @@ CREATE TABLE users (
     reset_token VARCHAR(100) NULL,
     token_expiry DATETIME NULL,
     admin_reset BOOLEAN DEFAULT 0,
+    deletion_requested DATETIME NULL,
+    deletion_token VARCHAR(64) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

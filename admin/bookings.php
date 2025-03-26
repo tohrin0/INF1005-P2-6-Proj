@@ -29,9 +29,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['admin_error'] = "Failed to update booking status";
             }
         } elseif ($_POST['action'] === 'delete') {
-            // Add delete booking functionality
-            // This would require more careful handling as it involves multiple tables
-            $_SESSION['admin_error'] = "Delete functionality requires careful implementation due to database relationships";
+            // Implement delete functionality
+            try {
+                $pdo->beginTransaction();
+                
+                // Delete passengers for this booking
+                $stmt = $pdo->prepare("DELETE FROM passengers WHERE booking_id = ?");
+                $stmt->execute([$bookingId]);
+                
+                // Delete payments for this booking
+                $stmt = $pdo->prepare("DELETE FROM payments WHERE booking_id = ?");
+                $stmt->execute([$bookingId]);
+                
+                // Delete the booking
+                $stmt = $pdo->prepare("DELETE FROM bookings WHERE id = ?");
+                $stmt->execute([$bookingId]);
+                
+                $pdo->commit();
+                $_SESSION['admin_message'] = "Booking deleted successfully";
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                $_SESSION['admin_error'] = "Error deleting booking: " . $e->getMessage();
+            }
         }
         
         header('Location: bookings.php');
@@ -61,6 +80,74 @@ include 'includes/header.php';
         <p class="text-gray-600">View and manage customer bookings</p>
     </div>
     
+    <?php if (isset($_SESSION['admin_message'])): ?>
+        <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
+            <p><?php echo htmlspecialchars($_SESSION['admin_message']); ?></p>
+        </div>
+        <?php unset($_SESSION['admin_message']); ?>
+    <?php endif; ?>
+    
+    <?php if (isset($_SESSION['admin_error'])): ?>
+        <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+            <p><?php echo htmlspecialchars($_SESSION['admin_error']); ?></p>
+        </div>
+        <?php unset($_SESSION['admin_error']); ?>
+    <?php endif; ?>
+    
+    <!-- Booking Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <!-- Total Bookings -->
+        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-blue-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 uppercase tracking-wider">Total Bookings</p>
+                    <p class="text-2xl font-bold text-gray-800"><?php echo $stats['total']; ?></p>
+                </div>
+                <div class="text-blue-500 h-10 w-10 flex items-center justify-center rounded-full bg-blue-100">
+                    <i class="fas fa-ticket-alt"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pending Bookings -->
+        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-yellow-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 uppercase tracking-wider">Pending</p>
+                    <p class="text-2xl font-bold text-gray-800"><?php echo $stats['pending']; ?></p>
+                </div>
+                <div class="text-yellow-500 h-10 w-10 flex items-center justify-center rounded-full bg-yellow-100">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Confirmed Bookings -->
+        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-green-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 uppercase tracking-wider">Confirmed</p>
+                    <p class="text-2xl font-bold text-gray-800"><?php echo $stats['confirmed']; ?></p>
+                </div>
+                <div class="text-green-500 h-10 w-10 flex items-center justify-center rounded-full bg-green-100">
+                    <i class="fas fa-check"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Canceled Bookings -->
+        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-red-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 uppercase tracking-wider">Canceled</p>
+                    <p class="text-2xl font-bold text-gray-800"><?php echo $stats['canceled']; ?></p>
+                </div>
+                <div class="text-red-500 h-10 w-10 flex items-center justify-center rounded-full bg-red-100">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <!-- Booking Filters -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
@@ -78,13 +165,16 @@ include 'includes/header.php';
             <a href="?status=canceled" class="px-3 py-1.5 rounded-full text-sm <?php echo $statusFilter === 'canceled' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-800 hover:bg-red-200'; ?> transition">
                 Canceled
             </a>
+            <a href="?status=completed" class="px-3 py-1.5 rounded-full text-sm <?php echo $statusFilter === 'completed' ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-800 hover:bg-purple-200'; ?> transition">
+                Completed
+            </a>
         </div>
     </div>
     
     <!-- Bookings Table -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h2 class="text-lg font-semibold text-gray-800">Booking List</h2>
+            <h2 class="text-lg font-semibold text-gray-800">Bookings List</h2>
             <input type="text" id="bookingSearch" placeholder="Search bookings..." 
                 class="px-3 py-1.5 text-sm border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
         </div>
@@ -97,19 +187,19 @@ include 'includes/header.php';
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flight Details</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200" id="bookingTableBody">
+                <tbody id="bookingTableBody" class="bg-white divide-y divide-gray-200">
                     <?php if (empty($bookings)): ?>
                         <tr>
-                            <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">No bookings found matching your criteria.</td>
+                            <td colspan="7" class="px-6 py-4 text-center text-gray-500">No bookings found matching your criteria.</td>
                         </tr>
                     <?php else: ?>
-                        <?php foreach ($bookings as $index => $booking): ?>
-                            <tr class="<?php echo $index % 2 === 0 ? 'bg-white' : 'bg-gray-50'; ?>">
+                        <?php foreach ($bookings as $booking): ?>
+                            <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                     #<?php echo htmlspecialchars($booking['id']); ?>
                                 </td>
@@ -122,62 +212,46 @@ include 'includes/header.php';
                                         <?php echo isset($booking['flight_number']) ? htmlspecialchars($booking['flight_number']) : 'N/A'; ?>
                                     </div>
                                     <div class="text-sm text-gray-500">
-                                        <?php 
-                                        if (isset($booking['departure']) && isset($booking['arrival'])) {
-                                            echo htmlspecialchars($booking['departure'] . ' → ' . $booking['arrival']);
-                                        } else {
-                                            echo 'Flight info not available';
-                                        }
-                                        ?>
+                                        <?php if (isset($booking['departure']) && isset($booking['arrival'])): ?>
+                                            <?php echo htmlspecialchars($booking['departure']); ?> → <?php echo htmlspecialchars($booking['arrival']); ?>
+                                        <?php else: ?>
+                                            Route info not available
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <?php echo isset($booking['booking_date']) ? date('M j, Y', strtotime($booking['booking_date'])) : 'N/A'; ?>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    $<?php echo isset($booking['total_price']) ? number_format($booking['total_price'], 2) : 'N/A'; ?>
+                                    <?php echo date('M j, Y', strtotime($booking['booking_date'])); ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <?php if ($booking['status'] === 'pending'): ?>
-                                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                            Pending
-                                        </span>
-                                    <?php elseif ($booking['status'] === 'confirmed'): ?>
-                                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                            Confirmed
-                                        </span>
-                                    <?php elseif ($booking['status'] === 'canceled'): ?>
-                                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                            Canceled
-                                        </span>
-                                    <?php else: ?>
-                                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                                            <?php echo htmlspecialchars(ucfirst($booking['status'])); ?>
-                                        </span>
-                                    <?php endif; ?>
+                                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                        <?php if ($booking['status'] === 'pending'): ?>
+                                            bg-yellow-100 text-yellow-800
+                                        <?php elseif ($booking['status'] === 'confirmed'): ?>
+                                            bg-green-100 text-green-800
+                                        <?php elseif ($booking['status'] === 'canceled'): ?>
+                                            bg-red-100 text-red-800
+                                        <?php elseif ($booking['status'] === 'completed'): ?>
+                                            bg-blue-100 text-blue-800
+                                        <?php else: ?>
+                                            bg-gray-100 text-gray-800
+                                        <?php endif; ?>">
+                                        <?php echo ucfirst(htmlspecialchars($booking['status'])); ?>
+                                    </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <div class="flex justify-end space-x-2">
-                                        <a href="view-booking.php?id=<?php echo $booking['id']; ?>" class="text-blue-600 hover:text-blue-900">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                                                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-                                            </svg>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    $<?php echo number_format($booking['total_price'], 2); ?>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <div class="flex space-x-2">
+                                        <a href="view-booking.php?id=<?php echo $booking['id']; ?>" class="text-indigo-600 hover:text-indigo-900" title="View Booking">
+                                            <i class="fas fa-eye"></i>
                                         </a>
-                                        <a href="edit-booking.php?id=<?php echo $booking['id']; ?>" class="text-blue-600 hover:text-blue-900">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                            </svg>
+                                        <a href="edit-booking.php?id=<?php echo $booking['id']; ?>" class="text-blue-600 hover:text-blue-900" title="Edit Booking">
+                                            <i class="fas fa-edit"></i>
                                         </a>
-                                        <form method="POST" action="bookings.php">
-                                            <input type="hidden" name="booking_id" value="<?php echo $booking['id']; ?>">
-                                            <input type="hidden" name="action" value="delete">
-                                            <button type="submit" class="text-red-600 hover:text-red-900">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                                </svg>
-                                            </button>
-                                        </form>
+                                        <button onclick="confirmDeleteBooking(<?php echo $booking['id']; ?>)" class="text-red-600 hover:text-red-900" title="Delete Booking">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -187,30 +261,21 @@ include 'includes/header.php';
             </table>
         </div>
     </div>
+    
+    <!-- Hidden form for delete action -->
+    <form id="deleteBookingForm" method="POST" style="display: none;">
+        <input type="hidden" name="action" value="delete">
+        <input type="hidden" name="booking_id" id="deleteBookingId">
+    </form>
 </div>
 
 <script>
-// Search functionality for the bookings table
-document.getElementById('bookingSearch').addEventListener('keyup', function() {
-    const searchTerm = this.value.toLowerCase();
-    const tableRows = document.getElementById('bookingTableBody').getElementsByTagName('tr');
-    
-    Array.from(tableRows).forEach(row => {
-        const rowText = row.textContent.toLowerCase();
-        if (rowText.includes(searchTerm)) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
+    function confirmDeleteBooking(bookingId) {
+        if (confirm('Are you sure you want to delete this booking? This action cannot be undone.')) {
+            document.getElementById('deleteBookingId').value = bookingId;
+            document.getElementById('deleteBookingForm').submit();
         }
-    });
-});
-
-// Delete confirmation
-function confirmDelete(bookingId) {
-    if (confirm('Are you sure you want to delete this booking? This action cannot be undone.')) {
-        window.location.href = 'delete-booking.php?id=' + bookingId;
     }
-}
 </script>
 
 <?php include 'includes/footer.php'; ?>

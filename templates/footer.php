@@ -6,7 +6,7 @@
     <div class="footer-content container">
         <div class="footer-main">
             <div class="footer-brand">
-                <h3>Flight Booking</h3>
+                <h3>Sky International Travels</h3>
                 <p class="tagline">Your journey begins with us</p>
                 <div class="footer-clock">
                     <div id="clock" class="clock">00:00:00</div>
@@ -27,11 +27,11 @@
                 <h4>Contact Us</h4>
                 <p><i class="fas fa-map-marker-alt"></i> 123 Travel Street, Singapore</p>
                 <p><i class="fas fa-phone"></i> +65 12345678</p>
-                <p><i class="fas fa-envelope"></i> info@flightbooking.com</p>
+                <p><i class="fas fa-envelope"></i> info@skyinternationaltravels.com</p>
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; <?php echo date("Y"); ?> Flight Booking Website. All rights reserved.</p>
+            <p>&copy; <?php echo date("Y"); ?> Sky International Travels. All rights reserved.</p>
             <div class="social-links">
                 <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
                 <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>

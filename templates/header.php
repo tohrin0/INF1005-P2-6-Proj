@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flight Booking Website</title>
+    <title>Sky International Travels</title>
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/responsive.css">
     <link href="assets/css/tailwind.css" rel="stylesheet">
@@ -110,7 +110,7 @@
     <header>
         <div class="header-content">
             <a href="index.php" class="logo">
-                Flight Booking
+                Sky International Travels
             </a>
 
 

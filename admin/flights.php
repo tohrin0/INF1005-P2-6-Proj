@@ -6,7 +6,7 @@ require_once '../inc/config.php';
 require_once '../inc/db.php';
 require_once '../inc/functions.php';
 require_once '../inc/auth.php';
-require_once '../inc/api.php';
+require_once '../classes/Flight.php';
 
 session_start();
 if (!isAdmin()) {
@@ -15,6 +15,12 @@ if (!isAdmin()) {
 }
 
 $flights = getAllFlights(); // Function to retrieve all flights from the database
+
+$success = $_SESSION['success'] ?? '';
+$error = $_SESSION['error'] ?? '';
+
+unset($_SESSION['success']);
+unset($_SESSION['error']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['add_flight'])) {
@@ -25,19 +31,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'arrival' => $_POST['arrival'],
             'date' => $_POST['date'],
             'time' => $_POST['time'],
+            'duration' => $_POST['duration'],
             'price' => $_POST['price'],
-            'airline' => $_POST['airline'] ?? 'Unknown Airline',
-            'available_seats' => $_POST['available_seats'] ?? 100
+            'available_seats' => $_POST['available_seats'],
+            'airline' => $_POST['airline'],
+            'status' => $_POST['status'] ?? 'scheduled',
+            'flight_api' => $_POST['flight_api'] ?? null
         ];
-        addFlight($flightData); // Function to add flight to the database
+        
+        $flight = new Flight();
+        $flight->setFromArray($flightData);
+        
+        if ($flight->save()) {
+            $_SESSION['success'] = "Flight added successfully.";
+        } else {
+            $_SESSION['error'] = "Failed to add flight.";
+        }
+        
         header('Location: flights.php');
         exit();
     }
-
-    if (isset($_POST['delete_flight'])) {
-        // Code to delete a flight
+    
+    if (isset($_POST['delete_flight']) && isset($_POST['flight_id'])) {
         $flightId = $_POST['flight_id'];
-        deleteFlight($flightId); // Function to delete flight from the database
+        
+        if (Flight::delete($flightId)) {
+            $_SESSION['success'] = "Flight deleted successfully.";
+        } else {
+            $_SESSION['error'] = "Failed to delete flight.";
+        }
+        
         header('Location: flights.php');
         exit();
     }
@@ -47,19 +70,110 @@ include 'includes/header.php';
 ?>
 
 <div class="container mx-auto px-4 py-6">
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-800 mb-2">Manage Flights</h1>
-        <p class="text-gray-600">Add, edit, and manage flights in the system</p>
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Manage Flights</h1>
+            <p class="text-gray-600">Add, edit, and delete flights in the system</p>
+        </div>
+        <button id="showAddFlightModal" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center">
+            <i class="fas fa-plus mr-2"></i> Add New Flight
+        </button>
     </div>
     
-    <!-- Add Flight Form -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-        <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-            
-            Add New Flight
-        </h2>
+    <?php if (!empty($success)): ?>
+        <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
+            <p><?= htmlspecialchars($success) ?></p>
+        </div>
+    <?php endif; ?>
+    
+    <?php if (!empty($error)): ?>
+        <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+            <p><?= htmlspecialchars($error) ?></p>
+        </div>
+    <?php endif; ?>
+    
+    <!-- Flights Table -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flight Number</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Route</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Airline</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <?php if (empty($flights)): ?>
+                        <tr>
+                            <td colspan="7" class="px-6 py-4 text-center text-gray-500">No flights found.</td>
+                        </tr>
+                    <?php else: ?>
+                        <?php foreach ($flights as $flight): ?>
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                                    <?= htmlspecialchars($flight['flight_number']) ?>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900"><?= htmlspecialchars($flight['departure']) ?> → <?= htmlspecialchars($flight['arrival']) ?></div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900"><?= date('M j, Y', strtotime($flight['date'])) ?></div>
+                                    <div class="text-sm text-gray-500"><?= date('g:i A', strtotime($flight['time'])) ?></div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <?= htmlspecialchars($flight['airline']) ?>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    $<?= number_format($flight['price'], 2) ?>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
+                                        <?php if ($flight['status'] === 'scheduled'): ?>
+                                            bg-green-100 text-green-800
+                                        <?php elseif ($flight['status'] === 'delayed'): ?>
+                                            bg-yellow-100 text-yellow-800
+                                        <?php elseif ($flight['status'] === 'cancelled'): ?>
+                                            bg-red-100 text-red-800
+                                        <?php else: ?>
+                                            bg-gray-100 text-gray-800
+                                        <?php endif; ?>">
+                                        <?= ucfirst(htmlspecialchars($flight['status'])) ?>
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <div class="flex space-x-2">
+                                        <a href="edit-flight.php?id=<?= $flight['id'] ?>" class="text-blue-600 hover:text-blue-900" title="Edit Flight">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button onclick="confirmDeleteFlight(<?= $flight['id'] ?>, '<?= htmlspecialchars($flight['flight_number']) ?>')" class="text-red-600 hover:text-red-900" title="Delete Flight">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Flight Modal -->
+<div id="addFlightModal" class="fixed inset-0 flex items-center justify-center z-50 hidden">
+    <div class="fixed inset-0 bg-black opacity-50"></div>
+    <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full z-10 p-6 max-h-screen overflow-y-auto relative">
+        <button id="closeModal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+            <i class="fas fa-times"></i>
+        </button>
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">Add New Flight</h2>
         
-        <form method="POST" action="" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <form action="" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="space-y-2">
                 <label for="flight_number" class="block text-sm font-medium text-gray-700">Flight Number</label>
                 <input type="text" name="flight_number" id="flight_number" required
@@ -68,7 +182,7 @@ include 'includes/header.php';
             
             <div class="space-y-2">
                 <label for="airline" class="block text-sm font-medium text-gray-700">Airline</label>
-                <input type="text" name="airline" id="airline" 
+                <input type="text" name="airline" id="airline" required
                     class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
             </div>
             
@@ -97,6 +211,12 @@ include 'includes/header.php';
             </div>
             
             <div class="space-y-2">
+                <label for="duration" class="block text-sm font-medium text-gray-700">Duration (minutes)</label>
+                <input type="number" name="duration" id="duration" min="1" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div class="space-y-2">
                 <label for="price" class="block text-sm font-medium text-gray-700">Price ($)</label>
                 <input type="number" name="price" id="price" step="0.01" required
                     class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
@@ -108,113 +228,68 @@ include 'includes/header.php';
                     class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
             </div>
             
-            <div class="md:col-span-2 lg:col-span-3 pt-2">
-                <button type="submit" name="add_flight" 
-                    class="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1 -mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-                    </svg>
+            <div class="space-y-2">
+                <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
+                <select name="status" id="status" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    <option value="scheduled">Scheduled</option>
+                    <option value="delayed">Delayed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            </div>
+            
+            <div class="space-y-2">
+                <label for="flight_api" class="block text-sm font-medium text-gray-700">API Reference ID (Optional)</label>
+                <input type="text" name="flight_api" id="flight_api" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div class="md:col-span-2 mt-4">
+                <button type="submit" name="add_flight" class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                     Add Flight
                 </button>
             </div>
         </form>
     </div>
+</div>
+
+<!-- Hidden form for flight deletion -->
+<form id="deleteFlightForm" method="POST" style="display: none;">
+    <input type="hidden" name="delete_flight" value="1">
+    <input type="hidden" name="flight_id" id="deleteFlightId">
+</form>
+
+<script>
+    // Modal functionality
+    const modal = document.getElementById('addFlightModal');
+    const showModalBtn = document.getElementById('showAddFlightModal');
+    const closeModalBtn = document.getElementById('closeModal');
     
-    <!-- Existing Flights Table -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-800">Existing Flights</h2>
-        </div>
-        
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flight Number</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Airline</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departure</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Arrival</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Seats</th>
-                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    <?php if (empty($flights)): ?>
-                        <tr>
-                            <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">No flights found in the database.</td>
-                        </tr>
-                    <?php else: ?>
-                        <?php foreach ($flights as $index => $flight): ?>
-                            <tr class="<?php echo $index % 2 === 0 ? 'bg-white' : 'bg-gray-50'; ?>">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    <?php echo htmlspecialchars($flight['flight_number']); ?>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <?php echo htmlspecialchars($flight['airline'] ?? 'N/A'); ?>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <?php echo htmlspecialchars($flight['departure']); ?>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <?php echo htmlspecialchars($flight['arrival']); ?>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <?php echo date('M j, Y', strtotime($flight['date'])); ?> at 
-                                    <?php echo date('H:i', strtotime($flight['time'])); ?>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    $<?php echo number_format($flight['price'], 2); ?>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <?php echo htmlspecialchars($flight['available_seats'] ?? 'N/A'); ?>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <div class="flex justify-end space-x-2">
-                                        <a href="edit-flight.php?id=<?php echo $flight['id']; ?>" class="text-blue-600 hover:text-blue-900">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                            </svg>
-                                        </a>
-                                        <form method="POST" action="" class="inline-block">
-                                            <input type="hidden" name="flight_id" value="<?php echo $flight['id']; ?>">
-                                            <button type="submit" name="delete_flight" onclick="return confirm('Are you sure you want to delete this flight?')" class="text-red-600 hover:text-red-900">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                                </svg>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<!-- Total Flights Icon -->
-<div class="flex-shrink-0 bg-blue-100 rounded-md p-2">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-    </svg>
-</div>
-
-<!-- Active Flights Icon -->
-<div class="flex-shrink-0 bg-green-100 rounded-md p-2">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-    </svg>
-</div>
-
-<!-- Revenue Icon -->
-<div class="flex-shrink-0 bg-yellow-100 rounded-md p-2">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0-2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-</div>
+    showModalBtn.addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden'; // Prevent scrolling when modal is open
+    });
+    
+    closeModalBtn.addEventListener('click', () => {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto'; // Re-enable scrolling
+    });
+    
+    // Close modal if clicked outside the content
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+    });
+    
+    // Function to confirm flight deletion
+    function confirmDeleteFlight(flightId, flightNumber) {
+        if (confirm(`Are you sure you want to delete flight ${flightNumber}? This action cannot be undone.`)) {
+            document.getElementById('deleteFlightId').value = flightId;
+            document.getElementById('deleteFlightForm').submit();
+        }
+    }
+</script>
 
 <?php include 'includes/footer.php'; ?>

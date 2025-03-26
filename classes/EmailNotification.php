@@ -19,7 +19,7 @@ class EmailNotification {
         $this->mailer->Password = 'vjks aktz vheu arse'; // Use environment variables in production
         $this->mailer->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
         $this->mailer->Port = 587;
-        $this->mailer->setFrom('augmenso.to@gmail.com', 'Flight Booking');
+        $this->mailer->setFrom('augmenso.to@gmail.com', 'Sky International Travels');
         $this->mailer->isHTML(true);
     }
     
@@ -34,7 +34,7 @@ class EmailNotification {
         try {
             $this->mailer->clearAddresses();
             $this->mailer->addAddress($booking['customer_email'], $booking['customer_name']);
-            $this->mailer->Subject = 'Your Flight Booking Awaits Payment - Booking #' . $booking['id'];
+            $this->mailer->Subject = 'Your Sky International Travels Awaits Payment - Booking #' . $booking['id'];
             
             // Get the email template
             $emailBody = $this->getPendingPaymentTemplate($booking, $flight);
@@ -129,7 +129,7 @@ class EmailNotification {
                     
                     <p>If you have any questions, please don't hesitate to contact our customer service team.</p>
                     
-                    <p style='margin-top: 30px;'>Best regards,<br>The Flight Booking Team</p>
+                    <p style='margin-top: 30px;'>Best regards,<br>The Sky International Travels Team</p>
                 </div>
                 
                 <div style='text-align: center; font-size: 12px; color: #777; margin-top: 20px;'>
@@ -156,7 +156,7 @@ class EmailNotification {
                 <div style='background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;'>
                     <h1 style='color: #28a745; margin-bottom: 20px;'>Your Booking is Confirmed!</h1>
                     <p style='font-size: 16px;'>Dear {$booking['customer_name']},</p>
-                    <p style='font-size: 16px;'>Great news! Your flight booking has been <strong style='color: #28a745;'>confirmed</strong>. Thank you for choosing to fly with us.</p>
+                    <p style='font-size: 16px;'>Great news! Your Sky International Travels has been <strong style='color: #28a745;'>confirmed</strong>. Thank you for choosing to fly with us.</p>
                     
                     <div style='background-color: #fff; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0; border-radius: 4px;'>
                         <h2 style='margin-top: 0; color: #28a745; font-size: 18px;'>Flight Details</h2>
@@ -193,7 +193,7 @@ class EmailNotification {
                     
                     <p style='margin-top: 30px;'>We look forward to providing you with an exceptional travel experience!</p>
                     
-                    <p>Best regards,<br>The Flight Booking Team</p>
+                    <p>Best regards,<br>The Sky International Travels Team</p>
                 </div>
                 
                 <div style='text-align: center; font-size: 12px; color: #777; margin-top: 20px;'>
@@ -218,7 +218,7 @@ class EmailNotification {
                 <div style='background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;'>
                     <h1 style='color: #dc3545; margin-bottom: 20px;'>Your Booking Has Been Cancelled</h1>
                     <p style='font-size: 16px;'>Dear {$booking['customer_name']},</p>
-                    <p style='font-size: 16px;'>We're writing to confirm that your flight booking has been <strong style='color: #dc3545;'>cancelled</strong> as requested.</p>
+                    <p style='font-size: 16px;'>We're writing to confirm that your Sky International Travels has been <strong style='color: #dc3545;'>cancelled</strong> as requested.</p>
                     
                     <div style='background-color: #fff; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0; border-radius: 4px;'>
                         <h2 style='margin-top: 0; color: #dc3545; font-size: 18px;'>Cancelled Booking Details</h2>
@@ -243,7 +243,7 @@ class EmailNotification {
                     
                     <p style='margin-top: 30px;'>We hope to have the opportunity to serve you in the future.</p>
                     
-                    <p>Best regards,<br>The Flight Booking Team</p>
+                    <p>Best regards,<br>The Sky International Travels Team</p>
                 </div>
                 
                 <div style='text-align: center; font-size: 12px; color: #777; margin-top: 20px;'>

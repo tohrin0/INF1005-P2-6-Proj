@@ -361,4 +361,38 @@ class User {
             ];
         }
     }
+
+    /**
+     * Request account deletion with 24 hour window
+     * 
+     * @param int $userId User ID
+     * @param string $deletionTime Timestamp when deletion was requested
+     * @param string $token Unique token for deletion verification
+     * @return bool Success or failure
+     */
+    public function requestDeletion($userId, $deletionTime, $token) {
+        try {
+            $stmt = $this->db->prepare("UPDATE users SET deletion_requested = ?, deletion_token = ? WHERE id = ?");
+            return $stmt->execute([$deletionTime, $token, $userId]);
+        } catch (PDOException $e) {
+            error_log("Error requesting account deletion: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Cancel account deletion request
+     * 
+     * @param int $userId User ID
+     * @return bool Success or failure
+     */
+    public function cancelDeletion($userId) {
+        try {
+            $stmt = $this->db->prepare("UPDATE users SET deletion_requested = NULL, deletion_token = NULL WHERE id = ?");
+            return $stmt->execute([$userId]);
+        } catch (PDOException $e) {
+            error_log("Error cancelling account deletion: " . $e->getMessage());
+            return false;
+        }
+    }
 }

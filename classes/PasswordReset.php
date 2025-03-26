@@ -23,7 +23,7 @@ class PasswordReset {
         $this->mailer->Password = 'vjks aktz vheu arse'; // In production, use environment variables
         $this->mailer->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
         $this->mailer->Port = 587;
-        $this->mailer->setFrom('augmenso.to@gmail.com', 'Flight Booking');
+        $this->mailer->setFrom('augmenso.to@gmail.com', 'Sky International Travels');
         $this->mailer->isHTML(true);
     }
     
@@ -96,7 +96,7 @@ class PasswordReset {
             <body style='font-family: Arial, sans-serif; line-height: 1.6;'>
                 <div style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;'>
                     <h2 style='color: #3366cc;'>Password Reset</h2>
-                    <p>You requested a password reset for your Flight Booking account.</p>
+                    <p>You requested a password reset for your Sky International Travels account.</p>
                     <p>Your One-Time Password (OTP) is: <strong style='font-size: 18px; letter-spacing: 2px;'>{$otp}</strong></p>
                     <p>This OTP will expire in 30 minutes.</p>
                     <p>If you did not request this reset, please ignore this email.</p>
