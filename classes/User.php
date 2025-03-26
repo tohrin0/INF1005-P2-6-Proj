@@ -7,28 +7,115 @@ class User {
         $this->db = $database;
     }
 
+    /**
+     * Register a new user
+     */
     public function register($username, $password, $email) {
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $this->db->prepare("INSERT INTO users (username, password, email) VALUES (?, ?, ?)");
-        return $stmt->execute([$username, $hashedPassword, $email]);
-    }
-
-    public function login($username, $password) {
-        $stmt = $this->db->prepare("SELECT * FROM users WHERE username = ?");
-        $stmt->execute([$username]);
-        $user = $stmt->fetch();
-
-        if ($user && password_verify($password, $user['password'])) {
-            $_SESSION['user_id'] = $user['id'];
-            return true;
+        // Check if email already exists
+        $checkStmt = $this->db->prepare("SELECT id FROM users WHERE email = ?");
+        $checkStmt->execute([$email]);
+        if ($checkStmt->rowCount() > 0) {
+            return false;
         }
-        return false;
+        
+        // Check if username already exists
+        $checkStmt = $this->db->prepare("SELECT id FROM users WHERE username = ?");
+        $checkStmt->execute([$username]);
+        if ($checkStmt->rowCount() > 0) {
+            return false;
+        }
+        
+        // Hash the password
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        
+        try {
+            $stmt = $this->db->prepare("INSERT INTO users (username, password, email) VALUES (?, ?, ?)");
+            return $stmt->execute([$username, $hashedPassword, $email]);
+        } catch (\PDOException $e) {
+            error_log("Registration error: " . $e->getMessage());
+            return false;
+        }
     }
 
+    /**
+     * Log in a user
+     */
+    public function login($email, $password) {
+        try {
+            // Search by email
+            $stmt = $this->db->prepare("SELECT id, username, password, role FROM users WHERE email = ?");
+            $stmt->execute([$email]);
+            $user = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            // Check if user exists and password is correct
+            if ($user && password_verify($password, $user['password'])) {
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['username'] = $user['username'];
+                $_SESSION['role'] = $user['role'];
+                return true;
+            }
+            
+            return false;
+        } catch (\PDOException $e) {
+            error_log("Login error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get user by ID
+     */
     public function getUserById($id) {
         $stmt = $this->db->prepare("SELECT * FROM users WHERE id = ?");
         $stmt->execute([$id]);
-        return $stmt->fetch();
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Get user by email
+     */
+    public function getUserByEmail($email) {
+        $stmt = $this->db->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Get user by username
+     */
+    public function getUserByUsername($username) {
+        $stmt = $this->db->prepare("SELECT * FROM users WHERE username = ?");
+        $stmt->execute([$username]);
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Update user details
+     */
+    public function updateUser($id, $data) {
+        $fields = [];
+        $values = [];
+        
+        foreach ($data as $key => $value) {
+            $fields[] = "$key = ?";
+            $values[] = $value;
+        }
+        
+        $values[] = $id;
+        
+        $sql = "UPDATE users SET " . implode(', ', $fields) . " WHERE id = ?";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute($values);
+    }
+
+    /**
+     * Check if a user is admin
+     */
+    public function isAdmin($id) {
+        $stmt = $this->db->prepare("SELECT role FROM users WHERE id = ?");
+        $stmt->execute([$id]);
+        $user = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return $user && $user['role'] === 'admin';
     }
 
     public function updateProfile($id, $username, $email) {
@@ -127,63 +214,5 @@ class User {
         $stmt = $this->db->prepare("SELECT COUNT(*) FROM users WHERE role = ?");
         $stmt->execute([$role]);
         return (int)$stmt->fetchColumn();
-    }
-
-    /**
-     * Get user by username
-     * 
-     * @param string $username The username to search for
-     * @return array|false User data or false if not found
-     */
-    public function getUserByUsername($username) {
-        $stmt = $this->db->prepare("SELECT * FROM users WHERE username = ?");
-        $stmt->execute([$username]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
-
-    /**
-     * Get user by email
-     * 
-     * @param string $email The email to search for
-     * @return array|false User data or false if not found
-     */
-    public function getUserByEmail($email) {
-        $stmt = $this->db->prepare("SELECT * FROM users WHERE email = ?");
-        $stmt->execute([$email]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
-
-    /**
-     * Update a user's information
-     * 
-     * @param int $userId The user ID
-     * @param array $userData The user data to update
-     * @return bool Success or failure
-     */
-    public function updateUser($userId, $userData) {
-        try {
-            $fields = [];
-            $values = [];
-            
-            // Dynamically build the query based on provided fields
-            foreach ($userData as $field => $value) {
-                $fields[] = "$field = ?";
-                $values[] = $value;
-            }
-            
-            // Add updated_at timestamp
-            $fields[] = "updated_at = NOW()";
-            
-            // Add user ID to values array
-            $values[] = $userId;
-            
-            $query = "UPDATE users SET " . implode(", ", $fields) . " WHERE id = ?";
-            $stmt = $this->db->prepare($query);
-            
-            return $stmt->execute($values);
-        } catch (Exception $e) {
-            error_log("Error updating user: " . $e->getMessage());
-            return false;
-        }
     }
 }
