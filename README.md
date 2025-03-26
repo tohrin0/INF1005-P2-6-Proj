@@ -109,7 +109,7 @@ This project was developed by a team of students for INF1005. We created a ficti
    npm run build
    composer install
 5. Update the `inc/config.php` and `inc/db.php` files with your database/server connection details
-6. Ensure proper permissions:
+
 
 ## Technical Stack
 - **Backend**: PHP 7.4+
