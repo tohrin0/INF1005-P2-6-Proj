@@ -1,4 +1,9 @@
 <?php
+ini_set('session.cookie_httponly', 1);
+ini_set('session.use_only_cookies', 1);
+if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+    ini_set('session.cookie_secure', 1);
+}
 session_start();
 require_once 'inc/config.php';
 require_once 'inc/db.php';
@@ -66,6 +71,9 @@ if (isset($_POST['booking_id']) || isset($_GET['booking_id'])) {
 
 // Process payment form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+        $error = "Invalid form submission.";
+    } else {
     // Validate form data
     if (empty($_POST['card_number']) || empty($_POST['card_name']) || 
         empty($_POST['expiry_date']) || empty($_POST['cvv'])) {
@@ -101,6 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_payment'])) {
             error_log("Payment error: " . $e->getMessage());
         }
     }
+}
 }
 
 include 'templates/header.php';
@@ -177,6 +186,7 @@ include 'templates/header.php';
                     <h2 class="text-lg font-semibold text-gray-800 mb-4">Payment Information</h2>
                     
                     <form method="POST" action="">
+                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                         <div class="mb-6">
                             <label class="block text-gray-700 font-medium mb-2">Payment Method</label>
                             <div class="grid grid-cols-4 gap-4">

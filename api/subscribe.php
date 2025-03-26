@@ -1,6 +1,16 @@
 <?php
+ini_set('session.cookie_httponly', 1);
+ini_set('session.use_only_cookies', 1);
+if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+    ini_set('session.cookie_secure', 1);
+}
 // Start session for all requests
 session_start();
+if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Invalid form submission.']);
+    exit;
+}
 
 // Include core files
 require_once '../inc/config.php';

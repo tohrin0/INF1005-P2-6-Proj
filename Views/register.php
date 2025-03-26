@@ -1,4 +1,9 @@
 <?php
+ini_set('session.cookie_httponly', 1);
+ini_set('session.use_only_cookies', 1);
+if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+    ini_set('session.cookie_secure', 1);
+}
 session_start();
 require_once 'inc/config.php';
 require_once 'inc/db.php';
@@ -18,6 +23,9 @@ $error = '';
 $user = new User($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+        $error = "Invalid form submission.";
+    } else {
     $username = trim($_POST['username']);
     $email = trim($_POST['email']);
     $password = trim($_POST['password']);
@@ -46,7 +54,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+}
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -86,6 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php endif; ?>
 
                     <form method="POST" action="register.php" class="space-y-6">
+                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                         <div>
                             <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
                             <div class="relative">

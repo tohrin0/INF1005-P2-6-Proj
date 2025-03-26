@@ -1,4 +1,9 @@
 <?php
+ini_set('session.cookie_httponly', 1);
+ini_set('session.use_only_cookies', 1);
+if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+    ini_set('session.cookie_secure', 1);
+}
 session_start();
 require_once __DIR__ . '/../inc/config.php';
 require_once __DIR__ . '/../inc/db.php';
@@ -86,6 +91,9 @@ else {
 
 // Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_booking'])) {
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+        $error = "Invalid form submission.";
+    } else {
     // Validate form data
     if (empty($_POST['first_name']) || empty($_POST['last_name']) || empty($_POST['email']) || 
         empty($_POST['phone']) || empty($_POST['nationality'])) {
@@ -186,6 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_booking'])) {
             error_log("Booking error: " . $e->getMessage());
         }
     }
+}
 }
 
 // Get flight details for display
@@ -345,6 +354,7 @@ include 'templates/header.php';
         <h2 class="text-xl font-semibold text-gray-700 mb-6">Passenger Details</h2>
         
         <form method="POST" action="">
+            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label for="first_name" class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>

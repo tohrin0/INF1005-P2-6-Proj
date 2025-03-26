@@ -225,7 +225,8 @@ include_once 'templates/header.php';
                 Subscribe to our newsletter and be the first to know about exclusive deals, travel tips, and special offers.
             </p>
             <div class="max-w-md mx-auto">
-                <form id="newsletter-form" class="flex flex-col gap-3">
+            <form id="newsletter-form" class="flex flex-col gap-3">
+                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                     <div class="flex flex-col sm:flex-row gap-2">
                         <input
                             type="text"
@@ -304,6 +305,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (nameInput && nameInput.value) {
                 formData.append('first_name', nameInput.value.trim());
             }
+            formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
             
             // Send AJAX request
             fetch('api/subscribe.php', {

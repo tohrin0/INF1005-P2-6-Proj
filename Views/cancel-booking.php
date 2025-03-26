@@ -1,4 +1,9 @@
 <?php
+ini_set('session.cookie_httponly', 1);
+ini_set('session.use_only_cookies', 1);
+if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+    ini_set('session.cookie_secure', 1);
+}
 session_start();
 require_once __DIR__ . '/../inc/config.php';
 require_once __DIR__ . '/../inc/db.php';
@@ -10,6 +15,13 @@ require_once __DIR__ . '/../classes/Booking.php';
 if (!isLoggedIn()) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'You must be logged in to cancel a booking.']);
+    exit;
+}
+
+// Check CSRF token
+if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Invalid token. Please refresh the page and try again.']);
     exit;
 }
 

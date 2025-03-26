@@ -1,4 +1,9 @@
 <?php
+ini_set('session.cookie_httponly', 1);
+ini_set('session.use_only_cookies', 1);
+if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+    ini_set('session.cookie_secure', 1);
+}
 session_start();
 require_once 'inc/config.php';
 require_once 'inc/db.php';
@@ -28,6 +33,9 @@ if (isset($_SESSION['login_message'])) {
 
 // Check for form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+        $error = "Invalid form submission.";
+    } else {
     $email = $_POST['email'] ?? '';
     $password = $_POST['password'] ?? '';
 
@@ -42,6 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
         } else {
             $error = "Invalid email or password.";
         }
+    }
     }
 }
 ?>
@@ -97,6 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                     <?php endif; ?>
 
                     <form method="POST" action="login.php" class="space-y-6">
+                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                         <div>
                             <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                             <div class="relative">
