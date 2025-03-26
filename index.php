@@ -54,6 +54,7 @@ $routes = [
     'my-bookings' => 'my-bookings.php',
     'booking' => 'booking.php',
     'confirmbooking' => 'confirmbooking.php',
+    'cancel-booking' => 'cancel-booking.php',
     'payment' => 'payment.php',
     'payments' => 'payments.php',
     'register' => 'register.php',

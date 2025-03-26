@@ -226,6 +226,11 @@ include 'templates/header.php';
                                             Edit Passenger Details
                                         <?php endif; ?>
                                     </a>
+                                    
+                                    <!-- Add Cancel Booking Button -->
+                                    <button onclick="confirmCancelBooking(<?= $booking['id'] ?>)" class="w-full bg-red-100 hover:bg-red-200 text-red-800 font-medium py-2 px-4 rounded transition-colors">
+                                        Cancel Booking
+                                    </button>
                                 </div>
                                 
                                 <?php if ($booking['status'] === 'pending' && strtotime($booking['date']) < strtotime('+2 days')): ?>
@@ -481,5 +486,34 @@ include 'templates/header.php';
         <?php endif; ?>
     <?php endif; ?>
 </div>
+
+<script>
+function confirmCancelBooking(bookingId) {
+    if (confirm('Are you sure you want to cancel this booking? This action cannot be undone.')) {
+        // User confirmed, proceed with cancellation
+        fetch('cancel-booking.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'booking_id=' + bookingId
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                // Reload the page to show updated status
+                window.location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while cancelling the booking. Please try again.');
+        });
+    }
+}
+</script>
 
 <?php include 'templates/footer.php'; ?>

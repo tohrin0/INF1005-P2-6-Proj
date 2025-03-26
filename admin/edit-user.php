@@ -272,9 +272,61 @@ include 'includes/header.php';
 
 <script>
     function resetPassword() {
+        const userId = <?php echo $user['id']; ?>;
+        const email = "<?php echo htmlspecialchars($user['email']); ?>";
+        
         if (confirm('Send password reset email to this user?')) {
-            // Add AJAX request to send reset email
-            alert('Password reset link sent to user\'s email.');
+            // Show loading state
+            const resetBtn = document.querySelector('[onclick="resetPassword()"]');
+            const originalText = resetBtn.innerHTML;
+            resetBtn.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Sending...';
+            resetBtn.disabled = true;
+
+            // Send AJAX request
+            fetch('admin-reset-password.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `user_id=${userId}&email=${encodeURIComponent(email)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Restore button
+                resetBtn.innerHTML = originalText;
+                resetBtn.disabled = false;
+                
+                if (data.success) {
+                    // Show success message
+                    const container = document.querySelector('.container');
+                    const successAlert = document.createElement('div');
+                    successAlert.className = 'bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4';
+                    successAlert.innerHTML = `
+                        <span class="block sm:inline">${data.message}</span>
+                        <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
+                            <svg class="fill-current h-6 w-6 text-green-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" onclick="this.parentElement.parentElement.remove()">
+                                <title>Close</title>
+                                <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
+                            </svg>
+                        </span>
+                    `;
+                    container.insertBefore(successAlert, container.firstChild);
+                    
+                    // Auto-dismiss the alert after 5 seconds
+                    setTimeout(() => {
+                        if (successAlert.parentNode) {
+                            successAlert.remove();
+                        }
+                    }, 5000);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                resetBtn.innerHTML = originalText;
+                resetBtn.disabled = false;
+                alert('Error sending reset email: ' + error);
+            });
         }
     }
 </script>

@@ -16,9 +16,26 @@ $message = '';
 $messageType = '';
 $showOtpForm = false;
 $showNewPasswordForm = false;
+$isAdminReset = false;
 
-// Step 1: Request OTP
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['request_otp'])) {
+// Check for admin reset token in URL
+if (isset($_GET['token']) && isset($_GET['admin_reset'])) {
+    $token = $_GET['token'];
+    $user = $passwordReset->verifyAdminResetToken($token);
+    
+    if ($user) {
+        $isAdminReset = true;
+        $showNewPasswordForm = true;
+        $message = "This is an administrator-requested password reset. Please create a new password.";
+        $messageType = "success";
+    } else {
+        $message = "Invalid or expired reset token. Please contact an administrator.";
+        $messageType = "error";
+    }
+}
+
+// Regular OTP request flow
+else if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['request_otp'])) {
     $email = $_POST['email'] ?? '';
     
     if (empty($email)) {
@@ -52,8 +69,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['request_otp'])) {
     }
 }
 
-// Step 2: Verify OTP
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_otp'])) {
+// Verify OTP step
+else if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_otp'])) {
     $entered_otp = $_POST['otp'] ?? '';
     
     if (empty($entered_otp)) {
@@ -76,45 +93,57 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_otp'])) {
     }
 }
 
-// Step 3: Reset Password
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['reset_password'])) {
+// Reset Password step (works for both regular and admin resets)
+else if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['reset_password'])) {
     $password = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
+    $admin_reset = isset($_POST['admin_reset']) && $_POST['admin_reset'] === '1';
     
     if (empty($password) || empty($confirm_password)) {
         $message = "Please enter and confirm your new password.";
         $messageType = "error";
         $showNewPasswordForm = true;
+        if ($admin_reset) $isAdminReset = true;
     } else if ($password !== $confirm_password) {
         $message = "Passwords do not match.";
         $messageType = "error";
         $showNewPasswordForm = true;
+        if ($admin_reset) $isAdminReset = true;
     } else if (strlen($password) < 6) {
         $message = "Password must be at least 6 characters long.";
         $messageType = "error";
         $showNewPasswordForm = true;
+        if ($admin_reset) $isAdminReset = true;
     } else {
         // Make sure we have the user's email from session
         if (isset($_SESSION['reset_email'])) {
-            // Reset password in database
             $email = $_SESSION['reset_email'];
             
-            if ($passwordReset->resetPassword($email, $password)) {
+            // Use the updated resetPassword method that checks history
+            $result = $passwordReset->resetPassword($email, $password);
+            
+            if ($result['success']) {
                 // Clear all form flags
                 $showOtpForm = false;
                 $showNewPasswordForm = false;
                 
+                // If this was an admin reset, clear the token
+                if ($admin_reset) {
+                    $passwordReset->clearAdminResetToken($email);
+                }
+                
                 // Add success message to session to display on login page
-                $_SESSION['login_message'] = "Your password has been reset successfully. You can now log in with your new password.";
+                $_SESSION['login_message'] = $result['message'];
                 $_SESSION['login_message_type'] = "success";
                 
                 // Redirect to login immediately
                 header("Location: login.php");
                 exit(); // Stop script execution to ensure redirect
             } else {
-                $message = "Failed to update password. Please try again.";
+                $message = $result['message'];
                 $messageType = "error";
                 $showNewPasswordForm = true;
+                if ($admin_reset) $isAdminReset = true;
             }
         } else {
             $message = "Session expired. Please restart the password reset process.";
@@ -147,10 +176,10 @@ include 'templates/header.php';
                 <div class="p-8 w-full">
                     <div class="uppercase tracking-wide text-sm text-indigo-600 font-semibold mb-1">Security</div>
                     <h2 class="text-2xl font-bold text-gray-900 mb-2">
-                        <?php echo $showNewPasswordForm ? 'Create New Password' : ($showOtpForm ? 'Enter Verification Code' : 'Reset Your Password'); ?>
+                        <?php echo $isAdminReset ? 'Administrator-Initiated Password Reset' : ($showNewPasswordForm ? 'Create New Password' : ($showOtpForm ? 'Enter Verification Code' : 'Reset Your Password')); ?>
                     </h2>
                     <p class="text-gray-600 mb-6">
-                        <?php echo $showNewPasswordForm ? 'Choose a strong password for your account' : ($showOtpForm ? 'Enter the 6-digit code sent to your email' : 'Enter your email to receive a verification code'); ?>
+                        <?php echo $isAdminReset ? 'An administrator has requested you to reset your password' : ($showNewPasswordForm ? 'Choose a strong password for your account' : ($showOtpForm ? 'Enter the 6-digit code sent to your email' : 'Enter your email to receive a verification code')); ?>
                     </p>
                     
                     <?php if (!empty($message)): ?>
@@ -177,7 +206,7 @@ include 'templates/header.php';
                                     </div>
                                     <input type="password" id="password" name="password" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter new password" required>
                                 </div>
-                                <p class="mt-1 text-xs text-gray-500">Must be at least 6 characters</p>
+                                <p class="mt-1 text-xs text-gray-500">Must be at least 6 characters and different from previous passwords</p>
                             </div>
                             
                             <div>
@@ -189,6 +218,10 @@ include 'templates/header.php';
                                     <input type="password" id="confirm_password" name="confirm_password" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Confirm new password" required>
                                 </div>
                             </div>
+                            
+                            <?php if ($isAdminReset): ?>
+                                <input type="hidden" name="admin_reset" value="1">
+                            <?php endif; ?>
                             
                             <div>
                                 <button type="submit" name="reset_password" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
@@ -224,8 +257,8 @@ include 'templates/header.php';
                             </div>
                         </form>
                         
-                    <?php else: ?>
-                        <!-- Email Request Form -->
+                    <?php elseif (!$isAdminReset): ?>
+                        <!-- Email Request Form (only show if not admin reset) -->
                         <form action="" method="POST" class="space-y-6">
                             <div>
                                 <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
@@ -280,7 +313,7 @@ include 'templates/header.php';
                             <i class="fas fa-sync-alt text-indigo-500"></i>
                         </div>
                         <p class="ml-3 text-sm text-gray-600">
-                            Change your password regularly for better security.
+                            Change your password regularly and avoid reusing old passwords.
                         </p>
                     </div>
                 </div>

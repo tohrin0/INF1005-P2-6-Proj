@@ -29,9 +29,35 @@ class User {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         
         try {
+            $this->db->beginTransaction();
+            
+            // Insert user
             $stmt = $this->db->prepare("INSERT INTO users (username, password, email) VALUES (?, ?, ?)");
-            return $stmt->execute([$username, $hashedPassword, $email]);
+            $userInserted = $stmt->execute([$username, $hashedPassword, $email]);
+            
+            if (!$userInserted) {
+                $this->db->rollBack();
+                return false;
+            }
+            
+            // Get the user ID
+            $userId = $this->db->lastInsertId();
+            
+            // Add password to history
+            $stmt = $this->db->prepare("INSERT INTO password_history (user_id, password_hash) VALUES (?, ?)");
+            $historyAdded = $stmt->execute([$userId, $hashedPassword]);
+            
+            if (!$historyAdded) {
+                $this->db->rollBack();
+                return false;
+            }
+            
+            $this->db->commit();
+            return true;
         } catch (\PDOException $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             error_log("Registration error: " . $e->getMessage());
             return false;
         }
@@ -214,5 +240,116 @@ class User {
         $stmt = $this->db->prepare("SELECT COUNT(*) FROM users WHERE role = ?");
         $stmt->execute([$role]);
         return (int)$stmt->fetchColumn();
+    }
+
+    /**
+     * Change user password with history check
+     * @param int $userId User ID
+     * @param string $oldPassword Current password
+     * @param string $newPassword New password
+     * @return array [success: bool, message: string] Result with message
+     */
+    public function changePassword($userId, $oldPassword, $newPassword) {
+        try {
+            // Get user data
+            $stmt = $this->db->prepare("SELECT password FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            if (!$user) {
+                return [
+                    'success' => false,
+                    'message' => "User not found."
+                ];
+            }
+            
+            // Verify current password
+            if (!password_verify($oldPassword, $user['password'])) {
+                return [
+                    'success' => false,
+                    'message' => "Current password is incorrect."
+                ];
+            }
+            
+            // Check if new password matches current password
+            if (password_verify($newPassword, $user['password'])) {
+                return [
+                    'success' => false,
+                    'message' => "New password cannot be the same as your current password."
+                ];
+            }
+            
+            // Check password history (last 5 passwords)
+            $stmt = $this->db->prepare("
+                SELECT password_hash 
+                FROM password_history 
+                WHERE user_id = ? 
+                ORDER BY created_at DESC 
+                LIMIT 5
+            ");
+            $stmt->execute([$userId]);
+            $passwordHistory = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            
+            foreach ($passwordHistory as $historyItem) {
+                if (password_verify($newPassword, $historyItem['password_hash'])) {
+                    return [
+                        'success' => false,
+                        'message' => "New password cannot be the same as any of your previous 5 passwords."
+                    ];
+                }
+            }
+            
+            // Hash new password
+            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+            
+            // Start transaction
+            $this->db->beginTransaction();
+            
+            // Update password
+            $stmt = $this->db->prepare("UPDATE users SET password = ? WHERE id = ?");
+            $passwordUpdated = $stmt->execute([$hashedPassword, $userId]);
+            
+            if (!$passwordUpdated) {
+                $this->db->rollBack();
+                return [
+                    'success' => false,
+                    'message' => "Failed to update password."
+                ];
+            }
+            
+            // Add to password history
+            $stmt = $this->db->prepare("
+                INSERT INTO password_history (user_id, password_hash) 
+                VALUES (?, ?)
+            ");
+            $historyAdded = $stmt->execute([$userId, $hashedPassword]);
+            
+            if (!$historyAdded) {
+                $this->db->rollBack();
+                return [
+                    'success' => false,
+                    'message' => "Failed to update password history."
+                ];
+            }
+            
+            // Commit transaction
+            $this->db->commit();
+            
+            return [
+                'success' => true,
+                'message' => "Password updated successfully."
+            ];
+        } catch (\PDOException $e) {
+            // Rollback transaction in case of error
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            
+            error_log("Database error: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => "An error occurred. Please try again later."
+            ];
+        }
     }
 }
