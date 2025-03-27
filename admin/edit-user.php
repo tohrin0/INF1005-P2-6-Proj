@@ -229,6 +229,12 @@ include 'includes/header.php';
                             <span class="mr-2 text-gray-600 inline-block w-5 h-5">🔑</span>
                             Send Password Reset Link
                         </button>
+
+                        <!-- Add the new 2FA setup button here -->
+                        <button type="button" onclick="setup2FA()" class="w-full text-left px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors flex items-center">
+                            <span class="mr-2 text-gray-600 inline-block w-5 h-5">🔒</span>
+                            Send 2FA Setup Link
+                        </button>
                         
                         <a href="view-bookings.php?user_id=<?php echo $userId; ?>" class="w-full text-left px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors flex items-center block">
                             <span class="mr-2 text-gray-600 inline-block w-5 h-5">📅</span>
@@ -297,6 +303,58 @@ include 'includes/header.php';
                 resetBtn.innerHTML = originalText;
                 resetBtn.disabled = false;
                 alert('Error sending reset email: ' + error);
+            });
+        }
+    }
+
+    function setup2FA() {
+        const userId = <?php echo $user['id']; ?>;
+        const email = "<?php echo htmlspecialchars($user['email']); ?>";
+        
+        if (confirm('Send 2FA setup email to this user?')) {
+            // Show loading state
+            const setupBtn = document.querySelector('[onclick="setup2FA()"]');
+            const originalText = setupBtn.innerHTML;
+            setupBtn.innerHTML = '<span class="animate-spin inline-block mr-2">⟳</span> Sending...';
+            setupBtn.disabled = true;
+
+            // Send AJAX request
+            fetch('admin-setup-2fa.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `user_id=${userId}&email=${encodeURIComponent(email)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                setupBtn.innerHTML = originalText;
+                setupBtn.disabled = false;
+                
+                if (data.success) {
+                    alert('2FA setup link has been sent to the user.');
+                    
+                    // Show success message that auto-disappears
+                    const successDiv = document.createElement('div');
+                    successDiv.className = 'bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6';
+                    successDiv.innerHTML = '<p>2FA setup email sent successfully.</p>';
+                    
+                    // Insert before the first child of container
+                    const container = document.querySelector('.container');
+                    container.insertBefore(successDiv, container.children[1]);
+                    
+                    // Remove after 5 seconds
+                    setTimeout(() => {
+                        successDiv.remove();
+                    }, 5000);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                setupBtn.innerHTML = originalText;
+                setupBtn.disabled = false;
+                alert('Error sending 2FA setup email: ' + error);
             });
         }
     }

@@ -88,7 +88,7 @@ class User
             }
 
             // Search by email
-            $stmt = $this->db->prepare("SELECT id, username, password, role, lockout_until, failed_login_attempts FROM users WHERE email = ?");
+            $stmt = $this->db->prepare("SELECT id, username, password, role, lockout_until, failed_login_attempts, two_factor_enabled FROM users WHERE email = ?");
             $stmt->execute([$email]);
             $user = $stmt->fetch(\PDO::FETCH_ASSOC);
 
@@ -120,6 +120,19 @@ class User
 
             // Check if password is correct
             if (password_verify($password, $user['password'])) {
+                // Check if 2FA is enabled for the user
+                if ($user['two_factor_enabled'] == 1) {
+                    // Log this attempt as "pending 2FA verification"
+                    $this->logLoginAttempt($email, $ip_address, $user_agent, 'pending');
+                    
+                    return [
+                        'success' => false,
+                        'requires_2fa' => true,
+                        'user_id' => $user['id'],
+                        'message' => 'Two-factor authentication required'
+                    ];
+                }
+                
                 // Regenerate session ID to prevent session fixation
                 regenerateSessionId();
 

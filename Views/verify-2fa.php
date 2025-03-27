@@ -1,4 +1,6 @@
 <?php
+ob_start(); // Start output buffering to prevent premature output
+
 require_once 'inc/session.php';
 require_once 'inc/config.php';
 require_once 'inc/db.php';
@@ -42,21 +44,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if ($secret && $twoFactorAuth->verifyCode($secret, $code)) {
                 // Code is valid, complete login
+                $userData = $user->getUserById($userId);
+                
+                // Clear 2FA verification data
                 unset($_SESSION['2fa_email']);
                 unset($_SESSION['2fa_user_id']);
                 
-                // Set session variables
+                // Set session variables for authenticated user
                 $_SESSION['user_id'] = $userId;
-                $userData = $user->getUserById($userId);
                 $_SESSION['username'] = $userData['username'];
                 $_SESSION['role'] = $userData['role'];
                 $_SESSION['login_time'] = time();
                 
                 // Regenerate session ID to prevent session fixation
                 regenerateSessionId();
-                
-                // Reset failed login attempts
-                $user->resetFailedAttempts($userId);
                 
                 // Redirect to intended page or home
                 $redirect = $_SESSION['redirect_after_login'] ?? 'index.php';

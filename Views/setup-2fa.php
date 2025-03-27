@@ -6,6 +6,31 @@ require_once 'inc/functions.php';
 require_once 'classes/TwoFactorAuth.php';
 require_once 'vendor/autoload.php';
 
+// Check if this is an admin-initiated setup
+$token = $_GET['token'] ?? '';
+$email = $_GET['email'] ?? '';
+$adminInitiated = false;
+
+if (!empty($token) && !empty($email)) {
+    // Verify token
+    $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? AND reset_token = ? AND token_expiry > NOW() AND admin_reset = 1");
+    $stmt->execute([$email, $token]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($user) {
+        // Valid token, set up for this user
+        $adminInitiated = true;
+        $_SESSION['temp_user_id'] = $user['id'];
+        $_SESSION['temp_user_email'] = $email;
+        
+        // Generate 2FA secret
+        $twoFactorAuth = new TwoFactorAuth($pdo);
+        $_SESSION['temp_2fa_secret'] = $twoFactorAuth->generateSecret();
+    } else {
+        $error = "Invalid or expired token.";
+    }
+}
+
 // Redirect if user is not logged in or doesn't have temp data
 if (!isset($_SESSION['temp_user_id']) || !isset($_SESSION['temp_user_email']) || !isset($_SESSION['temp_2fa_secret'])) {
     header("Location: login.php");
@@ -38,6 +63,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 unset($_SESSION['temp_user_id']);
                 unset($_SESSION['temp_user_email']);
                 unset($_SESSION['temp_2fa_secret']);
+                
+                // If this was an admin-initiated setup, clear the token
+                if ($adminInitiated && isset($_SESSION['user_id'])) {
+                    $stmt = $pdo->prepare("UPDATE users SET reset_token = NULL, token_expiry = NULL, admin_reset = 0 WHERE id = ?");
+                    $stmt->execute([$_SESSION['user_id']]);
+                }
                 
                 // Redirect to login page with success message
                 $_SESSION['login_message'] = "Two-factor authentication has been set up successfully. Your account is now secure.";

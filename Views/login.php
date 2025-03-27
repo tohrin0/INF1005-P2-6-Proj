@@ -94,8 +94,20 @@ else if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
             $result = $user->login($email, $password);
             
             if ($result['success']) {
-                // Check if 2FA is enabled for this user
-                if ($twoFactorAuth->is2FAEnabled($result['user_id'])) {
+                // No 2FA, proceed with login
+                $_SESSION['user_id'] = $result['user_id'];
+                $_SESSION['username'] = $result['username'];
+                $_SESSION['role'] = $result['role'];
+                $_SESSION['login_time'] = time();
+                
+                // Redirect to home page after successful login
+                $redirect = $_SESSION['redirect_after_login'] ?? 'index.php';
+                unset($_SESSION['redirect_after_login']);
+                header("Location: $redirect");
+                exit();
+            } else {
+                // Check if 2FA is required
+                if (isset($result['requires_2fa']) && $result['requires_2fa']) {
                     // Store email and user ID in session for 2FA verification
                     $_SESSION['2fa_email'] = $email;
                     $_SESSION['2fa_user_id'] = $result['user_id'];
@@ -104,22 +116,11 @@ else if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                     header("Location: verify-2fa.php");
                     exit();
                 } else {
-                    // No 2FA, proceed with login
-                    $_SESSION['user_id'] = $result['user_id'];
-                    $_SESSION['username'] = $result['username'];
-                    $_SESSION['role'] = $result['role'];
-                    $_SESSION['login_time'] = time();
-                    
-                    // Redirect to home page after successful login
-                    $redirect = $_SESSION['redirect_after_login'] ?? 'index.php';
-                    unset($_SESSION['redirect_after_login']);
-                    header("Location: $redirect");
-                    exit();
+                    // Regular login failure
+                    $error = $result['message'];
+                    $isLocked = isset($result['locked']) && $result['locked'];
+                    $isRateLimited = isset($result['rate_limited']) && $result['rate_limited'];
                 }
-            } else {
-                $error = $result['message'];
-                $isLocked = isset($result['locked']) && $result['locked'];
-                $isRateLimited = isset($result['rate_limited']) && $result['rate_limited'];
             }
         }
     }
