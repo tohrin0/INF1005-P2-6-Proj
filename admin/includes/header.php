@@ -321,6 +321,12 @@
                 <a href="flights.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'flights.php' ? 'active' : ''; ?>">
                     <i class="fas fa-plane"></i> Flights
                 </a>
+                <a href="subscribers.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'subscribers.php' ? 'active' : ''; ?>">
+                    <i class="fas fa-newspaper"></i> Newsletter Subscribers
+                </a>
+                <a href="login-attempts.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'login-attempts.php' ? 'active' : ''; ?>">
+                    <i class="fas fa-shield-alt"></i> Login Attempts
+                </a>
                 <a href="messages.php" class="menu-item">
                     <i class="fas fa-envelope"></i> Messages
                 </a>

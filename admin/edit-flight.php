@@ -5,12 +5,9 @@ require_once '../inc/db.php';
 require_once '../inc/functions.php';
 require_once '../inc/auth.php';
 require_once '../classes/Flight.php';
+require_once '../inc/session.php';
 
-// Check if the user is logged in and has admin privileges
-if (!isAdmin()) {
-    header('Location: ../login.php');
-    exit();
-}
+verifyAdminSession();
 
 // Get flight ID from URL parameter
 $flightId = $_GET['id'] ?? null;

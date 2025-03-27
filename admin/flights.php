@@ -7,12 +7,9 @@ require_once '../inc/db.php';
 require_once '../inc/functions.php';
 require_once '../inc/auth.php';
 require_once '../classes/Flight.php';
+require_once '../inc/session.php';
 
-session_start();
-if (!isAdmin()) {
-    header('Location: ../login.php');
-    exit();
-}
+verifyAdminSession();
 
 $flights = getAllFlights(); // Function to retrieve all flights from the database
 

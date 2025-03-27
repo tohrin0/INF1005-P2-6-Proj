@@ -51,6 +51,14 @@ CREATE TABLE newsletter_subscribers (
     subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+CREATE TABLE newsletter_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    subject VARCHAR(255) NOT NULL,
+    recipient_count INT NOT NULL,
+    sent_by INT NOT NULL,
+    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (sent_by) REFERENCES users(id)
+);
 -- Flights table - enhanced for Aviation Stack API
 CREATE TABLE flights (
     id INT AUTO_INCREMENT PRIMARY KEY,

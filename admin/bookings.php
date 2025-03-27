@@ -4,14 +4,9 @@ require_once '../inc/db.php';
 require_once '../inc/functions.php';
 require_once '../inc/auth.php';
 require_once '../classes/Booking.php';
+require_once '../inc/session.php';
 
-session_start();
-
-if (!isAdmin()) {
-    header('Location: ../login.php');
-    exit();
-}
-
+verifyAdminSession();
 // Get booking status filter from query string
 $statusFilter = isset($_GET['status']) ? $_GET['status'] : 'all';
 
