@@ -76,10 +76,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Email could not be sent. Mailer Error: {$mail->ErrorInfo}");
         }
         
-        header("Location: edit-user.php?status=success&message=2FA+reset+link+sent");
+        $_SESSION['flash_type'] = 'success';
+        $_SESSION['flash_message'] = '2FA reset link sent!';
+        header("Location: edit-user.php?id={$userId}");
         exit;
     } catch (Exception $e) {
-        header("Location: edit-user.php?status=error&message=" . urlencode("Error: " . $e->getMessage()));
+        $_SESSION['flash_type'] = 'error';
+        $_SESSION['flash_message'] = "Error: " . $e->getMessage();
+        header("Location: edit-user.php?id={$userId}");
         exit;
     }
 } else {

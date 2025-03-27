@@ -108,17 +108,21 @@ include 'includes/header.php';
         </div>
     </div>
 
-    <?php if (!empty($error)): ?>
-        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
-            <p><?php echo htmlspecialchars($error); ?></p>
+    <?php if (isset($_SESSION['flash_message'])): ?>
+    <div class="max-w-4xl mx-auto mb-6 p-4 rounded-md border <?php echo ($_SESSION['flash_type'] ?? '') === 'success' ? 'bg-green-100 border-green-400' : 'bg-red-100 border-red-400'; ?>">
+        <div class="flex items-center">
+            <?php if (($_SESSION['flash_type'] ?? '') === 'success'): ?>
+                <span class="mr-2 text-green-800">✔️</span>
+            <?php else: ?>
+                <span class="mr-2 text-red-800">❌</span>
+            <?php endif; ?>
+            <span class="<?php echo ($_SESSION['flash_type'] ?? '') === 'success' ? 'text-green-800' : 'text-red-800'; ?>">
+                <?php echo htmlspecialchars($_SESSION['flash_message']); ?>
+            </span>
         </div>
-    <?php endif; ?>
-    
-    <?php if (!empty($success)): ?>
-        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
-            <p><?php echo htmlspecialchars($success); ?></p>
-        </div>
-    <?php endif; ?>
+    </div>
+    <?php unset($_SESSION['flash_message'], $_SESSION['flash_type']); ?>
+<?php endif; ?>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- User Information Form -->
@@ -235,7 +239,7 @@ include 'includes/header.php';
                                 Send Password Reset Link
                             </button>
                         </form>
-
+                        <br>
                         <!-- 2FA Setup Form -->
                         <form action="admin-reset-2fa.php" method="POST">
                             <input type="hidden" name="user_id" value="<?php echo $userId; ?>">
@@ -243,7 +247,7 @@ include 'includes/header.php';
                             <button type="submit" 
                                 class="w-full text-left px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors flex items-center">
                                 <span class="mr-2 text-gray-600 inline-block w-5 h-5">🔒</span>
-                                Send 2FA Setup Link
+                                Send 2FA Reset Link
                             </button>
                         </form>
                         
@@ -268,110 +272,5 @@ include 'includes/header.php';
     </div>
 </div>
 
-<script>
-    function resetPassword() {
-        const userId = <?php echo $user['id']; ?>;
-        const email = "<?php echo htmlspecialchars($user['email']); ?>";
-        
-        if (confirm('Send password reset email to this user?')) {
-            // Show loading state
-            const resetBtn = document.querySelector('[onclick="resetPassword()"]');
-            const originalText = resetBtn.innerHTML;
-            resetBtn.innerHTML = '<span class="animate-spin inline-block mr-2">⟳</span> Sending...';
-            resetBtn.disabled = true;
-
-            // Send AJAX request
-            fetch('admin-reset-password.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: `user_id=${userId}&email=${encodeURIComponent(email)}`
-            })
-            .then(response => response.json())
-            .then(data => {
-                resetBtn.innerHTML = originalText;
-                resetBtn.disabled = false;
-                
-                if (data.success) {
-                    alert('Password reset link has been sent to the user.');
-                    
-                    // Show success message that auto-disappears
-                    const successDiv = document.createElement('div');
-                    successDiv.className = 'bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6';
-                    successDiv.innerHTML = '<p>Password reset email sent successfully.</p>';
-                    
-                    // Insert before the first child of container
-                    const container = document.querySelector('.container');
-                    container.insertBefore(successDiv, container.children[1]);
-                    
-                    // Remove after 5 seconds
-                    setTimeout(() => {
-                        successDiv.remove();
-                    }, 5000);
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            })
-            .catch(error => {
-                resetBtn.innerHTML = originalText;
-                resetBtn.disabled = false;
-                alert('Error sending reset email: ' + error);
-            });
-        }
-    }
-
-    function setup2FA() {
-        const userId = <?php echo $user['id']; ?>;
-        const email = "<?php echo htmlspecialchars($user['email']); ?>";
-        
-        if (confirm('Send 2FA setup email to this user?')) {
-            // Show loading state
-            const setupBtn = document.querySelector('[onclick="setup2FA()"]');
-            const originalText = setupBtn.innerHTML;
-            setupBtn.innerHTML = '<span class="animate-spin inline-block mr-2">⟳</span> Sending...';
-            setupBtn.disabled = true;
-
-            // Send AJAX request
-            fetch('admin-setup-2fa.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: `user_id=${userId}&email=${encodeURIComponent(email)}`
-            })
-            .then(response => response.json())
-            .then(data => {
-                setupBtn.innerHTML = originalText;
-                setupBtn.disabled = false;
-                
-                if (data.success) {
-                    alert('2FA setup link has been sent to the user.');
-                    
-                    // Show success message that auto-disappears
-                    const successDiv = document.createElement('div');
-                    successDiv.className = 'bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6';
-                    successDiv.innerHTML = '<p>2FA setup email sent successfully.</p>';
-                    
-                    // Insert before the first child of container
-                    const container = document.querySelector('.container');
-                    container.insertBefore(successDiv, container.children[1]);
-                    
-                    // Remove after 5 seconds
-                    setTimeout(() => {
-                        successDiv.remove();
-                    }, 5000);
-                } else {
-                    alert('Error: ' + data.message);
-                }
-            })
-            .catch(error => {
-                setupBtn.innerHTML = originalText;
-                setupBtn.disabled = false;
-                alert('Error sending 2FA setup email: ' + error);
-            });
-        }
-    }
-</script>
 
 <?php include 'includes/footer.php'; ?>
