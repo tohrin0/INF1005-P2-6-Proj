@@ -5,6 +5,8 @@ require_once 'inc/db.php';
 require_once 'inc/functions.php';
 require_once 'inc/auth.php';
 require_once 'classes/User.php';
+require_once 'classes/TwoFactorAuth.php';
+require_once 'vendor/autoload.php';
 
 if (!isLoggedIn()) {
     header('Location: login.php');
@@ -15,6 +17,13 @@ $userId = $_SESSION['user_id'];
 $user = getUserById($userId);
 $message = '';
 $messageType = '';
+
+// Initialize TwoFactorAuth
+$twoFactorAuth = new TwoFactorAuth($pdo);
+$is2FAEnabled = $twoFactorAuth->is2FAEnabled($userId);
+$showQRCode = false;
+$qrCode = '';
+$secret = '';
 
 // Check if user has requested deletion
 $deletionRequested = false;
@@ -93,6 +102,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $messageType = "error";
                 }
             }
+        }
+    } elseif (isset($_POST['setup_2fa'])) {
+        // Generate new 2FA secret and show QR code
+        $secret = $twoFactorAuth->generateSecret();
+        $_SESSION['temp_2fa_secret'] = $secret;
+        $qrCode = $twoFactorAuth->getQRCode($user['email'], $secret);
+        $showQRCode = true;
+    } elseif (isset($_POST['verify_2fa']) && isset($_SESSION['temp_2fa_secret'])) {
+        $code = $_POST['verification_code'] ?? '';
+        $secret = $_SESSION['temp_2fa_secret'];
+        
+        if ($twoFactorAuth->verifyCode($secret, $code)) {
+            // Enable 2FA for the user
+            if ($twoFactorAuth->enable2FA($_SESSION['user_id'], $secret)) {
+                unset($_SESSION['temp_2fa_secret']);
+                $message = "Two-factor authentication has been enabled for your account.";
+                $messageType = "success";
+                $is2FAEnabled = true;
+                $showQRCode = false;
+            } else {
+                $message = "Failed to enable two-factor authentication.";
+                $messageType = "error";
+                $showQRCode = true;
+                $qrCode = $twoFactorAuth->getQRCode($user['email'], $secret);
+            }
+        } else {
+            $message = "Invalid verification code. Please try again.";
+            $messageType = "error";
+            // Keep QR code visible for another attempt
+            $qrCode = $twoFactorAuth->getQRCode($user['email'], $secret);
+            $showQRCode = true;
+        }
+    } elseif (isset($_POST['disable_2fa'])) {
+        $code = $_POST['disable_code'] ?? '';
+        $secret = $twoFactorAuth->getUserSecret($_SESSION['user_id']);
+        
+        if ($secret && $twoFactorAuth->verifyCode($secret, $code)) {
+            if ($twoFactorAuth->disable2FA($_SESSION['user_id'])) {
+                $message = "Two-factor authentication has been disabled.";
+                $messageType = "success";
+                $is2FAEnabled = false;
+            } else {
+                $message = "Failed to disable two-factor authentication.";
+                $messageType = "error";
+            }
+        } else {
+            $message = "Invalid verification code.";
+            $messageType = "error";
         }
     } elseif (isset($_POST['request_deletion'])) {
         // Handle account deletion request
@@ -212,8 +269,89 @@ include 'templates/header.php';
             </form>
         </div>
         
-        <!-- Account Management -->
+        <!-- Two-Factor Authentication -->
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div class="flex items-center mb-4">
+                <div class="rounded-full bg-green-100 p-3 mr-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-800">Two-Factor Authentication</h2>
+            </div>
+            
+            <?php if ($showQRCode): ?>
+                <!-- 2FA Setup Form -->
+                <div class="space-y-4">
+                    <p class="text-gray-600 mb-4">Scan this QR code with your authenticator app:</p>
+                    
+                    <div class="flex justify-center mb-4">
+                        <?php echo $qrCode; ?>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-600 mb-2">Or enter this code manually:</p>
+                        <div class="bg-gray-100 p-3 rounded text-center font-mono select-all">
+                            <?php echo htmlspecialchars($secret); ?>
+                        </div>
+                    </div>
+                    
+                    <form action="account.php" method="POST" class="space-y-4">
+                        <div>
+                            <label for="verification_code" class="block text-sm font-medium text-gray-700 mb-1">Verification Code</label>
+                            <input type="text" id="verification_code" name="verification_code" 
+                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Enter 6-digit code" required autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="6">
+                        </div>
+                        <input type="hidden" name="verify_2fa" value="1">
+                        <button type="submit" 
+                            class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+                            Verify and Enable 2FA
+                        </button>
+                    </form>
+                </div>
+            <?php elseif ($is2FAEnabled): ?>
+                <!-- 2FA is enabled -->
+                <div class="space-y-4">
+                    <div class="flex items-center p-4 bg-green-50 text-green-800 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                        <span>Two-factor authentication is enabled</span>
+                    </div>
+                    
+                    <p class="text-gray-600">Your account is protected with two-factor authentication. To disable it, enter a verification code from your authenticator app.</p>
+                    
+                    <form action="account.php" method="POST" class="space-y-4">
+                        <div>
+                            <label for="disable_code" class="block text-sm font-medium text-gray-700 mb-1">Verification Code</label>
+                            <input type="text" id="disable_code" name="disable_code" 
+                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Enter 6-digit code" required autocomplete="off" inputmode="numeric" pattern="[0-9]*" maxlength="6">
+                        </div>
+                        <button type="submit" name="disable_2fa" 
+                            class="w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors">
+                            Disable 2FA
+                        </button>
+                    </form>
+                </div>
+            <?php else: ?>
+                <!-- 2FA is not enabled -->
+                <div class="space-y-4">
+                    <p class="text-gray-600 mb-4">Two-factor authentication adds an extra layer of security to your account. Once enabled, you'll need to enter a code from your authenticator app when logging in.</p>
+                    
+                    <form action="account.php" method="POST">
+                        <button type="submit" name="setup_2fa" 
+                            class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+                            Set Up Two-Factor Authentication
+                        </button>
+                    </form>
+                </div>
+            <?php endif; ?>
+        </div>
+        
+        <!-- Account Management -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow lg:col-span-3">
             <div class="flex items-center mb-4">
                 <div class="rounded-full bg-red-100 p-3 mr-4">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -296,5 +434,3 @@ include 'templates/header.php';
 <?php endif; ?>
 
 <?php include 'templates/footer.php'; ?>
-</body>
-</html>

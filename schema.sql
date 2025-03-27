@@ -10,6 +10,8 @@ CREATE TABLE users (
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     role ENUM('user', 'admin') DEFAULT 'user',
+    two_factor_secret VARCHAR(255) NULL,
+    two_factor_enabled TINYINT(1) NOT NULL DEFAULT 0,
     failed_login_attempts INT DEFAULT 0,
     lockout_until DATETIME NULL,
     last_login_at DATETIME NULL,
