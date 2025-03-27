@@ -51,6 +51,10 @@ function loginUser($email, $password) {
         // Add debugging
         error_log("loginUser function called with email: $email");
         
+        // Get IP address and user agent for logging
+        $ip_address = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+        
         // Changed to search by email instead of username
         $stmt = $pdo->prepare("SELECT id, username, password, role FROM users WHERE email = ?");
         $stmt->execute([$email]);
@@ -64,14 +68,39 @@ function loginUser($email, $password) {
             $_SESSION['username'] = $user['username'];
             $_SESSION['role'] = $user['role'];
             
+            // Log successful login attempt
+            logLoginAttempt($email, $ip_address, $user_agent, 'success');
+            
             error_log("Login successful, set session variables: user_id=" . $_SESSION['user_id'] . ", username=" . $_SESSION['username']);
             return true;
         }
+        
+        // Log failed login attempt
+        logLoginAttempt($email, $ip_address, $user_agent, 'failure');
         
         error_log("Login failed: user not found or password incorrect");
         return false;
     } catch (PDOException $e) {
         error_log("Login error: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Log login attempt to database
+ */
+function logLoginAttempt($email, $ip_address, $user_agent, $status) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO login_attempts 
+            (email, ip_address, user_agent, status) 
+            VALUES (?, ?, ?, ?)
+        ");
+        return $stmt->execute([$email, $ip_address, $user_agent, $status]);
+    } catch (PDOException $e) {
+        error_log("Error logging login attempt: " . $e->getMessage());
         return false;
     }
 }
