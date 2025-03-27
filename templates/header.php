@@ -325,5 +325,3 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
             </nav>
         </div>
     </header>
-</body>
-</html>
