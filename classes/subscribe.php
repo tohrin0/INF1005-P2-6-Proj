@@ -1,4 +1,10 @@
 <?php
+// Include core files
+require_once __DIR__ . '/../inc/functions.php';
+require_once __DIR__ . '/../inc/config.php';
+require_once __DIR__ . '/../inc/db.php';
+require_once __DIR__ . '/EmailNotification.php';  // Updated path
+
 ini_set('session.cookie_httponly', 1);
 ini_set('session.use_only_cookies', 1);
 if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
@@ -12,11 +18,6 @@ if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
     exit;
 }
 
-// Include core files
-require_once '../inc/config.php';
-require_once '../inc/db.php';
-require_once '../inc/functions.php';
-require_once '../classes/EmailNotification.php';
 
 // Prevent PHP warnings/notices from corrupting the JSON output
 error_reporting(E_ERROR);

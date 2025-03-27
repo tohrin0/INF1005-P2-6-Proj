@@ -299,6 +299,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
                 <div class="welcome-message">Welcome, <?php echo htmlspecialchars($_SESSION['username'] ?? 'User'); ?>!</div>
             <?php endif; ?>
 
+           
 
             <nav>
                 <ul>
@@ -308,8 +309,11 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
                     <li><a href="search2.php">Search Flights</a></li>
                     <li><a href="contact.php">Contact</a></li>
                     <li><a href="my-bookings.php">Bookings</a></li>
-                    
-                    <li><a href="membership.php">Privileges & Miles</a></li>
+                    <?php if (isLoggedIn()) : ?>
+                    <div class="header-miles">
+                        <li><a href="membership.php">Privileges & Miles</a></li>
+                    </div>
+                    <?php endif; ?>
                     <?php if (isset($_SESSION['user_id'])): ?>
                     <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
                         <li><a href="admin/dashboard.php" class="admin-link">Admin Dashboard</a></li>
@@ -324,3 +328,5 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
             </nav>
         </div>
     </header>
+</body>
+</html>
