@@ -210,7 +210,7 @@ include 'templates/header.php';
                                     </div>
                                     <input type="password" id="password" name="password" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter new password" required>
                                 </div>
-                                <p class="mt-1 text-xs text-gray-500">Must be at least 8 characters with 1 uppercase letter and 1 special character</p>
+                                <p class="mt-1 text-xs text-gray-500">Must be at least 12 characters with uppercase & lowercase letters, numbers, and special characters</p>
                             </div>
                             
                             <div>

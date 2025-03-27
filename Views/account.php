@@ -198,7 +198,7 @@ include 'templates/header.php';
                     <label for="new_password" class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
                     <input type="password" id="new_password" name="new_password" 
                         class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                    <p class="mt-1 text-xs text-gray-500">Must be at least 8 characters with 1 uppercase letter and 1 special character</p>
+                    <p class="mt-1 text-xs text-gray-500">Must be at least 12 characters with uppercase & lowercase letters, numbers, and special characters</p>
                 </div>
                 <div>
                     <label for="confirm_password" class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>

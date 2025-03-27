@@ -490,13 +490,23 @@ function validateCSRFToken($token) {
  */
 function validatePasswordStrength($password) {
     // Check minimum length
-    if (strlen($password) < 8) {
-        return [false, "Password must be at least 8 characters long."];
+    if (strlen($password) < 12) {
+        return [false, "Password must be at least 12 characters long."];
     }
     
     // Check for at least one uppercase letter
     if (!preg_match('/[A-Z]/', $password)) {
         return [false, "Password must contain at least one uppercase letter."];
+    }
+    
+    // Check for at least one lowercase letter
+    if (!preg_match('/[a-z]/', $password)) {
+        return [false, "Password must contain at least one lowercase letter."];
+    }
+    
+    // Check for at least one number
+    if (!preg_match('/[0-9]/', $password)) {
+        return [false, "Password must contain at least one number."];
     }
     
     // Check for at least one symbol/special character
