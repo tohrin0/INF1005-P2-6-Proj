@@ -28,6 +28,19 @@ CREATE TABLE password_history (
     INDEX (user_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+-- Login attempts tracking table
+CREATE TABLE login_attempts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(100) NOT NULL,
+    ip_address VARCHAR(45) NOT NULL,
+    user_agent VARCHAR(255) NOT NULL,
+    status ENUM('success', 'failure') NOT NULL,
+    attempt_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX (email),
+    INDEX (ip_address),
+    INDEX (status)
+);
 -- Newsletter subscribers table
 CREATE TABLE newsletter_subscribers (
     id INT AUTO_INCREMENT PRIMARY KEY,

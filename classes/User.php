@@ -73,18 +73,62 @@ class User {
             $stmt->execute([$email]);
             $user = $stmt->fetch(\PDO::FETCH_ASSOC);
             
+            // Get IP address and user agent for logging
+            $ip_address = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+            $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+            
             // Check if user exists and password is correct
             if ($user && password_verify($password, $user['password'])) {
+                // Regenerate session ID to prevent session fixation
+                regenerateSessionId();
+                
+                // Set session variables
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['role'] = $user['role'];
+                $_SESSION['login_time'] = time();
+                
+                // Log successful login to database
+                $this->logLoginAttempt($email, $ip_address, $user_agent, 'success');
+                
+                // Log successful login to error log as well (can be removed in production)
+                error_log("User {$user['id']} ({$email}) logged in successfully");
+                
                 return true;
             }
             
+            // Log failed login attempt to database
+            $this->logLoginAttempt($email, $ip_address, $user_agent, 'failure');
+            
+            // Log to error log as well (can be removed in production)
+            error_log("Failed login attempt for email: {$email}");
             return false;
         } catch (\PDOException $e) {
             error_log("Login error: " . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Log login attempt to database
+     * 
+     * @param string $email Email address used for login attempt
+     * @param string $ip_address IP address of the user
+     * @param string $user_agent User agent of the browser
+     * @param string $status 'success' or 'failure'
+     * @return bool Whether logging was successful
+     */
+    private function logLoginAttempt($email, $ip_address, $user_agent, $status) {
+        try {
+            $stmt = $this->db->prepare("
+                INSERT INTO login_attempts 
+                (email, ip_address, user_agent, status) 
+                VALUES (?, ?, ?, ?)
+            ");
+            return $stmt->execute([$email, $ip_address, $user_agent, $status]);
+        } catch (\PDOException $e) {
+            error_log("Error logging login attempt: " . $e->getMessage());
+            return false; // Logging failure shouldn't break the authentication flow
         }
     }
 
