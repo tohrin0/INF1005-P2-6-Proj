@@ -370,5 +370,237 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+<div id="simple-chat" style="position:fixed; bottom:20px; right:20px; z-index:9999;">
+  <button id="simple-chat-button" style="background-color:#2563EB; color:white; width:60px; height:60px; border-radius:50%; border:none; box-shadow:0 4px 6px rgba(0,0,0,0.1); cursor:pointer; display:flex; align-items:center; justify-content:center;">
+    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+  </button>
+  
+  <div id="simple-chat-window" style="display:none; position:absolute; bottom:70px; right:0; width:300px; height:400px; background:white; border-radius:10px; box-shadow:0 4px 15px rgba(0,0,0,0.15); overflow:hidden;">
+    <div style="background-color:#2563EB; color:white; padding:15px; display:flex; justify-content:space-between;">
+      <span>SkyBooker Assistant</span>
+      <button id="simple-close-chat" style="background:none; border:none; color:white; cursor:pointer;">✕</button>
+    </div>
+    
+    <div id="simple-messages" style="height:290px; overflow-y:auto; padding:15px;">
+      <div style="background-color:#EFF6FF; padding:10px; border-radius:8px; margin-bottom:10px; max-width:80%;">
+        <p style="margin:0; font-size:14px;">👋 Hi there! I'm your SkyBooker assistant. How can I help with your travel plans today?</p>
+      </div>
+    </div>
+    
+    <div style="border-top:1px solid #eee; padding:10px;">
+      <form id="simple-chat-form" style="display:flex;">
+        <input id="simple-user-input" type="text" placeholder="Type your message..." style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px 0 0 4px;">
+        <button type="submit" style="background-color:#2563EB; color:white; border:none; padding:8px 15px; border-radius:0 4px 4px 0;">Send</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.typing-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin: 0 3px;
+    display: inline-block;
+    animation: typing 1.4s infinite both;
+}
+.typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+.typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+@keyframes typing {
+    0%, 100% {
+        transform: scale(0.7);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+</style>
+
+<script>
+console.log("Debug: Chat script loading");
+document.addEventListener('DOMContentLoaded', function() {
+  console.log("Debug: DOM loaded");
+  const button = document.getElementById('simple-chat-button');
+  const window = document.getElementById('simple-chat-window');
+  const closeBtn = document.getElementById('simple-close-chat');
+  const form = document.getElementById('simple-chat-form');
+  const input = document.getElementById('simple-user-input');
+  const messages = document.getElementById('simple-messages');
+  
+  if(!button || !window) console.log("Debug: Elements not found");
+  
+  button.addEventListener('click', function() {
+    console.log("Debug: Button clicked");
+    window.style.display = window.style.display === 'none' ? 'block' : 'none';
+    if(window.style.display === 'block') {
+      setTimeout(() => input.focus(), 300);
+    }
+  });
+  
+  closeBtn.addEventListener('click', function() {
+    window.style.display = 'none';
+  });
+  
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const message = input.value.trim();
+    if(!message) return;
+    
+    // Add user message
+    addMessage(message, true);
+    input.value = '';
+    
+    // Get bot response
+    getBotResponse(message);
+  });
+  
+  function addMessage(text, isUser) {
+    const div = document.createElement('div');
+    div.style.backgroundColor = isUser ? '#2563EB' : '#EFF6FF';
+    div.style.color = isUser ? 'white' : 'black';
+    div.style.padding = '10px';
+    div.style.borderRadius = '8px';
+    div.style.marginBottom = '10px';
+    div.style.maxWidth = '80%';
+    div.style.marginLeft = isUser ? 'auto' : '0';
+    
+    // Use innerHTML instead of textContent to render HTML links
+    const p = document.createElement('p');
+    p.style.margin = '0';
+    p.style.fontSize = '14px';
+    p.innerHTML = text; // Changed from textContent to innerHTML
+    
+    div.appendChild(p);
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+}
+  
+  async function getBotResponse(message) {
+    // Show typing indicator
+    const typingDiv = document.createElement('div');
+    typingDiv.style.backgroundColor = '#EFF6FF';
+    typingDiv.style.padding = '10px';
+    typingDiv.style.borderRadius = '8px';
+    typingDiv.style.marginBottom = '10px';
+    typingDiv.style.maxWidth = '80%';
+    typingDiv.innerHTML = `
+        <div style="display:flex;">
+            <span class="typing-dot" style="background-color:#888"></span>
+            <span class="typing-dot" style="background-color:#888"></span>
+            <span class="typing-dot" style="background-color:#888"></span>
+        </div>
+    `;
+    messages.appendChild(typingDiv);
+    messages.scrollTop = messages.scrollHeight;
+    
+    try {
+        const botResponse = await simulateAIResponse(message);
+        messages.removeChild(typingDiv);
+        addMessage(botResponse, false);
+    } catch (error) {
+        console.error('Error getting bot response:', error);
+        messages.removeChild(typingDiv);
+        addMessage("I'm sorry, I couldn't process your request. Please try again later.", false);
+    }
+  }
+  
+  async function simulateAIResponse(message) {
+    // Simple delay to simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const lowerMessage = message.toLowerCase();
+    
+    // Page redirection handling
+    if (lowerMessage.includes('account') || lowerMessage.includes('profile') || lowerMessage.includes('my info')) {
+        return "You can access your account settings here: <a href='account.php' class='text-blue-600 underline'>Account Page</a>";
+    }
+    
+    if (lowerMessage.includes('book') || lowerMessage.includes('reservation') || lowerMessage.includes('ticket')) {
+        return "Start booking your flight here: <a href='search2.php' class='text-blue-600 underline'>Search Flights</a>";
+    }
+    
+    if (lowerMessage.includes('contact') || lowerMessage.includes('support') || lowerMessage.includes('help desk')) {
+        return "Need assistance? Visit our <a href='contact.php' class='text-blue-600 underline'>Contact Page</a>";
+    }
+    
+    if (lowerMessage.includes('faq') || lowerMessage.includes('questions') || lowerMessage.includes('answers')) {
+        return "Find answers to common questions on our <a href='faq.php' class='text-blue-600 underline'>FAQ Page</a>";
+    }
+    
+    if (lowerMessage.includes('globe') || lowerMessage.includes('map') || lowerMessage.includes('world')) {
+        return "Explore destinations on our interactive <a href='globe.php' class='text-blue-600 underline'>Globe View</a>";
+    }
+    
+    if (lowerMessage.includes('search') || lowerMessage.includes('find flights')) {
+        return "Search for available flights here: <a href='search2.php' class='text-blue-600 underline'>Flight Search</a>";
+    }
+    
+    if (lowerMessage.includes('terms') || lowerMessage.includes('conditions') || lowerMessage.includes('policy')) {
+        return "Review our terms and policies: <a href='terms.php' class='text-blue-600 underline'>Terms and Conditions</a>";
+    }
+    
+    if (lowerMessage.includes('register') || lowerMessage.includes('sign up') || lowerMessage.includes('create account')) {
+        return "Create a new account here: <a href='register.php' class='text-blue-600 underline'>Register</a>";
+    }
+    
+    if (lowerMessage.includes('login') || lowerMessage.includes('sign in')) {
+        return "Sign in to your account: <a href='login.php' class='text-blue-600 underline'>Login</a>";
+    }
+    
+    // Existing responses remain the same
+    if (lowerMessage.includes('price') || lowerMessage.includes('cost') || lowerMessage.includes('how much')) {
+        return "Flight prices vary based on destination, dates, and availability. You can check specific prices by searching for your route using our search form. We always show transparent pricing with no hidden fees!";
+    }
+    
+    if (lowerMessage.includes('destination') || lowerMessage.includes('where') || lowerMessage.includes('travel to')) {
+        return "We offer flights to hundreds of destinations worldwide! Popular destinations include New York, London, Tokyo, Dubai, and Sydney. You can explore our featured destinations section below.";
+    }
+    
+    if (lowerMessage.includes('cancel') || lowerMessage.includes('refund')) {
+        return "You can cancel or request a refund for your booking through your account dashboard. Our flexible booking options allow changes on many flights. Check the specific fare rules for your booking for details.";
+    }
+    
+    if (lowerMessage.includes('covid') || lowerMessage.includes('pandemic') || lowerMessage.includes('restriction')) {
+        return "Travel restrictions vary by country and are subject to change. We recommend checking the latest COVID-19 guidelines for your destination before booking. Our flexible booking options can help if your plans need to change.";
+    }
+    
+    if (lowerMessage.includes('help') || lowerMessage.includes('assistance')) {
+        return "I'm here to help! You can ask me about booking flights, destinations, prices, or navigate to specific pages. Try asking for 'account', 'search', 'contact', 'FAQ', etc.";
+    }
+    
+    if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
+        return "Hello there! How can I assist with your travel plans today?";
+    }
+    
+    // Default response
+    return "Thanks for your message! I can help with flight bookings, provide links to specific pages, or answer questions. What would you like to do?";
+}
+});
+
+// Enable HTML rendering in chat messages
+function addMessage(text, isUser) {
+    const div = document.createElement('div');
+    div.style.backgroundColor = isUser ? '#2563EB' : '#EFF6FF';
+    div.style.color = isUser ? 'white' : 'black';
+    div.style.padding = '10px';
+    div.style.borderRadius = '8px';
+    div.style.marginBottom = '10px';
+    div.style.maxWidth = '80%';
+    div.style.marginLeft = isUser ? 'auto' : '0';
+    
+    // Use innerHTML instead of textContent to render HTML links
+    div.innerHTML = text;
+    
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+}
+</script>
 </body>
 </html>

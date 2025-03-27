@@ -7,6 +7,7 @@ require_once 'inc/auth.php';
 require_once 'classes/User.php';
 require_once 'classes/TwoFactorAuth.php';
 require_once 'vendor/autoload.php';
+require_once 'inc/accessibility.php';
 
 if (!isLoggedIn()) {
     header('Location: login.php');

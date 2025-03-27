@@ -16,6 +16,8 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/responsive.css">
     <link href="assets/css/tailwind.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/accessibility.css">
+
     <style>
         /* Fix navigation styling */
         nav ul {
