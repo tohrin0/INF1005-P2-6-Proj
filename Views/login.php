@@ -14,6 +14,8 @@ if (isset($_SESSION['user_id'])) {
 }
 
 $error = "";
+$isLocked = false;
+$isRateLimited = false;
 
 // Create user object
 $user = new User($pdo);
@@ -39,12 +41,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
             $error = "Please enter both email and password.";
         } else {
             // Attempt to login
-            if ($user->login($email, $password)) {
+            $result = $user->login($email, $password);
+            
+            if ($result['success']) {
                 // Redirect to home page after successful login
                 header("Location: index.php");
                 exit();
             } else {
-                $error = "Invalid email or password.";
+                $error = $result['message'];
+                $isLocked = isset($result['locked']) && $result['locked'];
+                $isRateLimited = isset($result['rate_limited']) && $result['rate_limited'];
             }
         }
     }
@@ -76,13 +82,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                     <p class="text-gray-600 mb-6">Sign in to access your account</p>
                     
                     <?php if (!empty($error)): ?>
-                        <div class="mb-6 p-4 bg-red-50 text-red-700 border border-red-200 rounded-md">
+                        <div class="mb-6 p-4 <?php echo ($isLocked || $isRateLimited) ? 'bg-orange-50 text-orange-700 border border-orange-200' : 'bg-red-50 text-red-700 border border-red-200'; ?> rounded-md">
                             <div class="flex">
                                 <div class="flex-shrink-0">
                                     <i class="fas fa-exclamation-circle w-5 h-5"></i>
                                 </div>
                                 <div class="ml-3">
                                     <p><?php echo htmlspecialchars($error); ?></p>
+                                    <?php if ($isLocked): ?>
+                                        <p class="mt-2">
+                                            <a href="reset-password.php" class="text-orange-800 underline">Reset your password</a> to unlock your account immediately.
+                                        </p>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -101,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                         </div>
                     <?php endif; ?>
 
-                    <form method="POST" action="login.php" class="space-y-6">
+                    <form method="POST" action="login.php" class="space-y-6" <?php echo ($isRateLimited) ? 'hidden' : ''; ?>>
                         <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                         <div>
                             <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
@@ -109,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <i class="fas fa-envelope text-gray-400"></i>
                                 </div>
-                                <input type="email" id="email" name="email" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter your email" required>
+                                <input type="email" id="email" name="email" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter your email" value="<?php echo isset($email) ? htmlspecialchars($email) : ''; ?>" required>
                             </div>
                         </div>
                         
@@ -146,6 +157,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                             </div>
                         </div>
                     </form>
+                    
+                    <?php if ($isRateLimited): ?>
+                        <div class="text-center mt-6">
+                            <p class="text-gray-600 mb-4">Too many login attempts from your IP address.</p>
+                            <p class="text-gray-600">Please try again later or contact support.</p>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

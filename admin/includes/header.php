@@ -324,9 +324,6 @@
                 <a href="subscribers.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'subscribers.php' ? 'active' : ''; ?>">
                     <i class="fas fa-newspaper"></i> Newsletter Subscribers
                 </a>
-                <a href="login-attempts.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'login-attempts.php' ? 'active' : ''; ?>">
-                    <i class="fas fa-shield-alt"></i> Login Attempts
-                </a>
                 <a href="messages.php" class="menu-item">
                     <i class="fas fa-envelope"></i> Messages
                 </a>
@@ -344,6 +341,13 @@
                 </a>
                 <a href="../logout.php" class="menu-item">
                     <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+                <p class="menu-category">Security</p>
+                <a href="login-attempts.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'login-attempts.php' ? 'active' : ''; ?>">
+                    <i class="fas fa-sign-in-alt"></i> Login Attempts
+                </a>
+                <a href="manage-lockouts.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) === 'manage-lockouts.php' ? 'active' : ''; ?>">
+                    <i class="fas fa-lock"></i> Manage Lockouts
                 </a>
             </div>
         </div>
@@ -417,3 +421,5 @@
             </div>
 
             <main class="admin-main"></main>
+</body>
+</html>

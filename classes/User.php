@@ -68,17 +68,54 @@ class User {
      */
     public function login($email, $password) {
         try {
-            // Search by email
-            $stmt = $this->db->prepare("SELECT id, username, password, role FROM users WHERE email = ?");
-            $stmt->execute([$email]);
-            $user = $stmt->fetch(\PDO::FETCH_ASSOC);
-            
             // Get IP address and user agent for logging
             $ip_address = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
             $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
             
-            // Check if user exists and password is correct
-            if ($user && password_verify($password, $user['password'])) {
+            // Check for IP-based rate limiting first
+            if ($this->isIpRateLimited($ip_address)) {
+                // Log the blocked attempt
+                $this->logLoginAttempt($email, $ip_address, $user_agent, 'blocked');
+                return [
+                    'success' => false,
+                    'message' => 'Too many login attempts from this IP address. Please try again later.',
+                    'rate_limited' => true
+                ];
+            }
+            
+            // Search by email
+            $stmt = $this->db->prepare("SELECT id, username, password, role, lockout_until, failed_login_attempts FROM users WHERE email = ?");
+            $stmt->execute([$email]);
+            $user = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            // Check if user exists
+            if (!$user) {
+                // Log failed login attempt
+                $this->logLoginAttempt($email, $ip_address, $user_agent, 'failure');
+                $this->incrementIpAttempts($ip_address);
+                return [
+                    'success' => false,
+                    'message' => 'Invalid email or password.'
+                ];
+            }
+            
+            // Check if account is locked
+            if ($user['lockout_until'] !== null && new \DateTime($user['lockout_until']) > new \DateTime()) {
+                // Account is locked, log attempt as blocked
+                $this->logLoginAttempt($email, $ip_address, $user_agent, 'blocked');
+                $lockoutTime = new \DateTime($user['lockout_until']);
+                $now = new \DateTime();
+                $minutesLeft = ceil(($lockoutTime->getTimestamp() - $now->getTimestamp()) / 60);
+                
+                return [
+                    'success' => false,
+                    'message' => "Your account is temporarily locked due to multiple failed login attempts. Please try again in {$minutesLeft} minute(s) or reset your password.",
+                    'locked' => true
+                ];
+            }
+            
+            // Check if password is correct
+            if (password_verify($password, $user['password'])) {
                 // Regenerate session ID to prevent session fixation
                 regenerateSessionId();
                 
@@ -88,24 +125,47 @@ class User {
                 $_SESSION['role'] = $user['role'];
                 $_SESSION['login_time'] = time();
                 
+                // Reset failed login attempts and clear lockout
+                $resetStmt = $this->db->prepare("UPDATE users SET failed_login_attempts = 0, lockout_until = NULL, last_login_at = NOW() WHERE id = ?");
+                $resetStmt->execute([$user['id']]);
+                
                 // Log successful login to database
                 $this->logLoginAttempt($email, $ip_address, $user_agent, 'success');
+                
+                // Reset IP-based attempts for this IP on successful login
+                $this->resetIpAttempts($ip_address);
                 
                 // Log successful login to error log as well (can be removed in production)
                 error_log("User {$user['id']} ({$email}) logged in successfully");
                 
-                return true;
+                return [
+                    'success' => true,
+                    'message' => 'Login successful'
+                ];
             }
+            
+            // Password is incorrect, increment failed attempts
+            $this->incrementFailedAttempts($user['id'], $user['failed_login_attempts']);
+            
+            // Also increment IP-based attempts
+            $this->incrementIpAttempts($ip_address);
             
             // Log failed login attempt to database
             $this->logLoginAttempt($email, $ip_address, $user_agent, 'failure');
             
             // Log to error log as well (can be removed in production)
             error_log("Failed login attempt for email: {$email}");
-            return false;
+            
+            return [
+                'success' => false,
+                'message' => 'Invalid email or password.'
+            ];
         } catch (\PDOException $e) {
             error_log("Login error: " . $e->getMessage());
-            return false;
+            return [
+                'success' => false,
+                'message' => 'A system error occurred. Please try again later.'
+            ];
         }
     }
 
@@ -437,6 +497,128 @@ class User {
         } catch (PDOException $e) {
             error_log("Error cancelling account deletion: " . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Increment failed login attempts for a user
+     * Lock the account if threshold is reached
+     */
+    private function incrementFailedAttempts($userId, $currentAttempts) {
+        // Threshold for account lockout
+        $maxAttempts = 5;
+        
+        // Lockout duration in minutes
+        $lockoutDuration = 15;
+        
+        $newAttempts = $currentAttempts + 1;
+        
+        if ($newAttempts >= $maxAttempts) {
+            // Lock the account
+            $lockoutUntil = date('Y-m-d H:i:s', strtotime("+{$lockoutDuration} minutes"));
+            $stmt = $this->db->prepare("UPDATE users SET failed_login_attempts = ?, lockout_until = ? WHERE id = ?");
+            $stmt->execute([$newAttempts, $lockoutUntil, $userId]);
+            
+            error_log("Account ID {$userId} locked until {$lockoutUntil} after {$newAttempts} failed attempts");
+        } else {
+            // Just increment the counter
+            $stmt = $this->db->prepare("UPDATE users SET failed_login_attempts = ? WHERE id = ?");
+            $stmt->execute([$newAttempts, $userId]);
+        }
+        
+        return $newAttempts;
+    }
+    
+    /**
+     * Check if an IP address is rate limited
+     */
+    private function isIpRateLimited($ipAddress) {
+        try {
+            // Get current rate limit status
+            $stmt = $this->db->prepare("SELECT attempts, blocked_until, first_attempt_at FROM ip_rate_limits WHERE ip_address = ?");
+            $stmt->execute([$ipAddress]);
+            $rateLimit = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            // If no record exists, IP is not rate limited
+            if (!$rateLimit) {
+                return false;
+            }
+            
+            // Check if IP is blocked
+            if ($rateLimit['blocked_until'] !== null && new \DateTime($rateLimit['blocked_until']) > new \DateTime()) {
+                return true;
+            }
+            
+            // Check if the time window has reset (2 hours)
+            $firstAttempt = new \DateTime($rateLimit['first_attempt_at']);
+            $now = new \DateTime();
+            $hoursSinceFirstAttempt = ($now->getTimestamp() - $firstAttempt->getTimestamp()) / 3600;
+            
+            if ($hoursSinceFirstAttempt > 2) {
+                // Reset the counter if time window has passed
+                $this->resetIpAttempts($ipAddress);
+                return false;
+            }
+            
+            // IP is not currently blocked, but we'll check attempt count in incrementIpAttempts
+            return false;
+        } catch (\PDOException $e) {
+            error_log("Error checking IP rate limit: " . $e->getMessage());
+            return false; // Don't block on errors
+        }
+    }
+    
+    /**
+     * Increment IP-based attempt counter
+     */
+    private function incrementIpAttempts($ipAddress) {
+        try {
+            // Maximum attempts allowed in the time window
+            $maxAttempts = 15;
+            
+            // Block duration in minutes
+            $blockDuration = 30;
+            
+            // First, check if entry exists
+            $stmt = $this->db->prepare("SELECT id, attempts FROM ip_rate_limits WHERE ip_address = ?");
+            $stmt->execute([$ipAddress]);
+            $rateLimit = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            if ($rateLimit) {
+                // Increment existing record
+                $newAttempts = $rateLimit['attempts'] + 1;
+                
+                if ($newAttempts >= $maxAttempts) {
+                    // Block the IP
+                    $blockedUntil = date('Y-m-d H:i:s', strtotime("+{$blockDuration} minutes"));
+                    $stmt = $this->db->prepare("UPDATE ip_rate_limits SET attempts = ?, blocked_until = ?, updated_at = NOW() WHERE ip_address = ?");
+                    $stmt->execute([$newAttempts, $blockedUntil, $ipAddress]);
+                    
+                    error_log("IP address {$ipAddress} blocked until {$blockedUntil} after {$newAttempts} attempts");
+                } else {
+                    // Just increment the counter
+                    $stmt = $this->db->prepare("UPDATE ip_rate_limits SET attempts = attempts + 1, updated_at = NOW() WHERE ip_address = ?");
+                    $stmt->execute([$ipAddress]);
+                }
+            } else {
+                // Create new record
+                $stmt = $this->db->prepare("INSERT INTO ip_rate_limits (ip_address, attempts, first_attempt_at) VALUES (?, 1, NOW())");
+                $stmt->execute([$ipAddress]);
+            }
+        } catch (\PDOException $e) {
+            error_log("Error incrementing IP attempts: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Reset IP-based attempts counter
+     */
+    private function resetIpAttempts($ipAddress) {
+        try {
+            $stmt = $this->db->prepare("DELETE FROM ip_rate_limits WHERE ip_address = ?");
+            $stmt->execute([$ipAddress]);
+        } catch (\PDOException $e) {
+            error_log("Error resetting IP attempts: " . $e->getMessage());
         }
     }
 }

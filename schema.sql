@@ -10,6 +10,9 @@ CREATE TABLE users (
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     role ENUM('user', 'admin') DEFAULT 'user',
+    failed_login_attempts INT DEFAULT 0,
+    lockout_until DATETIME NULL,
+    last_login_at DATETIME NULL,
     reset_token VARCHAR(100) NULL,
     token_expiry DATETIME NULL,
     admin_reset BOOLEAN DEFAULT 0,
@@ -35,11 +38,22 @@ CREATE TABLE login_attempts (
     email VARCHAR(100) NOT NULL,
     ip_address VARCHAR(45) NOT NULL,
     user_agent VARCHAR(255) NOT NULL,
-    status ENUM('success', 'failure') NOT NULL,
+    status ENUM('success', 'failure','blocked') NOT NULL,
     attempt_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX (email),
     INDEX (ip_address),
     INDEX (status)
+);
+
+CREATE TABLE ip_rate_limits (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ip_address VARCHAR(45) NOT NULL,
+    attempts INT NOT NULL DEFAULT 1,
+    first_attempt_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    blocked_until DATETIME NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY (ip_address)
 );
 -- Newsletter subscribers table
 CREATE TABLE newsletter_subscribers (

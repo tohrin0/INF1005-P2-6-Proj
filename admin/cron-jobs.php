@@ -28,6 +28,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $messageType = "success";
                     break;
                     
+                case 'reset_lockouts':
+                    // Include the cron script but capture its output
+                    ob_start();
+                    include_once 'cron/reset-lockouts.php';
+                    $result = ob_get_clean();
+                    
+                    $message = "Reset lockouts job completed: " . $result;
+                    $messageType = "success";
+                    break;
+                    
                 // Add more cron jobs here as needed
                     
                 default:
@@ -44,7 +54,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Log last run times (you could store these in the database instead)
 $lastRunTimes = [
     'delete_accounts' => file_exists('cron/logs/delete_accounts.log') ? 
-        date('Y-m-d H:i:s', filemtime('cron/logs/delete_accounts.log')) : 'Never run'
+        date('Y-m-d H:i:s', filemtime('cron/logs/delete_accounts.log')) : 'Never run',
+    'reset_lockouts' => file_exists('cron/logs/reset_lockouts.log') ? 
+        date('Y-m-d H:i:s', filemtime('cron/logs/reset_lockouts.log')) : 'Never run'
 ];
 
 // Create logs directory if not exists
@@ -102,7 +114,37 @@ include 'includes/header.php';
             </form>
         </div>
         
-        <!-- You can add more cron job cards here following the same pattern -->
+        <!-- Reset Lockouts Job -->
+        <div class="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-800">Reset Expired Lockouts</h2>
+                    <p class="text-gray-600 mt-1">Clear expired account lockouts and IP address blocks.</p>
+                </div>
+                <div class="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-md">
+                    Security
+                </div>
+            </div>
+            
+            <div class="mb-4 p-4 bg-gray-50 rounded-md">
+                <div class="flex items-center mb-2">
+                    <span class="text-gray-600 font-medium mr-2">Last run:</span>
+                    <span class="text-gray-800"><?= $lastRunTimes['reset_lockouts'] ?></span>
+                </div>
+                <div class="flex items-center">
+                    <span class="text-gray-600 font-medium mr-2">Normal schedule:</span>
+                    <span class="text-gray-800">Every 15 minutes</span>
+                </div>
+            </div>
+            
+            <form method="POST" action="">
+                <input type="hidden" name="cron_job" value="reset_lockouts">
+                <button type="submit" name="run_cron" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors inline-flex items-center">
+                    <span class="mr-2">Run Now</span>
+                    <i class="fas fa-play-circle"></i>
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 
