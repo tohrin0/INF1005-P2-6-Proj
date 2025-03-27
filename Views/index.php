@@ -304,7 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
             
             // Send AJAX request
-            fetch('api/subscribe.php', {
+            fetch('classes/subscribe.php', {
                 method: 'POST',
                 body: formData
             })
