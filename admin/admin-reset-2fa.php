@@ -23,12 +23,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     try {
-        // Generate a unique token for the 2FA reset
+        // Generate a unique token for the 2FA reset with dedicated fields
         $token  = bin2hex(random_bytes(32));
         $expiry = date('Y-m-d H:i:s', strtotime('+24 hours'));
         
         // Update the user's record to clear 2FA (force re-setup) and store the reset token
-        $stmt = $pdo->prepare("UPDATE users SET reset_token = ?, token_expiry = ?, two_factor_secret = NULL, two_factor_enabled = 0 WHERE id = ? AND email = ?");
+        $stmt = $pdo->prepare("UPDATE users SET twofa_reset_token = ?, twofa_reset_expiry = ?, two_factor_secret = NULL, two_factor_enabled = 0, admin_2fa_reset = 1 WHERE id = ? AND email = ?");
         if (!$stmt->execute([$token, $expiry, $userId, $email])) {
             throw new Exception("Failed to update user for 2FA reset");
         }
