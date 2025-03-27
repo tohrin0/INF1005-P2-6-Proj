@@ -157,7 +157,10 @@ class User
 
                 return [
                     'success' => true,
-                    'message' => 'Login successful'
+                    'message' => 'Login successful',
+                    'user_id' => $user['id'],
+                    'username' => $user['username'],
+                    'role' => $user['role']
                 ];
             }
 
