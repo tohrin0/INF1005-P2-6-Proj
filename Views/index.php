@@ -1,15 +1,12 @@
 <?php
 // Include necessary files
+require_once 'inc/session.php';
 include_once 'templates/header.php';
 ?>
 
 <main class="flex min-h-screen flex-col">
     <div class="relative h-[600px] w-full overflow-hidden">
-        <img
-            src="assets/images/Plane1hero.jpg"
-            alt="Airplane flying over a beautiful landscape"
-            class="object-cover w-full h-full absolute inset-0"
-            loading="eager" />
+        <img src="assets/images/Plane1hero.jpg" alt="Airplane flying over a beautiful landscape" class="object-cover w-full h-full absolute inset-0" loading="eager"/>
         <div class="absolute inset-0 bg-gradient-to-r from-black/70 to-black/30 flex flex-col justify-center">
             <div class="container mx-auto px-4">
                 <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 max-w-2xl">
@@ -45,15 +42,15 @@ include_once 'templates/header.php';
                 </div>
                 
                 <div>
-                    <label for="passengers" class="block text-sm font-medium text-gray-700 mb-1">Passengers</label>
+                    <label for="adults" class="block text-sm font-medium text-gray-700 mb-1">Passengers</label>
                     <div class="flex gap-2">
-                        <select id="adults" name="adults" class="flex-1 p-2 border border-gray-300 rounded-md">
+                        <select id="adults" name="adults" aria-label="Number of Adult Passengers" class="flex-1 p-2 border border-gray-300 rounded-md">
                             <option value="1">1 Adult</option>
                             <option value="2">2 Adults</option>
                             <option value="3">3 Adults</option>
                             <option value="4">4 Adults</option>
                         </select>
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-md">
+                        <button type="submit" class="bg-blue-900 text-white py-2 px-6 rounded-md">
                             Search
                         </button>
                     </div>
@@ -82,7 +79,7 @@ include_once 'templates/header.php';
             
             foreach ($destinations as $destination):
             ?>
-                <a href="search2.php?departure=&arrival=<?= htmlspecialchars($destination['name']) ?>" class="group">
+                <a href="search2.php?departure=&arrival=<?= urlencode(htmlspecialchars($destination['name'])) ?>" class="group">
                     <div class="relative h-96 overflow-hidden rounded-xl"> <!-- Increased height from h-72 to h-96 -->
                         <img
                             src="<?= htmlspecialchars($destination['image']) ?>"
@@ -220,12 +217,13 @@ include_once 'templates/header.php';
 
     <section class="bg-blue-600 text-white py-16">
         <div class="container mx-auto px-4 text-center">
-            <h2 class="text-3xl font-bold mb-6">Join Our Newsletter</h2>
+            <h2 class="text-3xl font-bold mb-6 text-white">Join Our Newsletter</h2>
             <p class="text-xl max-w-2xl mx-auto mb-8">
                 Subscribe to our newsletter and be the first to know about exclusive deals, travel tips, and special offers.
             </p>
             <div class="max-w-md mx-auto">
-                <form id="newsletter-form" class="flex flex-col gap-3">
+            <form id="newsletter-form" class="flex flex-col gap-3">
+                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                     <div class="flex flex-col sm:flex-row gap-2">
                         <input
                             type="text"
@@ -239,13 +237,13 @@ include_once 'templates/header.php';
                             class="flex-1 px-4 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300"
                             required />
                     </div>
-                    <button type="submit" class="bg-white text-blue-600 hover:bg-blue-50 px-6 py-3 rounded-lg font-medium transition-colors">
+                    <button type="submit" class="bg-blue-800 text-white px-6 py-3 rounded-lg font-medium transition-colors hover:bg-blue-900">
                         Subscribe
                     </button>
                 </form>
                 <p id="newsletter-message" class="hidden text-sm mt-4 text-blue-100"></p>
-                <p class="text-sm mt-4 text-blue-100">
-                    By subscribing, you agree to our <a href="privacy-policy.php" class="underline hover:text-white transition-colors">Privacy Policy</a> and consent to receive updates from Sky International Travels.
+                <p class="text-sm mt-4 text-blue-50">
+                    By subscribing, you agree to our <a href="privacy-policy.php" class="underline hover:text-gray-100 transition-colors text-blue-500">Privacy Policy</a> and consent to receive updates from Sky International Travels.
                 </p>
             </div>
         </div>
@@ -304,9 +302,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (nameInput && nameInput.value) {
                 formData.append('first_name', nameInput.value.trim());
             }
+            formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
             
             // Send AJAX request
-            fetch('api/subscribe.php', {
+            fetch('classes/subscribe.php', {
                 method: 'POST',
                 body: formData
             })

@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once 'inc/session.php';
 require_once 'inc/config.php';
 require_once 'inc/db.php';
 require_once 'inc/functions.php';
@@ -496,7 +496,7 @@ function confirmCancelBooking(bookingId) {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: 'booking_id=' + bookingId
+            body: 'booking_id=' + bookingId + '&csrf_token=<?php echo generateCSRFToken(); ?>'
         })
         .then(response => response.json())
         .then(data => {

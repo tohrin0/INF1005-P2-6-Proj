@@ -5,12 +5,9 @@ require_once '../inc/db.php';
 require_once '../inc/functions.php';
 require_once '../inc/auth.php';
 require_once '../classes/ContactMessage.php';
+require_once '../inc/session.php';
 
-if (!isAdmin()) {
-    header('Location: ../login.php');
-    exit();
-}
-
+verifyAdminSession();
 // Initialize ContactMessage class
 $messageObj = new ContactMessage();
 

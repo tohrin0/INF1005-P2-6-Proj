@@ -5,13 +5,9 @@ require_once '../inc/functions.php';
 require_once '../inc/auth.php';
 require_once '../classes/Booking.php';
 require_once '../classes/User.php';
+require_once '../inc/session.php';
 
-session_start();
-
-if (!isAdmin()) {
-    header('Location: ../login.php');
-    exit();
-}
+verifyAdminSession();
 
 // Get date range for filtering
 $startDate = $_GET['start_date'] ?? date('Y-m-d', strtotime('-30 days'));

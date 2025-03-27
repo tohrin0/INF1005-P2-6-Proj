@@ -1,6 +1,5 @@
 <?php
-// Start session for consistent header/footer behavior
-session_start();
+require_once 'inc/session.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">

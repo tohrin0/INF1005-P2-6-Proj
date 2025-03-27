@@ -1,4 +1,5 @@
 <?php
+require_once 'inc/session.php';
 include 'templates/header.php';
 ?>
 

@@ -15,8 +15,8 @@ class EmailNotification {
         $this->mailer->isSMTP();
         $this->mailer->Host = 'smtp.gmail.com';
         $this->mailer->SMTPAuth = true;
-        $this->mailer->Username = 'augmenso.to@gmail.com';
-        $this->mailer->Password = 'vjks aktz vheu arse'; // Use environment variables in production
+        $this->mailer->Username = getenv('SMTP_USERNAME') ?: 'augmenso.to@gmail.com';
+        $this->mailer->Password = getenv('SMTP_PASSWORD') ?: 'vjks aktz vheu arse'; 
         $this->mailer->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
         $this->mailer->Port = 587;
         $this->mailer->setFrom('augmenso.to@gmail.com', 'Sky International Travels');

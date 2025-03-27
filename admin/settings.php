@@ -1,15 +1,12 @@
 <?php
-session_start();
+require_once '../inc/session.php';
 require_once '../inc/config.php';
 require_once '../inc/db.php';
 require_once '../inc/functions.php';
 require_once '../inc/auth.php';
 
-// Check if the user is logged in and has admin privileges
-if (!isLoggedIn() || !isAdmin()) {
-    header('Location: ../login.php');
-    exit();
-}
+// Use the centralized admin verification
+verifyAdminSession();
 
 $error = '';
 $success = '';

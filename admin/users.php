@@ -3,13 +3,9 @@ require_once '../inc/db.php';
 require_once '../inc/functions.php';
 require_once '../inc/auth.php';
 require_once '../classes/User.php';
+require_once '../inc/session.php';
 
-session_start();
-
-if (!isAdmin()) {
-    header('Location: ../login.php');
-    exit();
-}
+verifyAdminSession();
 
 // Initialize User class with the database connection
 $userObj = new User($pdo);

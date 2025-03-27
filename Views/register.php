@@ -1,5 +1,6 @@
 <?php
-session_start();
+// Replace direct session management with centralized session handling
+require_once 'inc/session.php';
 require_once 'inc/config.php';
 require_once 'inc/db.php';
 require_once 'inc/functions.php';
@@ -18,6 +19,9 @@ $error = '';
 $user = new User($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+        $error = "Invalid form submission.";
+    } else {
     $username = trim($_POST['username']);
     $email = trim($_POST['email']);
     $password = trim($_POST['password']);
@@ -46,7 +50,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+}
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -86,6 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php endif; ?>
 
                     <form method="POST" action="register.php" class="space-y-6">
+                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                         <div>
                             <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
                             <div class="relative">

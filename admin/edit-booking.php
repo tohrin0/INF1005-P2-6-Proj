@@ -6,12 +6,9 @@ require_once '../inc/functions.php';
 require_once '../inc/auth.php';
 require_once '../classes/Booking.php';
 require_once '../classes/Flight.php';
+require_once '../inc/session.php';
 
-// Check if the user is logged in and has admin privileges
-if (!isAdmin()) {
-    header('Location: ../login.php');
-    exit();
-}
+verifyAdminSession();
 
 // Get booking ID from URL parameter
 $bookingId = $_GET['id'] ?? null;

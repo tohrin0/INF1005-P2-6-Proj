@@ -1,8 +1,6 @@
 <?php
-// Start session for all requests
-session_start();
-
-// Include core files
+// Include session management first - this handles all session security
+require_once 'inc/session.php';
 require_once 'inc/config.php';
 require_once 'inc/db.php';
 require_once 'inc/functions.php';

@@ -1,5 +1,6 @@
 <?php
-session_start();
+// Replace direct session management with centralized session handling
+require_once 'inc/session.php';
 require_once 'inc/config.php';
 require_once 'inc/db.php';
 require_once 'inc/functions.php';
@@ -28,19 +29,23 @@ if (isset($_SESSION['login_message'])) {
 
 // Check for form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
-    $email = $_POST['email'] ?? '';
-    $password = $_POST['password'] ?? '';
-
-    if (empty($email) || empty($password)) {
-        $error = "Please enter both email and password.";
+    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
+        $error = "Invalid form submission.";
     } else {
-        // Attempt to login
-        if ($user->login($email, $password)) {
-            // Redirect to home page after successful login
-            header("Location: index.php");
-            exit();
+        $email = $_POST['email'] ?? '';
+        $password = $_POST['password'] ?? '';
+
+        if (empty($email) || empty($password)) {
+            $error = "Please enter both email and password.";
         } else {
-            $error = "Invalid email or password.";
+            // Attempt to login
+            if ($user->login($email, $password)) {
+                // Redirect to home page after successful login
+                header("Location: index.php");
+                exit();
+            } else {
+                $error = "Invalid email or password.";
+            }
         }
     }
 }
@@ -97,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                     <?php endif; ?>
 
                     <form method="POST" action="login.php" class="space-y-6">
+                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                         <div>
                             <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                             <div class="relative">

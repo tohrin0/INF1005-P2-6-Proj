@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once 'inc/session.php';
 require_once 'inc/config.php';
 require_once 'inc/db.php';
 require_once 'inc/functions.php';
@@ -622,7 +622,7 @@ include 'templates/header.php';
                 <div class="p-6">
                     <h2 class="text-xl font-bold mb-4">Filter Results</h2>
 
-                    <form method="GET" action="" class="space-y-6">
+                    <form method="GET" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" class="space-y-6">
                         <!-- Preserve search parameters -->
                         <input type="hidden" name="from" value="<?= htmlspecialchars($from) ?>">
                         <input type="hidden" name="to" value="<?= htmlspecialchars($to) ?>">
@@ -742,7 +742,7 @@ include 'templates/header.php';
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <form method="GET" action="" id="sortForm" class="flex items-center gap-2">
+                            <form method="GET" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" id="sortForm" class="flex items-center gap-2">
                                 <!-- Preserve search and filter parameters -->
                                 <input type="hidden" name="from" value="<?= htmlspecialchars($from) ?>">
                                 <input type="hidden" name="to" value="<?= htmlspecialchars($to) ?>">

@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once 'inc/session.php';
 require_once 'inc/config.php';
 require_once 'inc/db.php';
 require_once 'inc/functions.php';

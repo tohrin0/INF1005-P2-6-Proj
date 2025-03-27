@@ -1,4 +1,5 @@
 <?php
+require_once 'inc/session.php';
 // FAQ Page for Flight Booking Website
 
 // Fetch FAQ items from database

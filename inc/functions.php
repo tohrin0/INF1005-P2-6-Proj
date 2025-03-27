@@ -459,6 +459,28 @@ function updateApiKeyStatus($keyIndex, $isWorking, $errorMessage = '') {
         return false;
     }
 }
+/* 
+* Generate CSRF token for form protection
+ * @return string CSRF token
+ */
+function generateCSRFToken() {
+    if (!isset($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+/* 
+ * Validate CSRF token from form submission
+ * @param string $token Submitted token
+ * @return bool True if valid, false otherwise
+ */
+function validateCSRFToken($token) {
+    if (!isset($_SESSION['csrf_token']) || $token !== $_SESSION['csrf_token']) {
+        return false;
+    }
+    return true;
+}
 
 /**
  * Validate password strength against policy requirements
