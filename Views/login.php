@@ -1,10 +1,6 @@
 <?php
-ini_set('session.cookie_httponly', 1);
-ini_set('session.use_only_cookies', 1);
-if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
-    ini_set('session.cookie_secure', 1);
-}
-session_start();
+// Replace direct session management with centralized session handling
+require_once 'inc/session.php';
 require_once 'inc/config.php';
 require_once 'inc/db.php';
 require_once 'inc/functions.php';

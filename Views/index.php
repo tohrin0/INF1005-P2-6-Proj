@@ -1,5 +1,6 @@
 <?php
 // Include necessary files
+require_once 'inc/session.php';
 include_once 'templates/header.php';
 ?>
 

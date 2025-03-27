@@ -75,12 +75,22 @@ class User {
             
             // Check if user exists and password is correct
             if ($user && password_verify($password, $user['password'])) {
+                // Regenerate session ID to prevent session fixation
+                regenerateSessionId();
+                
+                // Set session variables
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['role'] = $user['role'];
+                $_SESSION['login_time'] = time();
+                
+                // Log successful login
+                error_log("User {$user['id']} ({$email}) logged in successfully");
+                
                 return true;
             }
             
+            error_log("Failed login attempt for email: {$email}");
             return false;
         } catch (\PDOException $e) {
             error_log("Login error: " . $e->getMessage());

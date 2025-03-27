@@ -1,4 +1,7 @@
-<?php include 'templates/header.php'; ?>
+<?php
+require_once 'inc/session.php';
+include 'templates/header.php'; 
+?>
 
 <div style="width:100%; height:600px; margin-top:30px;">
     <div id="globeViz" style="width:100%; height:100%;"></div>

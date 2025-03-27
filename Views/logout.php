@@ -1,29 +1,24 @@
 <?php
-ini_set('session.cookie_httponly', 1);
-ini_set('session.use_only_cookies', 1);
-if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
-    ini_set('session.cookie_secure', 1);
-}
-session_start();
+require_once 'inc/session.php';
+require_once 'inc/config.php';
 require_once 'inc/functions.php';
-require_once 'inc/auth.php';
 
-// Clear all session variables
-$_SESSION = array();
-
-// If a session cookie is used, unset it
-if (ini_get("session.use_cookies")) {
-    $params = session_get_cookie_params();
-    setcookie(session_name(), '', time() - 42000,
-        $params["path"], $params["domain"],
-        $params["secure"], $params["httponly"]
-    );
+// Log the logout action before destroying the session
+if (isset($_SESSION['user_id'])) {
+    error_log("User ID: {$_SESSION['user_id']} logged out");
 }
 
-// Destroy the session
-session_destroy();
+// Use the centralized session destruction function
+destroySession();
+
+// Start a new secure session
+secureSessionStart();
+
+// Set a message for the login page
+$_SESSION['login_message'] = "You have been successfully logged out.";
+$_SESSION['login_message_type'] = "success";
 
 // Redirect to homepage
-header("Location: index.php");
+header("Location: login.php");
 exit();
 ?>
