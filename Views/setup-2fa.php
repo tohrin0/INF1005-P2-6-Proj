@@ -6,85 +6,84 @@ require_once 'inc/functions.php';
 require_once 'classes/TwoFactorAuth.php';
 require_once 'vendor/autoload.php';
 
-// Check if this is an admin-initiated setup
-$token = $_GET['token'] ?? '';
-$email = $_GET['email'] ?? '';
+$error = '';
 $adminInitiated = false;
+$userId = null;
+$email = '';
+$secret = '';
 
-if (!empty($token) && !empty($email)) {
-    // Verify token
-    $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? AND reset_token = ? AND token_expiry > NOW() AND admin_reset = 1");
-    $stmt->execute([$email, $token]);
+// If the reset is admin-initiated via token
+if (isset($_GET['admin_reset']) && $_GET['admin_reset'] == 1 && isset($_GET['token'])) {
+    $token = $_GET['token'];
+    // Query the database using dedicated 2FA reset fields
+    $stmt = $pdo->prepare("SELECT id, email FROM users WHERE twofa_reset_token = ? AND twofa_reset_expiry > NOW() AND admin_2fa_reset = 1");
+    $stmt->execute([$token]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($user) {
-        // Valid token, set up for this user
         $adminInitiated = true;
-        $_SESSION['temp_user_id'] = $user['id'];
-        $_SESSION['temp_user_email'] = $email;
+        $userId = $user['id'];
+        $email = $user['email'];
         
-        // Generate 2FA secret
+        // Generate a new 2FA secret for re-setup
         $twoFactorAuth = new TwoFactorAuth($pdo);
-        $_SESSION['temp_2fa_secret'] = $twoFactorAuth->generateSecret();
+        $secret = $twoFactorAuth->generateSecret();
+        
+        // Set temporary session variables for the 2FA setup process
+        $_SESSION['temp_user_id']    = $userId;
+        $_SESSION['temp_user_email'] = $email;
+        $_SESSION['temp_2fa_secret'] = $secret;
     } else {
         $error = "Invalid or expired token.";
     }
 }
 
-// Redirect if user is not logged in or doesn't have temp data
-if (!isset($_SESSION['temp_user_id']) || !isset($_SESSION['temp_user_email']) || !isset($_SESSION['temp_2fa_secret'])) {
-    header("Location: login.php");
-    exit();
+// If not admin initiated, use standard flow that requires temp session data
+if (!$adminInitiated) {
+    if (!isset($_SESSION['temp_user_id']) || !isset($_SESSION['temp_user_email']) || !isset($_SESSION['temp_2fa_secret'])) {
+        header("Location: login.php");
+        exit();
+    }
+    $userId = $_SESSION['temp_user_id'];
+    $email  = $_SESSION['temp_user_email'];
+    $secret = $_SESSION['temp_2fa_secret'];
 }
 
-$userId = $_SESSION['temp_user_id'];
-$email = $_SESSION['temp_user_email'];
-$secret = $_SESSION['temp_2fa_secret'];
-$error = '';
-
-// Create TwoFactorAuth instance
-$twoFactorAuth = new TwoFactorAuth($pdo);
-
-// Generate QR code
-$qrCode = $twoFactorAuth->getQRCode($email, $secret);
-
-// Handle form submission
+// Handle form submission to verify the OTP and complete the 2FA setup
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
         $error = "Invalid form submission.";
     } else {
         $code = $_POST['verification_code'] ?? '';
-        
-        // Verify the code
-        if ($twoFactorAuth->verifyCode($secret, $code)) {
-            // Code is valid, enable 2FA for the user
-            if ($twoFactorAuth->enable2FA($userId, $secret)) {
-                // Clear temporary session data
-                unset($_SESSION['temp_user_id']);
-                unset($_SESSION['temp_user_email']);
-                unset($_SESSION['temp_2fa_secret']);
-                
-                // If this was an admin-initiated setup, clear the token
-                if ($adminInitiated && isset($_SESSION['user_id'])) {
-                    $stmt = $pdo->prepare("UPDATE users SET reset_token = NULL, token_expiry = NULL, admin_reset = 0 WHERE id = ?");
-                    $stmt->execute([$_SESSION['user_id']]);
-                }
-                
-                // Redirect to login page with success message
-                $_SESSION['login_message'] = "Two-factor authentication has been set up successfully. Your account is now secure.";
-                $_SESSION['login_message_type'] = "success";
-                header("Location: login.php");
-                exit;
-            } else {
-                $error = "Failed to enable two-factor authentication. Please try again.";
-            }
+        if (empty($code)) {
+            $error = "Please enter the verification code.";
         } else {
-            $error = "Invalid verification code. Please try again.";
+            $twoFactorAuth = new TwoFactorAuth($pdo);
+            if ($twoFactorAuth->verifyCode($secret, $code)) {
+                // Enable 2FA for the user
+                if ($twoFactorAuth->enable2FA($userId, $secret)) {
+                    // Clear temporary session variables
+                    unset($_SESSION['temp_user_id'], $_SESSION['temp_user_email'], $_SESSION['temp_2fa_secret']);
+                    
+                    // Optionally clear the reset token and admin_reset flag
+                    $stmt = $pdo->prepare("UPDATE users SET reset_token = NULL, token_expiry = NULL, admin_reset = 0 WHERE id = ?");
+                    $stmt->execute([$userId]);
+                    
+                    // Redirect to login (or account page) with a success message
+                    $_SESSION['login_message'] = "Two-factor authentication has been set up successfully.";
+                    $_SESSION['login_message_type'] = "success";
+                    header("Location: login.php");
+                    exit();
+                } else {
+                    $error = "Failed to enable two-factor authentication. Please try again.";
+                }
+            } else {
+                $error = "Invalid verification code. Please try again.";
+            }
         }
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -132,7 +131,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="mb-6 flex flex-col items-center">
                 <p class="text-gray-700 mb-4">Scan this QR code with your authenticator app:</p>
                 <div class="bg-white p-4 border border-gray-200 rounded-lg">
-                    <?php echo $qrCode; ?>
+                    <?php
+                    // Generate the QR code (using BaconQrCode)
+                    $twoFactorAuth = new TwoFactorAuth($pdo);
+                    $qrCode = $twoFactorAuth->getQRCode($email, $secret);
+                    echo $qrCode;
+                    ?>
                 </div>
             </div>
             

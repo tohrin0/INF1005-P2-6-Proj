@@ -225,24 +225,38 @@ include 'includes/header.php';
                 <div class="p-6">
                     <h2 class="text-xl font-semibold mb-4">User Actions</h2>
                     <div class="space-y-3">
-                        <button type="button" onclick="resetPassword()" class="w-full text-left px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors flex items-center">
-                            <span class="mr-2 text-gray-600 inline-block w-5 h-5">🔑</span>
-                            Send Password Reset Link
-                        </button>
+                        <!-- Password Reset Form -->
+                        <form action="admin-reset-password.php" method="POST">
+                            <input type="hidden" name="user_id" value="<?php echo $userId; ?>">
+                            <input type="hidden" name="email" value="<?php echo htmlspecialchars($user['email']); ?>">
+                            <button type="submit" 
+                                class="w-full text-left px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors flex items-center">
+                                <span class="mr-2 text-gray-600 inline-block w-5 h-5">🔑</span>
+                                Send Password Reset Link
+                            </button>
+                        </form>
 
-                        <!-- Add the new 2FA setup button here -->
-                        <button type="button" onclick="setup2FA()" class="w-full text-left px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors flex items-center">
-                            <span class="mr-2 text-gray-600 inline-block w-5 h-5">🔒</span>
-                            Send 2FA Setup Link
-                        </button>
+                        <!-- 2FA Setup Form -->
+                        <form action="admin-reset-2fa.php" method="POST">
+                            <input type="hidden" name="user_id" value="<?php echo $userId; ?>">
+                            <input type="hidden" name="email" value="<?php echo htmlspecialchars($user['email']); ?>">
+                            <button type="submit" 
+                                class="w-full text-left px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors flex items-center">
+                                <span class="mr-2 text-gray-600 inline-block w-5 h-5">🔒</span>
+                                Send 2FA Setup Link
+                            </button>
+                        </form>
                         
-                        <a href="view-bookings.php?user_id=<?php echo $userId; ?>" class="w-full text-left px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors flex items-center block">
+                        <a href="view-bookings.php?user_id=<?php echo $userId; ?>" 
+                            class="w-full text-left px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors flex items-center block">
                             <span class="mr-2 text-gray-600 inline-block w-5 h-5">📅</span>
                             View All Bookings
                         </a>
                         
-                        <form action="" method="POST" onsubmit="return confirm('Are you sure you want to delete this user? This action cannot be undone.');">
-                            <button type="submit" name="delete_user" class="w-full text-left px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-md transition-colors flex items-center">
+                        <form action="" method="POST" 
+                            onsubmit="return confirm('Are you sure you want to delete this user? This action cannot be undone.');">
+                            <button type="submit" name="delete_user" 
+                                class="w-full text-left px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-md transition-colors flex items-center">
                                 <span class="mr-2 text-red-600 inline-block w-5 h-5">🗑️</span>
                                 Delete User
                             </button>

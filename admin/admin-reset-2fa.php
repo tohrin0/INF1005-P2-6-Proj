@@ -5,8 +5,9 @@ require_once '../inc/db.php';
 require_once '../inc/functions.php';
 require_once '../inc/auth.php';
 require_once '../vendor/autoload.php';
-require_once '../classes/PasswordReset.php';
+require_once '../classes/TwoFactorAuth.php';
 
+// Ensure the requester is an admin
 if (!isAdmin()) {
     header("Location: edit-user.php?status=error&message=Unauthorized+access");
     exit;
@@ -22,50 +23,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     try {
-        $passwordReset = new PasswordReset($pdo);
-        
-        // Generate a unique token for the admin reset
+        // Generate a unique token for the 2FA reset
         $token  = bin2hex(random_bytes(32));
         $expiry = date('Y-m-d H:i:s', strtotime('+24 hours'));
         
-        // Store token in the database
-        $stmt = $pdo->prepare("UPDATE users SET reset_token = ?, token_expiry = ?, admin_reset = 1 WHERE id = ? AND email = ?");
+        // Update the user's record to clear 2FA (force re-setup) and store the reset token
+        $stmt = $pdo->prepare("UPDATE users SET reset_token = ?, token_expiry = ?, two_factor_secret = NULL, two_factor_enabled = 0 WHERE id = ? AND email = ?");
         if (!$stmt->execute([$token, $expiry, $userId, $email])) {
-            throw new Exception("Failed to update user with reset token");
+            throw new Exception("Failed to update user for 2FA reset");
         }
         
         // Dynamically determine the base URL from the current request
-        $protocol    = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+        $protocol    = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https://' : 'http://';
         $host        = $_SERVER['HTTP_HOST'];
         $currentPath = $_SERVER['REQUEST_URI'];
         $adminPos    = strpos($currentPath, '/admin/');
         $basePath    = ($adminPos !== false) ? substr($currentPath, 0, $adminPos) : '';
         $siteUrl     = $protocol . $host . $basePath;
         
-        // Create the reset link
-        $resetLink = $siteUrl . "/reset-password.php?token=" . $token . "&admin_reset=1";
+        // Create the 2FA reset link; direct users to the setup-2fa.php page.
+        $resetLink = $siteUrl . "/setup-2fa.php?token=" . $token . "&admin_reset=1";
         
-        // Use PHPMailer to send the email
+        // Prepare email using PHPMailer
         $mail = new PHPMailer\PHPMailer\PHPMailer(true);
         $mail->isSMTP();
         $mail->Host       = 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
         $mail->Username   = 'augmenso.to@gmail.com';
-        $mail->Password   = 'vjks aktz vheu arse'; // Use environment variables in production
+        $mail->Password   = 'vjks aktz vheu arse'; // use environment variables in production
         $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = 587;
         $mail->setFrom('augmenso.to@gmail.com', 'Sky International Travels Admin');
         $mail->addAddress($email);
         $mail->isHTML(true);
-        $mail->Subject  = 'Password Reset Requested by Administrator';
+        $mail->Subject  = 'Two-Factor Authentication Reset Requested by Administrator';
         $mail->Body = "
             <html>
             <body style='font-family: Arial, sans-serif; line-height: 1.6;'>
                 <div style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;'>
-                    <h2 style='color: #3366cc;'>Administrator Requested Password Reset</h2>
-                    <p>An administrator has requested a password reset for your account.</p>
-                    <p>Click the link below to set a new password:</p>
-                    <p><a href='{$resetLink}' style='display: inline-block; background-color: #3366cc; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Reset Password</a></p>
+                    <h2 style='color: #3366cc;'>Administrator Requested 2FA Reset</h2>
+                    <p>An administrator has requested that you reset your two-factor authentication settings.</p>
+                    <p>Click the link below to set up a new 2FA method for your account:</p>
+                    <p><a href='{$resetLink}' style='display: inline-block; background-color: #3366cc; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>Reset Two-Factor Authentication</a></p>
                     <p>This link will expire in 24 hours.</p>
                     <p>If you did not request this reset, please contact support immediately.</p>
                 </div>
@@ -77,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Email could not be sent. Mailer Error: {$mail->ErrorInfo}");
         }
         
-        header("Location: edit-user.php?status=success&message=Password+reset+link+sent");
+        header("Location: edit-user.php?status=success&message=2FA+reset+link+sent");
         exit;
     } catch (Exception $e) {
         header("Location: edit-user.php?status=error&message=" . urlencode("Error: " . $e->getMessage()));
