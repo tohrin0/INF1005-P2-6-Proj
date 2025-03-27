@@ -87,7 +87,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
 
 
         .welcome-message {
-            color: #4CAF50;
+            color: #2e7d32;
             font-weight: bold;
             padding: 10px 15px;
             background-color: #f1f9f1;
@@ -310,9 +310,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
                     <li><a href="contact.php">Contact</a></li>
                     <li><a href="my-bookings.php">Bookings</a></li>
                     <?php if (isLoggedIn()) : ?>
-                    <div class="header-miles">
                         <li><a href="membership.php">Privileges & Miles</a></li>
-                    </div>
                     <?php endif; ?>
                     <?php if (isset($_SESSION['user_id'])): ?>
                     <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>

@@ -49,7 +49,7 @@ include_once 'templates/header.php';
                             <option value="3">3 Adults</option>
                             <option value="4">4 Adults</option>
                         </select>
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-md">
+                        <button type="submit" class="bg-blue-900 text-white py-2 px-6 rounded-md">
                             Search
                         </button>
                     </div>
@@ -216,7 +216,7 @@ include_once 'templates/header.php';
 
     <section class="bg-blue-600 text-white py-16">
         <div class="container mx-auto px-4 text-center">
-            <h2 class="text-3xl font-bold mb-6">Join Our Newsletter</h2>
+            <h2 class="text-3xl font-bold mb-6 text-white">Join Our Newsletter</h2>
             <p class="text-xl max-w-2xl mx-auto mb-8">
                 Subscribe to our newsletter and be the first to know about exclusive deals, travel tips, and special offers.
             </p>
@@ -236,13 +236,13 @@ include_once 'templates/header.php';
                             class="flex-1 px-4 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300"
                             required />
                     </div>
-                    <button type="submit" class="bg-white text-blue-600 hover:bg-blue-50 px-6 py-3 rounded-lg font-medium transition-colors">
+                    <button type="submit" class="bg-blue-800 text-white px-6 py-3 rounded-lg font-medium transition-colors hover:bg-blue-900">
                         Subscribe
                     </button>
                 </form>
                 <p id="newsletter-message" class="hidden text-sm mt-4 text-blue-100"></p>
-                <p class="text-sm mt-4 text-blue-100">
-                    By subscribing, you agree to our <a href="privacy-policy.php" class="underline hover:text-white transition-colors">Privacy Policy</a> and consent to receive updates from Sky International Travels.
+                <p class="text-sm mt-4 text-blue-50">
+                    By subscribing, you agree to our <a href="privacy-policy.php" class="underline hover:text-gray-100 transition-colors text-blue-500">Privacy Policy</a> and consent to receive updates from Sky International Travels.
                 </p>
             </div>
         </div>

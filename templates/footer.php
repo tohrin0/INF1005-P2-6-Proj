@@ -6,7 +6,7 @@
     <div class="footer-content container">
         <div class="footer-main">
             <div class="footer-brand">
-                <h3>Sky International Travels</h3>
+                <h3 class="text-white">Sky International Travels</h3>
                 <p class="tagline">Your journey begins with us</p>
                 <div class="footer-clock">
                     <div id="clock" class="clock">00:00:00</div>
