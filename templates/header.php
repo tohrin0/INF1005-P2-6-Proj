@@ -16,6 +16,8 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/responsive.css">
     <link href="assets/css/tailwind.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/accessibility.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         /* Fix navigation styling */
         nav ul {

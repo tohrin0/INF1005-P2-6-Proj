@@ -7,7 +7,7 @@ require_once 'inc/auth.php';
 require_once 'classes/Booking.php';
 require_once 'classes/Payment.php';
 require_once 'classes/ApiClient.php';
-
+require_once 'inc/accessibility.php';
 // Redirect if not logged in
 if (!isLoggedIn()) {
     header('Location: login.php');

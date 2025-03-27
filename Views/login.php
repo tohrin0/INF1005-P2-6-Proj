@@ -7,6 +7,7 @@ require_once 'inc/functions.php';
 require_once 'inc/auth.php';
 require_once 'classes/User.php';
 require_once 'classes/TwoFactorAuth.php';
+require_once 'inc/accessibility.php'; 
 
 // If user is already logged in, redirect to index.php
 if (isset($_SESSION['user_id'])) {
@@ -141,6 +142,7 @@ if (isset($_GET['redirect'])) {
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/responsive.css">
     <link rel="stylesheet" href="assets/css/tailwind.css">
+    <link rel="stylesheet" href="assets/css/accessibility.php 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 
