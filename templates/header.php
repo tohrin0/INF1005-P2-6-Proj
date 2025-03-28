@@ -23,46 +23,68 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
             display: flex;
             padding: 0;
             margin: 0;
+            gap: 4px;
+            /* Add some consistent spacing between items */
         }
-
 
         nav li {
-            margin: 0 10px;
+            margin: 0;
         }
-
 
         nav a {
-            color: #333;
-            /* Changed from white to dark color */
-            color: #333;
-            /* Changed from white to dark color */
+            color: #71717a;
+            /* Zinc-500 - more muted color for better aesthetics */
             text-decoration: none;
-            padding: 10px 15px;
+            padding: 8px 12px;
             display: inline-block;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
         }
 
-
         nav a:hover {
-            background: #e9ecef;
-            /* Changed from dark blue to light gray */
-            background: #e9ecef;
-            /* Changed from dark blue to light gray */
-            color: #007bff;
+            background: #f4f4f5;
+            /* Zinc-100 */
+            color: #18181b;
+            /* Zinc-900 */
+        }
+
+        /* Active/current page styling */
+        nav a.active {
+            background: #f4f4f5;
+            /* Zinc-100 */
+            color: #18181b;
+            /* Zinc-900 */
+        }
+
+        /* Admin link styling */
+        .admin-link {
+            background-color: #ef4444;
+            /* Red-500 */
+            color: white !important;
             border-radius: 4px;
         }
 
+        .admin-link:hover {
+            background-color: #dc2626;
+            /* Red-600 */
+            color: white !important;
+        }
 
         /* Repositioned welcome message */
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 20px;
-            background-color: #f8f9fa;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 12px 24px;
+            background-color: white;
+            border-bottom: 1px solid #e4e4e7;
+            /* Zinc-200 */
+            position: sticky;
+            top: 0;
+            z-index: 50;
         }
-
 
         .header-content {
             display: flex;
@@ -71,43 +93,42 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
             width: 100%;
         }
 
-
         .logo {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: bold;
-            color: #007bff;
+            color: #3b82f6;
+            /* Blue-500 */
             cursor: pointer;
             text-decoration: none;
+            display: flex;
+            align-items: center;
         }
 
+        .logo img {
+            max-height: 40px;
+            /* Limit the height of the logo */
+            width: auto;
+            /* Maintain aspect ratio */
+        }
 
         .logo:hover {
-            color: #0056b3;
+            color: #2563eb;
+            /* Blue-600 */
         }
-
 
         .welcome-message {
-            color: #2e7d32;
-            font-weight: bold;
-            padding: 10px 15px;
-            background-color: #f1f9f1;
+            color: #16a34a;
+            /* Green-600 */
+            font-weight: 500;
+            padding: 8px 12px;
+            background-color: #f0fdf4;
+            /* Green-50 */
             border-radius: 4px;
             margin-left: auto;
-            margin-right: 20px;
-        }
-
-
-        /* Admin link styling */
-        .admin-link {
-            background-color: #dc3545;
-            color: white !important;
-            border-radius: 4px;
-        }
-
-
-        .admin-link:hover {
-            background-color: #c82333;
-            color: white !important;
+            margin-right: 16px;
+            font-size: 14px;
+            border: 1px solid #dcfce7;
+            /* Green-100 */
         }
 
         /* Compact footer styling */
@@ -294,19 +315,15 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
     <header>
         <div class="header-content">
             <a href="index.php" class="logo">
-                Sky International Travels
+                <img src="assets/images/horizontal.svg" alt="Sky International Travels Logo" class="h-10 w-auto" />
             </a>
-
 
             <?php if (isset($_SESSION['user_id'])): ?>
                 <div class="welcome-message">Welcome, <?php echo htmlspecialchars($_SESSION['username'] ?? 'User'); ?>!</div>
             <?php endif; ?>
 
-
-
             <nav>
                 <ul>
-
                     <li><a href="globe.php">World Map</a></li>
                     <li><a href="search2.php">Search Flights</a></li>
                     <li><a href="contact.php">Contact</a></li>
