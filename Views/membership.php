@@ -48,62 +48,61 @@ include 'templates/header.php';
 ?>
 
 <main class="container mx-auto p-4">
-	<h1 class="text-2xl font-semibold text-blue-900 mb-4">Good Day, <?php echo $_SESSION['username']; ?>!</h1>
+    <h1 class="text-2xl font-semibold text-blue-900 mb-4 text-center md:text-left">
+        Good Day, <?php echo $_SESSION['username']; ?>!
+    </h1>
 
-	<div class="max-w-sm mx-auto p-6 border-2 rounded-lg shadow-lg <?php echo $cardClass; ?>">
-		<h2 class="text-xl font-bold">Membership Level:</h2>
-		<p class="text-lg font-semibold"><?php echo $level; ?></p>
-		<p class="text-sm">Miles: <?php echo number_format($member->getMiles()); ?></p>
-	</div>
+    <!-- Membership Card -->
+    <div class="w-full max-w-sm mx-auto p-4 border-2 rounded-lg shadow-lg <?php echo $cardClass; ?>">
+        <h2 class="text-lg font-bold">Membership Level:</h2>
+        <p class="text-base font-semibold"><?php echo $level; ?></p>
+        <p class="text-sm">Miles: <?php echo number_format($member->getMiles()); ?></p>
+    </div>
 
-	<!-- Progress Bar Section (Separated from Card) -->
-	<div class="max-w-lg mx-auto mt-6 relative">
-		<p class="text-lg font-semibold text-gray-700 text-center mb-2">Membership Progress</p>
+    <!-- Progress Bar -->
+    <div class="w-full max-w-lg mx-auto mt-4">
+        <p class="text-lg font-semibold text-gray-700 text-center mb-2">Membership Progress</p>
 
-		<div class="relative w-full bg-gray-200 border border-gray-300 rounded-full h-8 shadow-md">
-			<div class="<?php echo $progressBarColor; ?> h-8 rounded-full transition-all" style="width: <?php echo $progress; ?>%;"></div>
+        <div class="relative w-full bg-gray-200 border border-gray-300 rounded-full h-6 shadow-md">
+            <div class="<?php echo $progressBarColor; ?> h-6 rounded-full transition-all" style="width: <?php echo $progress; ?>%;"></div>
+        </div>
 
-			<!-- Labels for thresholds (Precise positioning) -->
-			<div class="absolute top-full w-full text-sm font-bold text-gray-700 mt-1">
-				<span class="absolute left-0 transform -translate-x-1/2">0</span>
-				<span class="absolute" style="left: 10%;">1,000</span>
-				<span class="absolute" style="left: 50%;">5,000</span>
-				<span class="absolute right-0 transform translate-x-1/2">10,000+</span>
-			</div>
-		</div>
-	</div>
+        <div class="flex justify-between text-xs font-bold text-gray-700 mt-1">
+            <span>0</span><span>1,000</span><span>5,000</span><span>10,000+</span>
+        </div>
+    </div>
 
-	<div class="bg-white p-6 rounded-lg shadow-md mt-6">
-		<h2 class="text-xl font-semibold mb-2">Transaction History</h2>
-		<?php if (empty($transactions)) : ?>
-			<p>No transactions found.</p>
-		<?php else : ?>
-			<table class="w-full border-collapse border border-gray-300 mt-2">
-				<thead>
-					<tr class="bg-gray-200">
-						<th class="border border-gray-300 p-2">Airline</th>
-						<th class="border border-gray-300 p-2">Flight Number</th>
-						<th class="border border-gray-300 p-2">Departure</th>
-						<th class="border border-gray-300 p-2">Arrival</th>
-						<th class="border border-gray-300 p-2">Miles Earned</th>
-						<th class="border border-gray-300 p-2">Booking Date</th>
-					</tr>
-				</thead>
-				<tbody>
-					<?php foreach ($transactions as $transaction) : ?>
-						<tr class="border border-gray-300">
-							<td class="border border-gray-300 p-2"><?php echo htmlspecialchars($transaction['airline']); ?></td>
-							<td class="border border-gray-300 p-2"><?php echo htmlspecialchars($transaction['flight_number']); ?></td>
-							<td class="border border-gray-300 p-2"><?php echo htmlspecialchars($transaction['departure']); ?></td>
-							<td class="border border-gray-300 p-2"><?php echo htmlspecialchars($transaction['arrival']); ?></td>
-							<td class="border border-gray-300 p-2"><?php echo number_format($transaction['miles']); ?></td>
-							<td class="border border-gray-300 p-2"><?php echo date("M d, Y", strtotime($transaction['booking_date'])); ?></td>
+    <!-- Transaction History -->
+    <div class="bg-white p-4 rounded-lg shadow-md mt-6 w-full">
+        <h2 class="text-lg font-semibold mb-2 text-center md:text-left">Transaction History</h2>
+
+        <?php if (empty($transactions)) : ?>
+            <p class="text-center">No transactions found.</p>
+        <?php else : ?>
+            <div class="overflow-x-auto">
+				<table class="w-full border-collapse border border-gray-300 text-sm">
+					<thead>
+						<tr class="bg-gray-200 text-xs md:text-base">
+							<th class="border border-gray-300 p-2 w-32">Airline</th>
+							<th class="border border-gray-300 p-2 w-24">Flight #</th>
+							<th class="border border-gray-300 p-2 w-16">Miles</th>
+							<th class="border border-gray-300 p-2 w-28">Booking Date</th>
 						</tr>
-					<?php endforeach; ?>
-				</tbody>
-			</table>
-		<?php endif; ?>
-	</div>
+					</thead>
+					<tbody>
+						<?php foreach ($transactions as $transaction) : ?>
+							<tr class="border border-gray-300 text-center">
+								<td class="border border-gray-300 p-2 truncate"><?php echo htmlspecialchars($transaction['airline']); ?></td>
+								<td class="border border-gray-300 p-2 truncate"><?php echo htmlspecialchars($transaction['flight_number']); ?></td>
+								<td class="border border-gray-300 p-2"><?php echo number_format($transaction['miles']); ?></td>
+								<td class="border border-gray-300 p-2 whitespace-nowrap"><?php echo date("M d, Y", strtotime($transaction['booking_date'])); ?></td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			</div>
+        <?php endif; ?>
+    </div>
 </main>
 <?php include 'templates/footer.php'; ?>
 </body>
