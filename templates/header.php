@@ -119,13 +119,14 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             font-size: 14px;
         }
-        
+
         .footer-content {
-            max-width: 900px !important; /* Reduced from default container width */
+            max-width: 900px !important;
+            /* Reduced from default container width */
             margin: 0 auto;
             padding: 0 15px;
         }
-        
+
         .footer-main {
             display: flex;
             flex-wrap: wrap;
@@ -133,24 +134,24 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
             margin-bottom: 20px;
             gap: 20px;
         }
-        
+
         .footer-brand {
             flex: 0 0 220px;
         }
-        
+
         .footer-brand h3 {
             font-size: 20px;
             margin: 0 0 8px;
             font-weight: 600;
         }
-        
+
         .footer-brand .tagline {
             color: #b3c0d1;
             margin: 0;
             font-size: 13px;
             margin-bottom: 12px;
         }
-        
+
         /* Clock styling */
         .footer-clock {
             margin-top: 15px;
@@ -159,68 +160,68 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
             border-radius: 6px;
             display: inline-block;
         }
-        
+
         .clock {
             font-size: 16px;
             font-weight: 600;
             color: #ffffff;
             font-family: "Courier New", monospace;
         }
-        
+
         .timezone {
             font-size: 11px;
             color: #b3c0d1;
             margin-top: 2px;
         }
-        
+
         .footer-nav {
             flex: 0 0 220px;
         }
-        
+
         .footer-contact {
             flex: 0 0 220px;
         }
-        
+
         .footer-contact p {
             margin: 5px 0;
             color: #b3c0d1;
             font-size: 13px;
         }
-        
+
         .footer-contact i {
             width: 15px;
             margin-right: 5px;
             color: #4CAF50;
         }
-        
+
         .footer-links {
             list-style: none;
             padding: 0;
             margin: 0;
         }
-        
+
         .footer-links li {
             margin-bottom: 5px;
         }
-        
+
         .footer-links a {
             color: #b3c0d1;
             text-decoration: none;
             transition: color 0.3s;
             font-size: 13px;
         }
-        
+
         .footer-links a:hover {
             color: #4CAF50;
         }
-        
+
         h4 {
             font-size: 16px;
             margin-top: 0;
             margin-bottom: 10px;
             font-weight: 600;
         }
-        
+
         .footer-bottom {
             padding-top: 15px;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -229,17 +230,17 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
             justify-content: space-between;
             align-items: center;
         }
-        
+
         .footer-bottom p {
             margin: 0;
             font-size: 12px;
             color: #b3c0d1;
         }
-        
+
         .social-links {
             display: flex;
         }
-        
+
         .social-links a {
             display: flex;
             align-items: center;
@@ -253,37 +254,39 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
             transition: background-color 0.3s;
             text-decoration: none;
         }
-        
+
         .social-links a:hover {
             background-color: #4CAF50;
         }
-        
+
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .footer-main {
                 justify-content: flex-start;
             }
-            
-            .footer-brand, .footer-nav, .footer-contact {
+
+            .footer-brand,
+            .footer-nav,
+            .footer-contact {
                 flex: 0 0 100%;
                 margin-bottom: 15px;
             }
-            
+
             .footer-bottom {
                 flex-direction: column;
                 text-align: center;
             }
-            
+
             .social-links {
                 margin-top: 10px;
                 justify-content: center;
             }
-            
+
             .social-links a {
                 margin: 0 4px;
             }
         }
-        </style>
+    </style>
 </head>
 
 
@@ -299,11 +302,11 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
                 <div class="welcome-message">Welcome, <?php echo htmlspecialchars($_SESSION['username'] ?? 'User'); ?>!</div>
             <?php endif; ?>
 
-           
+
 
             <nav>
                 <ul>
-                    
+
                     <li><a href="globe.php">World Map</a></li>
                     <li><a href="search2.php">Search Flights</a></li>
                     <li><a href="contact.php">Contact</a></li>
@@ -312,14 +315,14 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
                         <li><a href="membership.php">Privileges & Miles</a></li>
                     <?php endif; ?>
                     <?php if (isset($_SESSION['user_id'])): ?>
-                    <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
-                        <li><a href="admin/dashboard.php" class="admin-link">Admin Dashboard</a></li>
-                    <?php endif; ?>
-                    <li><a href="account.php">My Account</a></li>
-                    <li><a href="logout.php">Logout</a></li>
+                        <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                            <li><a href="admin/dashboard.php" class="admin-link">Admin Dashboard</a></li>
+                        <?php endif; ?>
+                        <li><a href="account.php">My Account</a></li>
+                        <li><a href="logout.php">Logout</a></li>
                     <?php else: ?>
-                    <li><a href="login.php">Login</a></li>
-                    <li><a href="register.php">Register</a></li>
+                        <li><a href="login.php">Login</a></li>
+                        <li><a href="register.php">Register</a></li>
                     <?php endif; ?>
                 </ul>
             </nav>
