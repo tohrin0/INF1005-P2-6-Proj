@@ -6,6 +6,7 @@ require_once 'inc/functions.php';
 require_once 'inc/auth.php';
 require_once 'inc/api.php';
 require_once 'classes/ApiClient.php';
+require_once 'inc/accessibility.php';
 
 $flights = [];
 $error = '';

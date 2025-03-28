@@ -62,7 +62,9 @@ $routes = [
     'services' => 'services.php',
     'terms' => 'terms.php',
     'privacy-policy' => 'privacy-policy.php',
-    'membership' => 'membership.php'
+    'membership' => 'membership.php',
+    'setup-2fa' => 'setup-2fa.php',
+    'verify-2fa' => 'verify-2fa.php'
 ];
 
 

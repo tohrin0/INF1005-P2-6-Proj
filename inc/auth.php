@@ -64,6 +64,26 @@ function loginUser($email, $password) {
         
         // Check if user exists and password is correct
         if ($user && password_verify($password, $user['password'])) {
+            // Inside the login function, after password verification:
+
+            // Check if user has 2FA enabled
+            $twoFactorAuth = new TwoFactorAuth($pdo);
+            if ($twoFactorAuth->is2FAEnabled($user['id'])) {
+                // If 2FA is enabled, don't complete login yet
+                // Store user info temporarily in session
+                $_SESSION['2fa_user_id'] = $user['id'];
+                $_SESSION['2fa_username'] = $user['username'];
+                $_SESSION['2fa_role'] = $user['role'];
+                
+                // Return with a 2FA required flag
+                return [
+                    'success' => false,
+                    'requires_2fa' => true,
+                    'message' => 'Two-factor authentication required'
+                ];
+            }
+
+            // If no 2FA or 2FA is verified, complete login
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['role'] = $user['role'];

@@ -303,8 +303,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
 
             <nav>
                 <ul>
-                    <!-- Removed "Home" menu item since logo now links to home -->
-                    <li><a href="index.php">Home</a></li>
+                    
                     <li><a href="globe.php">World Map</a></li>
                     <li><a href="search2.php">Search Flights</a></li>
                     <li><a href="contact.php">Contact</a></li>
@@ -326,5 +325,3 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
             </nav>
         </div>
     </header>
-</body>
-</html>

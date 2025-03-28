@@ -27,7 +27,9 @@ class ComposerStaticInit1a712e8471ce2af032dd28117377ab24
             'Psr\\Log\\' => 8,
             'Psr\\Http\\Message\\' => 17,
             'Psr\\Http\\Client\\' => 16,
+            'PragmaRX\\Google2FA\\' => 19,
             'PhpOption\\' => 10,
+            'ParagonIE\\ConstantTime\\' => 23,
             'PHPMailer\\PHPMailer\\' => 20,
         ),
         'M' => 
@@ -48,10 +50,15 @@ class ComposerStaticInit1a712e8471ce2af032dd28117377ab24
         'D' => 
         array (
             'Dotenv\\' => 7,
+            'DASPRiD\\Enum\\' => 13,
         ),
         'C' => 
         array (
             'Classes\\' => 8,
+        ),
+        'B' => 
+        array (
+            'BaconQrCode\\' => 12,
         ),
     );
 
@@ -81,9 +88,17 @@ class ComposerStaticInit1a712e8471ce2af032dd28117377ab24
         array (
             0 => __DIR__ . '/..' . '/psr/http-client/src',
         ),
+        'PragmaRX\\Google2FA\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/pragmarx/google2fa/src',
+        ),
         'PhpOption\\' => 
         array (
             0 => __DIR__ . '/..' . '/phpoption/phpoption/src/PhpOption',
+        ),
+        'ParagonIE\\ConstantTime\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/paragonie/constant_time_encoding/src',
         ),
         'PHPMailer\\PHPMailer\\' => 
         array (
@@ -118,9 +133,17 @@ class ComposerStaticInit1a712e8471ce2af032dd28117377ab24
         array (
             0 => __DIR__ . '/..' . '/vlucas/phpdotenv/src',
         ),
+        'DASPRiD\\Enum\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/dasprid/enum/src',
+        ),
         'Classes\\' => 
         array (
             0 => __DIR__ . '/../..' . '/classes',
+        ),
+        'BaconQrCode\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/bacon/bacon-qr-code/src',
         ),
     );
 

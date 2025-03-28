@@ -24,6 +24,7 @@ define('FLIGHT_API_KEYS', json_encode([
     '16cebcc9041492c90f3eb7ff50e66d94',
     '16cebcc9041492c90f3eb7ff50e66d94',
     '16cebcc9041492c90f3eb7ff50e66d94',
+    '16cebcc9041492c90f3eb7ff50e66d94',
     '16cebcc9041492c90f3eb7ff50e66d94'
 ]));
 
@@ -32,5 +33,16 @@ define('FLIGHT_API_KEY', json_decode(FLIGHT_API_KEYS, true)[0]);
 
 // Site settings
 define('SITE_NAME', 'Flight Booking Website');
-define('SITE_URL', 'http://localhost:8000');
+
+// Create dynamic site URL instead of hardcoded value
+$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+$host = $_SERVER['HTTP_HOST'];
+$basePath = '';
+
+// Check if we're in a subdirectory installation
+if (strpos($_SERVER['SCRIPT_NAME'], 'INF1005-P2-6-Proj') !== false) {
+    $basePath = '/INF1005-P2-6-Proj';
+}
+
+define('SITE_URL', $protocol . $host . $basePath);
 ?>
