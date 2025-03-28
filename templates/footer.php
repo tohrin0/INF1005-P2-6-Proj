@@ -82,25 +82,41 @@ function getCurrentYear()
             </div>
 
             <!-- Column 4 - Newsletter -->
-            <div>
-                <h3 class="font-medium text-gray-900 mb-4">Newsletter</h3>
-                <p class="text-gray-600 text-sm mb-4">Subscribe to get special offers and travel updates.</p>
-                <form class="flex space-x-2">
-                    <input
-                        type="email"
-                        placeholder="Your email"
-                        class="flex h-10 max-w-[200px] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500" />
-                    <button type="submit" class="inline-flex items-center justify-center gap-2 h-10 rounded-md px-3 bg-sky-600 text-white hover:bg-sky-700 text-sm font-medium transition-colors duration-300">
-                        <i class="fa fa-paper-plane h-4 w-4"></i>
-                    </button>
-                </form>
-            </div>
-        </div>
+            
 
         <div class="py-6 border-t border-gray-200 text-center">
+            <!-- UTC Clock with light box -->
+            <div class="mb-3">
+                <div class="inline-block bg-gray-100 px-4 py-2 rounded-md shadow-sm border border-gray-200">
+                    <p class="text-gray-800 text-sm font-medium">
+                        <i class="fa fa-clock-o text-sky-600 mr-1"></i>
+                        <span id="utc-clock" class="font-mono text-gray-900 font-bold"></span> UTC
+                    </p>
+                </div>
+                <p class="text-gray-500 text-xs mt-1 italic">
+                    All flight times displayed across the website are in UTC timezone
+                </p>
+            </div>
             <p class="text-gray-600 text-sm">
                 &copy; <?php echo getCurrentYear(); ?> Sky International Travels. All rights reserved.
             </p>
         </div>
     </div>
 </footer>
+
+<!-- JavaScript for UTC Clock -->
+<script>
+    function updateUTCClock() {
+        const now = new Date();
+        const utcTimeString = now.toUTCString();
+        // Format: extract just the time portion (removes day and date)
+        const timeOnly = utcTimeString.split(' ')[4];
+        document.getElementById('utc-clock').textContent = timeOnly;
+    }
+
+    // Update immediately on page load
+    updateUTCClock();
+    
+    // Then update every second
+    setInterval(updateUTCClock, 1000);
+</script>
