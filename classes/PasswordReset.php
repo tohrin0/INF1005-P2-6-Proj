@@ -185,6 +185,7 @@ class PasswordReset {
             // Validate password strength
             list($isValid, $message) = validatePasswordStrength($newPassword);
             if (!$isValid) {
+                error_log("Password validation failed: " . $message);
                 return [
                     'success' => false,
                     'message' => $message
@@ -193,6 +194,7 @@ class PasswordReset {
             
             // Check if password is reused
             if ($this->isPasswordReused($email, $newPassword)) {
+                error_log("Password reuse detected for email: " . $email);
                 return [
                     'success' => false,
                     'message' => "Cannot reuse your current password or any of your last 5 passwords."
@@ -205,6 +207,7 @@ class PasswordReset {
             $user = $stmt->fetch(\PDO::FETCH_ASSOC);
             
             if (!$user) {
+                error_log("User not found for password reset: " . $email);
                 return [
                     'success' => false,
                     'message' => "User not found."
@@ -218,11 +221,12 @@ class PasswordReset {
             $this->pdo->beginTransaction();
             
             // Update user's password
-            $stmt = $this->pdo->prepare("UPDATE users SET password = ? WHERE email = ?");
+            $stmt = $this->pdo->prepare("UPDATE users SET password = ?, reset_token = NULL, token_expiry = NULL, admin_reset = 0 WHERE email = ?");
             $passwordUpdated = $stmt->execute([$hashedPassword, $email]);
             
             if (!$passwordUpdated) {
                 $this->pdo->rollBack();
+                error_log("Failed to update password for user: " . $email);
                 return [
                     'success' => false,
                     'message' => "Failed to update password."
@@ -234,6 +238,7 @@ class PasswordReset {
             
             if (!$historyAdded) {
                 $this->pdo->rollBack();
+                error_log("Failed to update password history for user: " . $email);
                 return [
                     'success' => false,
                     'message' => "Failed to update password history."
@@ -248,6 +253,7 @@ class PasswordReset {
             unset($_SESSION['reset_otp']);
             unset($_SESSION['reset_otp_time']);
             
+            error_log("Password reset successful for user: " . $email);
             return [
                 'success' => true,
                 'message' => "Your password has been reset successfully."
@@ -258,7 +264,7 @@ class PasswordReset {
                 $this->pdo->rollBack();
             }
             
-            error_log("Database error: " . $e->getMessage());
+            error_log("Database error during password reset: " . $e->getMessage() . " for user: " . $email);
             return [
                 'success' => false,
                 'message' => "An error occurred. Please try again later."
@@ -273,6 +279,8 @@ class PasswordReset {
      */
     public function verifyAdminResetToken($token) {
         try {
+            error_log("Verifying admin reset token: " . $token);
+            
             $stmt = $this->pdo->prepare("
                 SELECT id, email, username 
                 FROM users 
@@ -281,15 +289,11 @@ class PasswordReset {
                   AND admin_reset = 1
             ");
             $stmt->execute([$token]);
-            $user = $stmt->fetch(\PDO::FETCH_ASSOC);
+            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
             
-            if ($user) {
-                // Store user email in session for the reset process
-                $_SESSION['reset_email'] = $user['email'];
-                return $user;
-            }
+            error_log("Token verification result: " . ($result ? "User found: " . $result['email'] : "No user found"));
             
-            return false;
+            return $result;
         } catch (\PDOException $e) {
             error_log("Token verification error: " . $e->getMessage());
             return false;

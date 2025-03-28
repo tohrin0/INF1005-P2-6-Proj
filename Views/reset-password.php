@@ -8,6 +8,18 @@ require_once 'vendor/autoload.php';
 require_once 'classes/PasswordReset.php';
 require_once 'inc/accessibility.php';
 
+// Add this debugging code at the top of the file (after the initial requires)
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    error_log("POST received: " . print_r($_POST, true));
+}
+
+// If user is already logged in, redirect to index.php
+// No need to access password reset when already authenticated
+if (isset($_SESSION['user_id'])) {
+    header("Location: index.php");
+    exit();
+}
+
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
@@ -22,16 +34,26 @@ $isAdminReset = false;
 // Check for admin reset token in URL
 if (isset($_GET['token']) && isset($_GET['admin_reset'])) {
     $token = $_GET['token'];
+    
+    // Add more detailed debugging
+    error_log("Admin reset token received: " . $token);
+    
     $user = $passwordReset->verifyAdminResetToken($token);
     
     if ($user) {
         $isAdminReset = true;
         $showNewPasswordForm = true;
+        $_SESSION['reset_email'] = $user['email']; // Make sure email is stored in session
+        $_SESSION['admin_reset_token'] = $token; // Store token in session for verification
         $message = "This is an administrator-requested password reset. Please create a new password.";
         $messageType = "success";
+        
+        // Debug log
+        error_log("Admin reset token valid for user: " . $user['email']);
     } else {
         $message = "Invalid or expired reset token. Please contact an administrator.";
         $messageType = "error";
+        error_log("Admin reset token verification failed for token: " . $token);
     }
 }
 
@@ -95,10 +117,12 @@ else if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verify_otp'])) {
 }
 
 // Reset Password step (works for both regular and admin resets)
-else if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['reset_password'])) {
+else if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_password'])) {
     $password = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
     $admin_reset = isset($_POST['admin_reset']) && $_POST['admin_reset'] === '1';
+    
+    error_log("Processing password reset - Admin reset: " . ($admin_reset ? 'Yes' : 'No'));
     
     if (empty($password) || empty($confirm_password)) {
         $message = "Please enter and confirm your new password.";
@@ -118,23 +142,25 @@ else if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['reset_password'])
             $messageType = "error";
             $showNewPasswordForm = true;
             if ($admin_reset) $isAdminReset = true;
+            error_log("Password validation failed: " . $passwordMessage);
         } else {
-            // Make sure we have the user's email from session
+            // Check if we have the user's email from session
             if (isset($_SESSION['reset_email'])) {
                 $email = $_SESSION['reset_email'];
                 
-                // Use the updated resetPassword method that checks history
+                // For debugging
+                error_log("Attempting password reset for: " . $email . " - Admin reset: " . ($admin_reset ? 'Yes' : 'No'));
+                
+                // Use the updated resetPassword method
                 $result = $passwordReset->resetPassword($email, $password);
+                
+                // Detailed logging of result
+                error_log("Password reset result: " . ($result['success'] ? 'Success' : 'Failed') . " - " . $result['message']);
                 
                 if ($result['success']) {
                     // Clear all form flags
                     $showOtpForm = false;
                     $showNewPasswordForm = false;
-                    
-                    // If this was an admin reset, clear the token
-                    if ($admin_reset) {
-                        $passwordReset->clearAdminResetToken($email);
-                    }
                     
                     // Add success message to session to display on login page
                     $_SESSION['login_message'] = $result['message'];
@@ -150,6 +176,7 @@ else if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['reset_password'])
                     if ($admin_reset) $isAdminReset = true;
                 }
             } else {
+                error_log("Missing reset_email in session for password reset");
                 $message = "Session expired. Please restart the password reset process.";
                 $messageType = "error";
             }
@@ -192,7 +219,7 @@ include 'templates/header.php';
                         <div class="mb-6 p-4 rounded-md <?php echo $messageType === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'; ?>">
                             <div class="flex">
                                 <div class="flex-shrink-0">
-                                    <i class="fas fa-<?php echo $messageType === 'error' ? 'exclamation-circle' : 'check-circle'; ?> w-5 h-5"></i>
+                                    <i class="fas fa-<?php echo $messageType === 'error' ? 'times-circle' : 'thumbs-up'; ?> w-5 h-5"></i>
                                 </div>
                                 <div class="ml-3">
                                     <p><?php echo htmlspecialchars($message); ?></p>
@@ -203,12 +230,12 @@ include 'templates/header.php';
                     
                     <?php if ($showNewPasswordForm): ?>
                         <!-- New Password Form -->
-                        <form action="" method="POST" class="space-y-6">
+                        <form action="reset-password.php<?php echo $isAdminReset ? '?admin_reset=1' : ''; ?>" method="POST" class="space-y-6">
                             <div>
                                 <label for="password" class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <i class="fas fa-lock text-gray-400"></i>
+                                        <i class="fas fa-key text-gray-400"></i>
                                     </div>
                                     <input type="password" id="password" name="password" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter new password" required>
                                 </div>
@@ -227,6 +254,9 @@ include 'templates/header.php';
                             
                             <?php if ($isAdminReset): ?>
                                 <input type="hidden" name="admin_reset" value="1">
+                                <?php if (isset($_SESSION['admin_reset_token'])): ?>
+                                    <input type="hidden" name="token" value="<?php echo htmlspecialchars($_SESSION['admin_reset_token']); ?>">
+                                <?php endif; ?>
                             <?php endif; ?>
                             
                             <div>

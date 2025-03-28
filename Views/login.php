@@ -160,7 +160,7 @@ if (isset($_GET['redirect'])) {
                         <div class="mb-6 p-4 <?php echo ($isLocked || $isRateLimited) ? 'bg-orange-50 text-orange-700 border border-orange-200' : 'bg-red-50 text-red-700 border border-red-200'; ?> rounded-md">
                             <div class="flex">
                                 <div class="flex-shrink-0">
-                                    <i class="fas fa-exclamation-circle w-5 h-5"></i>
+                                    <i class="fas fa-times-circle w-5 h-5"></i>
                                 </div>
                                 <div class="ml-3">
                                     <p><?php echo htmlspecialchars($error); ?></p>
@@ -178,7 +178,7 @@ if (isset($_GET['redirect'])) {
                         <div class="mb-6 p-4 bg-green-50 text-green-700 border border-green-200 rounded-md">
                             <div class="flex">
                                 <div class="flex-shrink-0">
-                                    <i class="fas fa-check-circle w-5 h-5"></i>
+                                    <i class="fas fa-thumbs-up w-5 h-5"></i>
                                 </div>
                                 <div class="ml-3">
                                     <p><?php echo htmlspecialchars($success); ?></p>
@@ -220,7 +220,7 @@ if (isset($_GET['redirect'])) {
                                 <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <i class="fas fa-envelope text-gray-400"></i>
+                                        <i class="fas fa-at text-gray-400"></i>
                                     </div>
                                     <input type="email" id="email" name="email" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter your email" value="<?php echo isset($email) ? htmlspecialchars($email) : ''; ?>" required>
                                 </div>
@@ -230,7 +230,7 @@ if (isset($_GET['redirect'])) {
                                 <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <i class="fas fa-lock text-gray-400"></i>
+                                        <i class="fas fa-key text-gray-400"></i>
                                     </div>
                                     <input type="password" id="password" name="password" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter your password" required>
                                 </div>
