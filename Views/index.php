@@ -69,12 +69,12 @@ include_once 'templates/header.php';
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"> <!-- Increased gap -->
             <?php
             $destinations = [
-                ["name" => "New York", "image" => "/placeholder.svg?height=400&width=700", "price" => 349],
-                ["name" => "London", "image" => "/placeholder.svg?height=400&width=700", "price" => 429],
-                ["name" => "Paris", "image" => "/placeholder.svg?height=400&width=700", "price" => 399],
-                ["name" => "Tokyo", "image" => "/placeholder.svg?height=400&width=700", "price" => 549],
-                ["name" => "Sydney", "image" => "/placeholder.svg?height=400&width=700", "price" => 649],
-                ["name" => "Dubai", "image" => "/placeholder.svg?height=400&width=700", "price" => 499]
+                ["name" => "New York", "image" => "assets/images/destinations/new-york.jpeg", "price" => 349],
+                ["name" => "London", "image" => "assets/images/destinations/london.avif", "price" => 429],
+                ["name" => "Paris", "image" => "assets/images/destinations/paris.jpg", "price" => 399],
+                ["name" => "Tokyo", "image" => "assets/images/destinations/tokyo.webp", "price" => 549],
+                ["name" => "Sydney", "image" => "assets/images/destinations/sydney.jpg", "price" => 649],
+                ["name" => "Dubai", "image" => "assets/images/destinations/dubai.webp", "price" => 499]
             ];
 
             foreach ($destinations as $destination):
