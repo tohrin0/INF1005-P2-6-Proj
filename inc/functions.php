@@ -459,6 +459,7 @@ function updateApiKeyStatus($keyIndex, $isWorking, $errorMessage = '') {
         return false;
     }
 }
+
 /* 
 * Generate CSRF token for form protection
  * @return string CSRF token
@@ -516,5 +517,40 @@ function validatePasswordStrength($password) {
     
     // All checks passed
     return [true, "Password meets strength requirements."];
+}
+
+/**
+ * Get the real client IP address
+ * This handles proxies, load balancers, and local development
+ * 
+ * @return string The client's IP address
+ */
+function getClientIp() {
+    // Check for CloudFlare
+    if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+        return $_SERVER['HTTP_CF_CONNECTING_IP'];
+    }
+    
+    // Check for proxy headers
+    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        // HTTP_X_FORWARDED_FOR can contain multiple IPs separated by commas
+        // The first one is the original client IP
+        $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+        return trim($ips[0]);
+    }
+    
+    if (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+        return $_SERVER['HTTP_X_REAL_IP'];
+    }
+    
+    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+        return $_SERVER['HTTP_CLIENT_IP'];
+    }
+    
+    // For local testing, you could uncommment this line and set a test IP
+    // return '123.45.67.89'; 
+    
+    // Fall back to REMOTE_ADDR
+    return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 }
 ?>

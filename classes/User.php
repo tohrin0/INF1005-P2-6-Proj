@@ -73,7 +73,7 @@ class User
     {
         try {
             // Get IP address and user agent for logging
-            $ip_address = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+            $ip_address = getClientIp();
             $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
 
             // Check for IP-based rate limiting first
@@ -572,6 +572,9 @@ class User
      */
     private function isIpRateLimited($ipAddress)
     {
+        // Use getClientIp() instead of directly passing the parameter
+        $ipAddress = getClientIp();
+        
         try {
             // Get current rate limit status
             $stmt = $this->db->prepare("SELECT attempts, blocked_until, first_attempt_at FROM ip_rate_limits WHERE ip_address = ?");

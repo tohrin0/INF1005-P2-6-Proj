@@ -52,7 +52,7 @@ function loginUser($email, $password) {
         error_log("loginUser function called with email: $email");
         
         // Get IP address and user agent for logging
-        $ip_address = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        $ip_address = getClientIp();
         $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
         
         // Changed to search by email instead of username
