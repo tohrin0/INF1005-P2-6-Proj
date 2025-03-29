@@ -70,139 +70,127 @@ include 'includes/header.php';
 ?>
 
 <div class="container mx-auto px-4 py-6">
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-800 mb-2">Manage Bookings</h1>
-        <p class="text-gray-600">View and manage customer bookings</p>
+    <div class="admin-page-header">
+        <h1>Manage Bookings</h1>
+        <p>View and manage customer bookings</p>
     </div>
     
     <?php if (isset($_SESSION['admin_message'])): ?>
-        <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
+        <div class="admin-alert admin-alert-success">
             <p><?php echo htmlspecialchars($_SESSION['admin_message']); ?></p>
         </div>
         <?php unset($_SESSION['admin_message']); ?>
     <?php endif; ?>
     
     <?php if (isset($_SESSION['admin_error'])): ?>
-        <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+        <div class="admin-alert admin-alert-danger">
             <p><?php echo htmlspecialchars($_SESSION['admin_error']); ?></p>
         </div>
         <?php unset($_SESSION['admin_error']); ?>
     <?php endif; ?>
     
     <!-- Booking Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="admin-grid-4 mb-6">
         <!-- Total Bookings -->
-        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-blue-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-500 uppercase tracking-wider">Total Bookings</p>
-                    <p class="text-2xl font-bold text-gray-800"><?php echo $stats['total']; ?></p>
-                </div>
-                <div class="text-blue-500 h-10 w-10 flex items-center justify-center rounded-full bg-blue-100">
-                    <i class="fas fa-ticket-alt"></i>
-                </div>
+        <div class="admin-metric-card admin-metric-primary">
+            <div>
+                <p class="text-sm text-gray-500 uppercase tracking-wider">Total Bookings</p>
+                <p class="text-2xl font-bold text-gray-800"><?php echo $stats['total']; ?></p>
+            </div>
+            <div class="admin-metric-icon admin-metric-icon-primary">
+                <i class="fas fa-ticket-alt"></i>
             </div>
         </div>
         
         <!-- Pending Bookings -->
-        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-yellow-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-500 uppercase tracking-wider">Pending</p>
-                    <p class="text-2xl font-bold text-gray-800"><?php echo $stats['pending']; ?></p>
-                </div>
-                <div class="text-yellow-500 h-10 w-10 flex items-center justify-center rounded-full bg-yellow-100">
-                    <i class="fas fa-clock"></i>
-                </div>
+        <div class="admin-metric-card admin-metric-warning">
+            <div>
+                <p class="text-sm text-gray-500 uppercase tracking-wider">Pending</p>
+                <p class="text-2xl font-bold text-gray-800"><?php echo $stats['pending']; ?></p>
+            </div>
+            <div class="admin-metric-icon admin-metric-icon-warning">
+                <i class="fas fa-clock"></i>
             </div>
         </div>
         
         <!-- Confirmed Bookings -->
-        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-green-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-500 uppercase tracking-wider">Confirmed</p>
-                    <p class="text-2xl font-bold text-gray-800"><?php echo $stats['confirmed']; ?></p>
-                </div>
-                <div class="text-green-500 h-10 w-10 flex items-center justify-center rounded-full bg-green-100">
-                    <i class="fas fa-check"></i>
-                </div>
+        <div class="admin-metric-card admin-metric-success">
+            <div>
+                <p class="text-sm text-gray-500 uppercase tracking-wider">Confirmed</p>
+                <p class="text-2xl font-bold text-gray-800"><?php echo $stats['confirmed']; ?></p>
+            </div>
+            <div class="admin-metric-icon admin-metric-icon-success">
+                <i class="fas fa-check"></i>
             </div>
         </div>
         
         <!-- Canceled Bookings -->
-        <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-red-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-500 uppercase tracking-wider">Canceled</p>
-                    <p class="text-2xl font-bold text-gray-800"><?php echo $stats['canceled']; ?></p>
-                </div>
-                <div class="text-red-500 h-10 w-10 flex items-center justify-center rounded-full bg-red-100">
-                    <i class="fas fa-times"></i>
-                </div>
+        <div class="admin-metric-card admin-metric-danger">
+            <div>
+                <p class="text-sm text-gray-500 uppercase tracking-wider">Canceled</p>
+                <p class="text-2xl font-bold text-gray-800"><?php echo $stats['canceled']; ?></p>
+            </div>
+            <div class="admin-metric-icon admin-metric-icon-danger">
+                <i class="fas fa-times"></i>
             </div>
         </div>
     </div>
     
-    <!-- Booking Filters -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-        <div class="flex flex-wrap items-center gap-2">
-            <span class="text-sm font-medium text-gray-700">Filter by status:</span>
-            <a href="?status=all" class="px-3 py-1.5 rounded-full text-sm <?php echo $statusFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'; ?> transition">
-                All
-            </a>
-            <a href="?status=pending" class="px-3 py-1.5 rounded-full text-sm <?php echo $statusFilter === 'pending' ? 'bg-yellow-600 text-white' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'; ?> transition">
-                Pending
-            </a>
-            <a href="?status=confirmed" class="px-3 py-1.5 rounded-full text-sm <?php echo $statusFilter === 'confirmed' ? 'bg-green-600 text-white' : 'bg-green-100 text-green-800 hover:bg-green-200'; ?> transition">
-                Confirmed
-            </a>
-            <a href="?status=canceled" class="px-3 py-1.5 rounded-full text-sm <?php echo $statusFilter === 'canceled' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-800 hover:bg-red-200'; ?> transition">
-                Canceled
-            </a>
-            <a href="?status=completed" class="px-3 py-1.5 rounded-full text-sm <?php echo $statusFilter === 'completed' ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-800 hover:bg-purple-200'; ?> transition">
-                Completed
-            </a>
-        </div>
-    </div>
-    
     <!-- Bookings Table -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h2 class="text-lg font-semibold text-gray-800">Bookings List</h2>
-            <input type="text" id="bookingSearch" placeholder="Search bookings..." 
-                class="px-3 py-1.5 text-sm border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+    <div class="admin-content-card">
+        <div class="admin-card-header">
+            <h2>Bookings List</h2>
+            <div class="header-actions flex flex-wrap gap-2">
+                <a href="?status=all" class="px-3 py-1 rounded-full text-sm <?php echo $statusFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'; ?> transition">
+                    All
+                </a>
+                <a href="?status=pending" class="px-3 py-1 rounded-full text-sm <?php echo $statusFilter === 'pending' ? 'bg-yellow-600 text-white' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'; ?> transition">
+                    Pending
+                </a>
+                <a href="?status=confirmed" class="px-3 py-1 rounded-full text-sm <?php echo $statusFilter === 'confirmed' ? 'bg-green-600 text-white' : 'bg-green-100 text-green-800 hover:bg-green-200'; ?> transition">
+                    Confirmed
+                </a>
+                <a href="?status=canceled" class="px-3 py-1 rounded-full text-sm <?php echo $statusFilter === 'canceled' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-800 hover:bg-red-200'; ?> transition">
+                    Canceled
+                </a>
+                <a href="?status=completed" class="px-3 py-1 rounded-full text-sm <?php echo $statusFilter === 'completed' ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-800 hover:bg-purple-200'; ?> transition">
+                    Completed
+                </a>
+                
+                <input type="text" id="bookingSearch" placeholder="Search bookings..." 
+                    class="px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ml-auto">
+            </div>
         </div>
         
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+            <table class="admin-table">
+                <thead>
                     <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking ID</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flight Details</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th scope="col">Booking ID</th>
+                        <th scope="col">Customer</th>
+                        <th scope="col">Flight Details</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Price</th>
+                        <th scope="col" class="text-right">Actions</th>
                     </tr>
                 </thead>
-                <tbody id="bookingTableBody" class="bg-white divide-y divide-gray-200">
+                <tbody id="bookingTableBody">
                     <?php if (empty($bookings)): ?>
                         <tr>
-                            <td colspan="7" class="px-6 py-4 text-center text-gray-500">No bookings found matching your criteria.</td>
+                            <td colspan="7" class="text-center py-4 text-gray-500">No bookings found matching your criteria.</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($bookings as $booking): ?>
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    #<?php echo htmlspecialchars($booking['id']); ?>
+                            <tr>
+                                <td>
+                                    <div class="font-medium">#<?php echo htmlspecialchars($booking['id']); ?></div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td>
                                     <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($booking['customer_name']); ?></div>
                                     <div class="text-sm text-gray-500"><?php echo htmlspecialchars($booking['customer_email']); ?></div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td>
                                     <div class="text-sm font-medium text-gray-900">
                                         <?php echo isset($booking['flight_number']) ? htmlspecialchars($booking['flight_number']) : 'N/A'; ?>
                                     </div>
@@ -214,37 +202,37 @@ include 'includes/header.php';
                                         <?php endif; ?>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <td>
                                     <?php echo date('M j, Y', strtotime($booking['booking_date'])); ?>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                <td>
+                                    <span class="status-badge 
                                         <?php if ($booking['status'] === 'pending'): ?>
-                                            bg-yellow-100 text-yellow-800
+                                            status-badge-warning
                                         <?php elseif ($booking['status'] === 'confirmed'): ?>
-                                            bg-green-100 text-green-800
+                                            status-badge-success
                                         <?php elseif ($booking['status'] === 'canceled'): ?>
-                                            bg-red-100 text-red-800
+                                            status-badge-danger
                                         <?php elseif ($booking['status'] === 'completed'): ?>
-                                            bg-blue-100 text-blue-800
+                                            status-badge-info
                                         <?php else: ?>
-                                            bg-gray-100 text-gray-800
+                                            status-badge-default
                                         <?php endif; ?>">
                                         <?php echo ucfirst(htmlspecialchars($booking['status'])); ?>
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    $<?php echo number_format($booking['total_price'], 2); ?>
+                                <td>
+                                    <div class="font-medium">$<?php echo number_format($booking['total_price'], 2); ?></div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <div class="flex space-x-2">
-                                        <a href="view-booking.php?id=<?php echo $booking['id']; ?>" class="text-indigo-600 hover:text-indigo-900" title="View Booking">
+                                <td class="text-right">
+                                    <div class="flex justify-end space-x-2">
+                                        <a href="view-booking.php?id=<?php echo $booking['id']; ?>" class="admin-action-view" title="View Booking">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <a href="edit-booking.php?id=<?php echo $booking['id']; ?>" class="text-blue-600 hover:text-blue-900" title="Edit Booking">
+                                        <a href="edit-booking.php?id=<?php echo $booking['id']; ?>" class="admin-action-edit" title="Edit Booking">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <button onclick="confirmDeleteBooking(<?php echo $booking['id']; ?>)" class="text-red-600 hover:text-red-900" title="Delete Booking">
+                                        <button onclick="confirmDeleteBooking(<?php echo $booking['id']; ?>)" class="admin-action-delete" title="Delete Booking">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -271,6 +259,17 @@ include 'includes/header.php';
             document.getElementById('deleteBookingForm').submit();
         }
     }
+    
+    // Simple search functionality
+    document.getElementById('bookingSearch').addEventListener('keyup', function() {
+        const searchText = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#bookingTableBody tr');
+        
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchText) ? '' : 'none';
+        });
+    });
 </script>
 
 <?php include 'includes/footer.php'; ?>

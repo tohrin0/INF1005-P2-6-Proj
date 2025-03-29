@@ -91,122 +91,144 @@ $counts = $countStmt->fetch(PDO::FETCH_ASSOC);
 include 'includes/header.php';
 ?>
 
-<div class="container mx-auto px-4 py-8">
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-        <h1 class="text-2xl font-bold text-gray-800">Newsletter Subscribers</h1>
-        <a href="send-newsletter.php" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
-            <i class="fas fa-paper-plane mr-2"></i> Send Newsletter
-        </a>
+<div class="container mx-auto px-4 py-6">
+    <div class="admin-page-header">
+        <h1>Newsletter Subscribers</h1>
+        <p>Manage and track newsletter subscribers</p>
     </div>
     
     <?php if (isset($_SESSION['admin_message'])): ?>
-        <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
+        <div class="admin-alert admin-alert-success">
             <p><?php echo htmlspecialchars($_SESSION['admin_message']); ?></p>
         </div>
         <?php unset($_SESSION['admin_message']); ?>
     <?php endif; ?>
     
     <?php if (isset($_SESSION['admin_error'])): ?>
-        <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+        <div class="admin-alert admin-alert-danger">
             <p><?php echo htmlspecialchars($_SESSION['admin_error']); ?></p>
         </div>
         <?php unset($_SESSION['admin_error']); ?>
     <?php endif; ?>
     
-    <!-- Stats Overview -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <p class="text-gray-500 text-sm mb-1">Total Subscribers</p>
-            <p class="text-2xl font-bold"><?php echo number_format($counts['total'] ?? 0); ?></p>
-        </div>
-        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <p class="text-gray-500 text-sm mb-1">Active Subscribers</p>
-            <p class="text-2xl font-bold text-green-600"><?php echo number_format($counts['active'] ?? 0); ?></p>
-        </div>
-        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <p class="text-gray-500 text-sm mb-1">Inactive Subscribers</p>
-            <p class="text-2xl font-bold text-gray-500"><?php echo number_format($counts['inactive'] ?? 0); ?></p>
-        </div>
-    </div>
-    
-    <!-- Filters -->
-    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
-        <form action="subscribers.php" method="GET" class="flex flex-col sm:flex-row items-center gap-4">
-            <div class="w-full sm:w-auto">
-                <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select id="status" name="status" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    <option value="all" <?php echo $status === 'all' ? 'selected' : ''; ?>>All Subscribers</option>
-                    <option value="subscribed" <?php echo $status === 'subscribed' ? 'selected' : ''; ?>>Subscribed</option>
-                    <option value="unsubscribed" <?php echo $status === 'unsubscribed' ? 'selected' : ''; ?>>Unsubscribed</option>
-                </select>
+    <!-- Subscriber Stats Cards -->
+    <div class="admin-grid-3 mb-6">
+        <!-- Total Subscribers -->
+        <div class="admin-metric-card admin-metric-primary">
+            <div>
+                <p class="text-sm text-gray-500 uppercase tracking-wider">Total Subscribers</p>
+                <p class="text-2xl font-bold text-gray-800"><?php echo number_format($counts['total'] ?? 0); ?></p>
             </div>
-            <div class="w-full sm:w-auto">
-                <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
-                <input type="text" id="search" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search by email or name" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            <div class="admin-metric-icon admin-metric-icon-primary">
+                <i class="fas fa-users"></i>
             </div>
-            <div class="w-full sm:w-auto self-end">
-                <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-                    Filter
-                </button>
+        </div>
+        
+        <!-- Active Subscribers -->
+        <div class="admin-metric-card admin-metric-success">
+            <div>
+                <p class="text-sm text-gray-500 uppercase tracking-wider">Active Subscribers</p>
+                <p class="text-2xl font-bold text-gray-800"><?php echo number_format($counts['active'] ?? 0); ?></p>
             </div>
-            <?php if (!empty($search) || $status !== 'all'): ?>
-                <div class="w-full sm:w-auto self-end">
-                    <a href="subscribers.php" class="inline-block w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors text-center">
-                        Reset
-                    </a>
-                </div>
-            <?php endif; ?>
-        </form>
+            <div class="admin-metric-icon admin-metric-icon-success">
+                <i class="fas fa-user-check"></i>
+            </div>
+        </div>
+        
+        <!-- Inactive Subscribers -->
+        <div class="admin-metric-card admin-metric-warning">
+            <div>
+                <p class="text-sm text-gray-500 uppercase tracking-wider">Inactive Subscribers</p>
+                <p class="text-2xl font-bold text-gray-800"><?php echo number_format($counts['inactive'] ?? 0); ?></p>
+            </div>
+            <div class="admin-metric-icon admin-metric-icon-warning">
+                <i class="fas fa-user-slash"></i>
+            </div>
+        </div>
     </div>
     
     <!-- Subscribers Table -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
+    <div class="admin-content-card">
+        <div class="admin-card-header">
+            <h2>Subscribers List</h2>
+            <div class="header-actions flex flex-wrap gap-2">
+                <a href="?status=all" class="px-3 py-1 rounded-full text-sm <?php echo $status === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'; ?> transition">
+                    All
+                </a>
+                <a href="?status=subscribed" class="px-3 py-1 rounded-full text-sm <?php echo $status === 'subscribed' ? 'bg-green-600 text-white' : 'bg-green-100 text-green-800 hover:bg-green-200'; ?> transition">
+                    Active
+                </a>
+                <a href="?status=unsubscribed" class="px-3 py-1 rounded-full text-sm <?php echo $status === 'unsubscribed' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-800 hover:bg-red-200'; ?> transition">
+                    Inactive
+                </a>
+                
+                <form action="subscribers.php" method="GET" class="ml-auto flex items-center gap-2">
+                    <input type="hidden" name="status" value="<?php echo htmlspecialchars($status); ?>">
+                    <input type="text" id="search" name="search" value="<?php echo htmlspecialchars($search); ?>" 
+                            placeholder="Search by email or name" 
+                            class="px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    <button type="submit" class="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <?php if (!empty($search)): ?>
+                        <a href="?status=<?php echo htmlspecialchars($status); ?>" class="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded-md hover:bg-gray-300">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    <?php endif; ?>
+                </form>
+                
+                <a href="send-newsletter.php" class="px-3 py-1.5 rounded-md text-sm bg-green-600 text-white hover:bg-green-700 transition">
+                    <i class="fas fa-paper-plane mr-1"></i> Send Newsletter
+                </a>
+            </div>
+        </div>
+        
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+            <table class="admin-table">
+                <thead>
                     <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subscribed Date</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Subscribed Date</th>
+                        <th scope="col" class="text-right">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    <?php if (count($subscribers) === 0): ?>
+                <tbody id="subscriberTableBody">
+                    <?php if (empty($subscribers)): ?>
                         <tr>
-                            <td colspan="5" class="px-6 py-4 text-center text-gray-500">No subscribers found</td>
+                            <td colspan="5" class="text-center py-4 text-gray-500">No subscribers found matching your criteria.</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($subscribers as $subscriber): ?>
                             <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td>
                                     <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($subscriber['email']); ?></div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td>
                                     <div class="text-sm text-gray-900"><?php echo !empty($subscriber['first_name']) ? htmlspecialchars($subscriber['first_name']) : 'N/A'; ?></div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $subscriber['status'] === 'subscribed' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'; ?>">
+                                <td>
+                                    <span class="status-badge <?php echo $subscriber['status'] === 'subscribed' ? 'status-badge-success' : 'status-badge-warning'; ?>">
                                         <?php echo ucfirst($subscriber['status']); ?>
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <?php echo date('M j, Y', strtotime($subscriber['subscribed_at'])); ?>
+                                <td>
+                                    <div class="text-sm text-gray-500"><?php echo date('M j, Y', strtotime($subscriber['subscribed_at'])); ?></div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <div class="flex space-x-2">
-                                        <form method="POST">
+                                <td class="text-right">
+                                    <div class="flex justify-end space-x-2">
+                                        <form method="POST" class="inline">
                                             <input type="hidden" name="subscriber_id" value="<?php echo $subscriber['id']; ?>">
                                             <input type="hidden" name="action" value="toggle_status">
-                                            <button type="submit" class="text-blue-600 hover:text-blue-900" title="<?php echo $subscriber['status'] === 'subscribed' ? 'Unsubscribe' : 'Subscribe'; ?>">
+                                            <button type="submit" class="admin-action-btn admin-action-edit" title="<?php echo $subscriber['status'] === 'subscribed' ? 'Unsubscribe' : 'Subscribe'; ?>">
                                                 <i class="fas fa-<?php echo $subscriber['status'] === 'subscribed' ? 'toggle-on' : 'toggle-off'; ?>"></i>
                                             </button>
                                         </form>
-                                        <form method="POST" onsubmit="return confirm('Are you sure you want to delete this subscriber?');">
+                                        <form method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this subscriber?');">
                                             <input type="hidden" name="subscriber_id" value="<?php echo $subscriber['id']; ?>">
                                             <input type="hidden" name="action" value="delete">
-                                            <button type="submit" class="text-red-600 hover:text-red-900" title="Delete">
+                                            <button type="submit" class="admin-action-btn admin-action-delete" title="Delete">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
@@ -218,35 +240,43 @@ include 'includes/header.php';
                 </tbody>
             </table>
         </div>
+        
+        <?php if ($totalPages > 1): ?>
+            <div class="admin-card-footer flex justify-center">
+                <nav class="inline-flex rounded-md shadow-sm" aria-label="Pagination">
+                    <?php if ($page > 1): ?>
+                        <a href="?page=<?php echo $page - 1; ?>&status=<?php echo htmlspecialchars($status); ?>&search=<?php echo urlencode($search); ?>" 
+                           class="px-3 py-1 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    <?php endif; ?>
+                    
+                    <?php for ($i = max(1, $page - 2); $i <= min($totalPages, $page + 2); $i++): ?>
+                        <a href="?page=<?php echo $i; ?>&status=<?php echo htmlspecialchars($status); ?>&search=<?php echo urlencode($search); ?>" 
+                           class="px-3 py-1 border border-gray-300 <?php echo $i === $page ? 'bg-blue-50 text-blue-600' : 'bg-white text-gray-500 hover:bg-gray-50'; ?> text-sm font-medium">
+                            <?php echo $i; ?>
+                        </a>
+                    <?php endfor; ?>
+                    
+                    <?php if ($page < $totalPages): ?>
+                        <a href="?page=<?php echo $page + 1; ?>&status=<?php echo htmlspecialchars($status); ?>&search=<?php echo urlencode($search); ?>" 
+                           class="px-3 py-1 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    <?php endif; ?>
+                </nav>
+            </div>
+        <?php endif; ?>
     </div>
-    
-    <!-- Pagination -->
-    <?php if ($totalPages > 1): ?>
-        <div class="flex justify-center">
-            <nav class="inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                <?php if ($page > 1): ?>
-                    <a href="?page=<?php echo $page - 1; ?>&status=<?php echo $status; ?>&search=<?php echo urlencode($search); ?>" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                        <span class="sr-only">Previous</span>
-                        <i class="fas fa-chevron-left"></i>
-                    </a>
-                <?php endif; ?>
-                
-                <?php for ($i = max(1, $page - 2); $i <= min($totalPages, $page + 2); $i++): ?>
-                    <a href="?page=<?php echo $i; ?>&status=<?php echo $status; ?>&search=<?php echo urlencode($search); ?>" 
-                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 <?php echo $i === $page ? 'bg-blue-50 text-blue-600' : 'bg-white text-gray-500 hover:bg-gray-50'; ?> text-sm font-medium">
-                        <?php echo $i; ?>
-                    </a>
-                <?php endfor; ?>
-                
-                <?php if ($page < $totalPages): ?>
-                    <a href="?page=<?php echo $page + 1; ?>&status=<?php echo $status; ?>&search=<?php echo urlencode($search); ?>" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                        <span class="sr-only">Next</span>
-                        <i class="fas fa-chevron-right"></i>
-                    </a>
-                <?php endif; ?>
-            </nav>
-        </div>
-    <?php endif; ?>
 </div>
+
+<script>
+    // Simple search functionality for immediate filtering
+    document.getElementById('search').addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') {
+            this.form.submit();
+        }
+    });
+</script>
 
 <?php include 'includes/footer.php'; ?>

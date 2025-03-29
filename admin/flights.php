@@ -1,7 +1,4 @@
 <?php
-// Clear any potential PHP cache
-clearstatcache();
-
 require_once '../inc/config.php';
 require_once '../inc/db.php';
 require_once '../inc/functions.php';
@@ -11,15 +8,24 @@ require_once '../inc/session.php';
 
 verifyAdminSession();
 
-$flights = getAllFlights(); // Function to retrieve all flights from the database
+// Get flight status filter from query string
+$statusFilter = isset($_GET['status']) ? $_GET['status'] : 'all';
 
-$success = $_SESSION['success'] ?? '';
-$error = $_SESSION['error'] ?? '';
-
-unset($_SESSION['success']);
-unset($_SESSION['error']);
-
+// Handle flight actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['delete_flight']) && isset($_POST['flight_id'])) {
+        $flightId = $_POST['flight_id'];
+        
+        if (Flight::delete($flightId)) {
+            $_SESSION['admin_message'] = "Flight deleted successfully.";
+        } else {
+            $_SESSION['admin_error'] = "Failed to delete flight. It may have associated bookings.";
+        }
+        
+        header('Location: flights.php');
+        exit();
+    }
+    
     if (isset($_POST['add_flight'])) {
         // Code to add a new flight
         $flightData = [
@@ -40,22 +46,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $flight->setFromArray($flightData);
         
         if ($flight->save()) {
-            $_SESSION['success'] = "Flight added successfully.";
+            $_SESSION['admin_message'] = "Flight added successfully.";
         } else {
-            $_SESSION['error'] = "Failed to add flight.";
-        }
-        
-        header('Location: flights.php');
-        exit();
-    }
-    
-    if (isset($_POST['delete_flight']) && isset($_POST['flight_id'])) {
-        $flightId = $_POST['flight_id'];
-        
-        if (Flight::delete($flightId)) {
-            $_SESSION['success'] = "Flight deleted successfully.";
-        } else {
-            $_SESSION['error'] = "Failed to delete flight.";
+            $_SESSION['admin_error'] = "Failed to add flight.";
         }
         
         header('Location: flights.php');
@@ -63,91 +56,181 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Get flights based on filter
+$flights = ($statusFilter !== 'all') 
+    ? Flight::getFlightsByStatus($statusFilter) 
+    : getAllFlights();
+
+// Get statistics
+$stats = [
+    'total' => count(getAllFlights()),
+    'scheduled' => count(Flight::getFlightsByStatus('scheduled')),
+    'delayed' => count(Flight::getFlightsByStatus('delayed')),
+    'cancelled' => count(Flight::getFlightsByStatus('cancelled')),
+    'completed' => count(Flight::getFlightsByStatus('completed')),
+];
+
 include 'includes/header.php';
 ?>
 
 <div class="container mx-auto px-4 py-6">
-    <div class="mb-6 flex justify-between items-center">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-800 mb-2">Manage Flights</h1>
-            <p class="text-gray-600">Add, edit, and delete flights in the system</p>
-        </div>
-        <button id="showAddFlightModal" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center">
-            <i class="fas fa-plus mr-2"></i> Add New Flight
-        </button>
+    <div class="admin-page-header">
+        <h1>Manage Flights</h1>
+        <p>Add, edit, and delete flights in the system</p>
     </div>
     
-    <?php if (!empty($success)): ?>
-        <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
-            <p><?= htmlspecialchars($success) ?></p>
+    <?php if (isset($_SESSION['admin_message'])): ?>
+        <div class="admin-alert admin-alert-success">
+            <p><?php echo htmlspecialchars($_SESSION['admin_message']); ?></p>
         </div>
+        <?php unset($_SESSION['admin_message']); ?>
     <?php endif; ?>
     
-    <?php if (!empty($error)): ?>
-        <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
-            <p><?= htmlspecialchars($error) ?></p>
+    <?php if (isset($_SESSION['admin_error'])): ?>
+        <div class="admin-alert admin-alert-danger">
+            <p><?php echo htmlspecialchars($_SESSION['admin_error']); ?></p>
         </div>
+        <?php unset($_SESSION['admin_error']); ?>
     <?php endif; ?>
+    
+    <!-- Flight Stats Cards -->
+    <div class="admin-grid-4 mb-6">
+        <!-- Total Flights -->
+        <div class="admin-metric-card admin-metric-primary">
+            <div>
+                <p class="text-sm text-gray-500 uppercase tracking-wider">Total Flights</p>
+                <p class="text-2xl font-bold text-gray-800"><?php echo $stats['total']; ?></p>
+            </div>
+            <div class="admin-metric-icon admin-metric-icon-primary">
+                <i class="fas fa-plane"></i>
+            </div>
+        </div>
+        
+        <!-- Scheduled Flights -->
+        <div class="admin-metric-card admin-metric-success">
+            <div>
+                <p class="text-sm text-gray-500 uppercase tracking-wider">Scheduled</p>
+                <p class="text-2xl font-bold text-gray-800"><?php echo $stats['scheduled']; ?></p>
+            </div>
+            <div class="admin-metric-icon admin-metric-icon-success">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+        </div>
+        
+        <!-- Delayed Flights -->
+        <div class="admin-metric-card admin-metric-warning">
+            <div>
+                <p class="text-sm text-gray-500 uppercase tracking-wider">Delayed</p>
+                <p class="text-2xl font-bold text-gray-800"><?php echo $stats['delayed']; ?></p>
+            </div>
+            <div class="admin-metric-icon admin-metric-icon-warning">
+                <i class="fas fa-clock"></i>
+            </div>
+        </div>
+        
+        <!-- Cancelled Flights -->
+        <div class="admin-metric-card admin-metric-danger">
+            <div>
+                <p class="text-sm text-gray-500 uppercase tracking-wider">Cancelled</p>
+                <p class="text-2xl font-bold text-gray-800"><?php echo $stats['cancelled']; ?></p>
+            </div>
+            <div class="admin-metric-icon admin-metric-icon-danger">
+                <i class="fas fa-ban"></i>
+            </div>
+        </div>
+    </div>
     
     <!-- Flights Table -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <div class="admin-content-card">
+        <div class="admin-card-header">
+            <h2>Flights List</h2>
+            <div class="header-actions flex flex-wrap gap-2">
+                <a href="?status=all" class="px-3 py-1 rounded-full text-sm <?php echo $statusFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'; ?> transition">
+                    All
+                </a>
+                <a href="?status=scheduled" class="px-3 py-1 rounded-full text-sm <?php echo $statusFilter === 'scheduled' ? 'bg-green-600 text-white' : 'bg-green-100 text-green-800 hover:bg-green-200'; ?> transition">
+                    Scheduled
+                </a>
+                <a href="?status=delayed" class="px-3 py-1 rounded-full text-sm <?php echo $statusFilter === 'delayed' ? 'bg-yellow-600 text-white' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'; ?> transition">
+                    Delayed
+                </a>
+                <a href="?status=cancelled" class="px-3 py-1 rounded-full text-sm <?php echo $statusFilter === 'cancelled' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-800 hover:bg-red-200'; ?> transition">
+                    Cancelled
+                </a>
+                <a href="?status=completed" class="px-3 py-1 rounded-full text-sm <?php echo $statusFilter === 'completed' ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-800 hover:bg-purple-200'; ?> transition">
+                    Completed
+                </a>
+                
+                <input type="text" id="flightSearch" placeholder="Search flights..." 
+                    class="px-3 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ml-auto">
+                    
+                <button id="showAddFlightModal" class="px-3 py-1.5 rounded-md text-sm bg-green-600 text-white hover:bg-green-700 transition">
+                    <i class="fas fa-plus mr-1"></i> Add Flight
+                </button>
+            </div>
+        </div>
+        
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+            <table class="admin-table">
+                <thead>
                     <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flight Number</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Route</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Airline</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th scope="col">Flight Number</th>
+                        <th scope="col">Route</th>
+                        <th scope="col">Date & Time</th>
+                        <th scope="col">Airline</th>
+                        <th scope="col">Price</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="text-right">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody id="flightTableBody">
                     <?php if (empty($flights)): ?>
                         <tr>
-                            <td colspan="7" class="px-6 py-4 text-center text-gray-500">No flights found.</td>
+                            <td colspan="7" class="text-center py-4 text-gray-500">No flights found matching your criteria.</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($flights as $flight): ?>
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-                                    <?= htmlspecialchars($flight['flight_number']) ?>
+                            <tr>
+                                <td>
+                                    <div class="font-medium"><?php echo htmlspecialchars($flight['flight_number']); ?></div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900"><?= htmlspecialchars($flight['departure']) ?> → <?= htmlspecialchars($flight['arrival']) ?></div>
+                                <td>
+                                    <div class="text-sm font-medium text-gray-900">
+                                        <?php echo htmlspecialchars($flight['departure']); ?> → <?php echo htmlspecialchars($flight['arrival']); ?>
+                                    </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900"><?= date('M j, Y', strtotime($flight['date'])) ?></div>
-                                    <div class="text-sm text-gray-500"><?= date('g:i A', strtotime($flight['time'])) ?></div>
+                                <td>
+                                    <div class="text-sm"><?php echo date('M j, Y', strtotime($flight['date'])); ?></div>
+                                    <div class="text-sm text-gray-500"><?php echo date('g:i A', strtotime($flight['time'])); ?></div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <?= htmlspecialchars($flight['airline']) ?>
+                                <td>
+                                    <?php echo htmlspecialchars($flight['airline']); ?>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    $<?= number_format($flight['price'], 2) ?>
+                                <td>
+                                    <div class="font-medium">$<?php echo number_format($flight['price'], 2); ?></div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
+                                <td>
+                                    <span class="status-badge 
                                         <?php if ($flight['status'] === 'scheduled'): ?>
-                                            bg-green-100 text-green-800
+                                            status-badge-success
                                         <?php elseif ($flight['status'] === 'delayed'): ?>
-                                            bg-yellow-100 text-yellow-800
+                                            status-badge-warning
                                         <?php elseif ($flight['status'] === 'cancelled'): ?>
-                                            bg-red-100 text-red-800
+                                            status-badge-danger
+                                        <?php elseif ($flight['status'] === 'completed'): ?>
+                                            status-badge-info
                                         <?php else: ?>
-                                            bg-gray-100 text-gray-800
+                                            status-badge-default
                                         <?php endif; ?>">
-                                        <?= ucfirst(htmlspecialchars($flight['status'])) ?>
+                                        <?php echo ucfirst(htmlspecialchars($flight['status'])); ?>
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <div class="flex space-x-2">
-                                        <a href="edit-flight.php?id=<?= $flight['id'] ?>" class="text-blue-600 hover:text-blue-900" title="Edit Flight">
+                                <td class="text-right">
+                                    <div class="flex justify-end space-x-2">
+                                        <a href="edit-flight.php?id=<?php echo $flight['id']; ?>" class="admin-action-edit" title="Edit Flight">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <button onclick="confirmDeleteFlight(<?= $flight['id'] ?>, '<?= htmlspecialchars($flight['flight_number']) ?>')" class="text-red-600 hover:text-red-900" title="Delete Flight">
+                                        <button onclick="confirmDeleteFlight(<?php echo $flight['id']; ?>, '<?php echo htmlspecialchars($flight['flight_number']); ?>')" class="admin-action-delete" title="Delete Flight">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -159,6 +242,12 @@ include 'includes/header.php';
             </table>
         </div>
     </div>
+    
+    <!-- Hidden form for delete action -->
+    <form id="deleteFlightForm" method="POST" style="display: none;">
+        <input type="hidden" name="delete_flight" value="1">
+        <input type="hidden" name="flight_id" id="deleteFlightId">
+    </form>
 </div>
 
 <!-- Add Flight Modal -->
@@ -168,6 +257,7 @@ include 'includes/header.php';
         <button id="closeModal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
             <i class="fas fa-times"></i>
         </button>
+        
         <h2 class="text-xl font-semibold text-gray-800 mb-4">Add New Flight</h2>
         
         <form action="" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -250,12 +340,6 @@ include 'includes/header.php';
     </div>
 </div>
 
-<!-- Hidden form for flight deletion -->
-<form id="deleteFlightForm" method="POST" style="display: none;">
-    <input type="hidden" name="delete_flight" value="1">
-    <input type="hidden" name="flight_id" id="deleteFlightId">
-</form>
-
 <script>
     // Modal functionality
     const modal = document.getElementById('addFlightModal');
@@ -287,6 +371,17 @@ include 'includes/header.php';
             document.getElementById('deleteFlightForm').submit();
         }
     }
+    
+    // Simple search functionality
+    document.getElementById('flightSearch').addEventListener('keyup', function() {
+        const searchText = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#flightTableBody tr');
+        
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchText) ? '' : 'none';
+        });
+    });
 </script>
 
 <?php include 'includes/footer.php'; ?>

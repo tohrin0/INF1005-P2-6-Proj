@@ -90,25 +90,20 @@ class ContactMessage {
      * @param int $perPage Messages per page
      * @return array Array of messages
      */
-    public function getAllMessages($status = 'all', $page = 1, $perPage = 10) {
+    public function getMessages($status = 'all', $page = 1, $perPage = 20) {
         try {
-            $offset = ($page - 1) * $perPage;
-            
             if ($status !== 'all') {
                 $stmt = $this->db->prepare(
                     "SELECT * FROM contact_messages 
                      WHERE status = ? 
-                     ORDER BY created_at DESC 
-                     LIMIT ? OFFSET ?"
+                     ORDER BY created_at DESC"
                 );
-                $stmt->execute([$status, $perPage, $offset]);
+                $stmt->execute([$status]);
             } else {
-                $stmt = $this->db->prepare(
+                $stmt = $this->db->query(
                     "SELECT * FROM contact_messages 
-                     ORDER BY created_at DESC 
-                     LIMIT ? OFFSET ?"
+                     ORDER BY created_at DESC"
                 );
-                $stmt->execute([$perPage, $offset]);
             }
             
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -163,7 +158,7 @@ class ContactMessage {
      * @param int $messageId Message ID
      * @return bool Success or failure
      */
-    public function delete($messageId) {
+    public function deleteMessage($messageId) {
         try {
             $stmt = $this->db->prepare("DELETE FROM contact_messages WHERE id = ?");
             return $stmt->execute([$messageId]);
@@ -188,5 +183,68 @@ class ContactMessage {
             error_log("Error getting message: " . $e->getMessage());
             return null;
         }
+    }
+    
+    /**
+     * Static method to delete a message
+     * 
+     * @param int $messageId Message ID
+     * @return bool Success or failure
+     */
+    public static function delete($messageId) {
+        $instance = new self();
+        return $instance->deleteMessage($messageId);
+    }
+    
+    /**
+     * Static method to mark a message as read
+     * 
+     * @param int $messageId Message ID
+     * @return bool Success or failure
+     */
+    public static function markAsRead($messageId) {
+        $instance = new self();
+        return $instance->updateStatus($messageId, 'read');
+    }
+    
+    /**
+     * Static method to mark a message as unread
+     * 
+     * @param int $messageId Message ID
+     * @return bool Success or failure
+     */
+    public static function markAsUnread($messageId) {
+        $instance = new self();
+        return $instance->updateStatus($messageId, 'unread');
+    }
+    
+    /**
+     * Static method to get all messages
+     * 
+     * @return array Array of all messages
+     */
+    public static function getAllMessages() {
+        $instance = new self();
+        return $instance->getMessages('all');
+    }
+    
+    /**
+     * Static method to get all read messages
+     * 
+     * @return array Array of read messages
+     */
+    public static function getReadMessages() {
+        $instance = new self();
+        return $instance->getMessages('read');
+    }
+    
+    /**
+     * Static method to get all unread messages
+     * 
+     * @return array Array of unread messages
+     */
+    public static function getUnreadMessages() {
+        $instance = new self();
+        return $instance->getMessages('unread');
     }
 }

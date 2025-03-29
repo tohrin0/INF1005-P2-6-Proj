@@ -577,4 +577,47 @@ class Flight {
             return false;
         }
     }
+
+    /**
+     * Get flights by status
+     * 
+     * @param string $status Flight status (scheduled, delayed, cancelled, completed)
+     * @return array Array of Flight objects with the specified status
+     */
+    public static function getFlightsByStatus($status) {
+        global $pdo;
+        $flights = [];
+        
+        try {
+            $stmt = $pdo->prepare("SELECT * FROM flights WHERE status = ? ORDER BY date, time");
+            $stmt->execute([$status]);
+            $flightRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($flightRecords as $record) {
+                $flight = new Flight(
+                    $record['flight_number'],
+                    $record['departure'],
+                    $record['arrival'],
+                    $record['duration'],
+                    $record['price']
+                );
+                $flight->setFromArray($record);
+                $flights[] = $flight;
+            }
+            
+            return $flights;
+        } catch (PDOException $e) {
+            error_log("Error getting flights by status: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Alias for getAll() - used for consistent naming in admin area
+     * 
+     * @return array Array of all Flight objects
+     */
+    public static function getAllFlights() {
+        return self::getAll();
+    }
 }

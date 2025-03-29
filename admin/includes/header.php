@@ -1,4 +1,10 @@
-
+<?php
+// Security headers
+header("X-XSS-Protection: 1; mode=block");
+header("X-Content-Type-Options: nosniff");
+header("X-Frame-Options: SAMEORIGIN");
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data:; font-src 'self' https://cdnjs.cloudflare.com;");
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -6,8 +12,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Flight Booking</title>
+    <!-- Base CSS files -->
     <link rel="stylesheet" href="../assets/css/admin.css">
     <link rel="stylesheet" href="../assets/css/admin-fix.css">
+    <link rel="stylesheet" href="../assets/css/admin-template.css">
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
@@ -19,7 +27,7 @@
         <div class="admin-sidebar">
             <div class="sidebar-brand">
                 <img src="../assets/images/logo.png" alt="Logo">
-                <h2>Admin Panel</h2>
+                <h2>Sky International</h2>
             </div>
 
             <div class="sidebar-menu">
@@ -29,6 +37,9 @@
                 </a>
 
                 <p class="menu-category">Management</p>
+                <a href="reports.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'reports.php' ? 'active' : ''; ?>">
+                    <i class="fas fa-chart-bar"></i> Reports & Analytics
+                </a>
                 <a href="bookings.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'bookings.php' ? 'active' : ''; ?>">
                     <i class="fas fa-ticket-alt"></i> Bookings
                 </a>
@@ -41,7 +52,7 @@
                 <a href="subscribers.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'subscribers.php' ? 'active' : ''; ?>">
                     <i class="fas fa-newspaper"></i> Newsletter Subscribers
                 </a>
-                <a href="messages.php" class="menu-item">
+                <a href="messages.php" class="menu-item <?php echo basename($_SERVER['PHP_SELF']) == 'messages.php' ? 'active' : ''; ?>">
                     <i class="fas fa-envelope"></i> Messages
                 </a>
                 <p class="menu-category">Configuration</p>
@@ -72,7 +83,9 @@
         <div class="content-wrapper">
             <div class="admin-topbar">
                 <div class="topbar-left">
-                    
+                    <button id="sidebar-toggle" class="sidebar-toggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
                     <h1 class="page-title">
                         <?php
                         $current_page = basename($_SERVER['PHP_SELF']);
@@ -89,8 +102,23 @@
                             case 'flights.php':
                                 echo 'Manage Flights';
                                 break;
+                            case 'subscribers.php':
+                                echo 'Newsletter Subscribers';
+                                break;
+                            case 'messages.php':
+                                echo 'Customer Messages';
+                                break;
+                            case 'reports.php':
+                                echo 'Reports & Analytics';
+                                break;
                             case 'settings.php':
                                 echo 'Site Settings';
+                                break;
+                            case 'login-attempts.php':
+                                echo 'Login Attempts';
+                                break;
+                            case 'manage-lockouts.php':
+                                echo 'Manage Lockouts';
                                 break;
                             default:
                                 echo 'Admin Panel';
