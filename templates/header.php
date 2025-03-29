@@ -425,7 +425,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
                     <?php endif; ?>
                     <?php if (isset($_SESSION['user_id'])): ?>
                         <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
-                            <li><a href="admin/dashboard.php" class="inline-block py-2 px-3 bg-red-500 hover:bg-red-600 text-white rounded-md text-sm font-medium transition-colors">Admin Dashboard</a></li>
+                            <li><a href="admin/dashboard.php" class="inline-block py-2 px-3 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium transition-colors">Admin Dashboard</a></li>
                         <?php endif; ?>
                         <li><a href="account.php" class="inline-block py-2 px-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-md text-sm font-medium transition-colors">My Account</a></li>
                         <li><a href="logout.php" class="inline-block py-2 px-3 text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-md text-sm font-medium transition-colors">Logout</a></li>
