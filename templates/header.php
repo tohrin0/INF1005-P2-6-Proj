@@ -44,6 +44,24 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
             pointer-events: none;
         }
 
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 40;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .menu-overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
         /* Footer styles preserved */
         .site-footer {
             background-color: #1a2b49;
@@ -61,6 +79,9 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
 
 
 <body>
+    <!-- Mobile menu overlay -->
+    <div id="menu-overlay" class="menu-overlay"></div>
+
     <header class="sticky top-0 z-50 bg-white border-b border-gray-200">
         <div class="flex justify-between items-center w-full px-6 py-3">
             <a href="index.php" class="flex items-center text-blue-500 font-bold hover:text-blue-600 transition-colors">
@@ -106,7 +127,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
     </header>
 
     <!-- Mobile navigation -->
-    <div id="mobile-menu" class="md:hidden mobile-menu-closed absolute top-[56px] sm:top-[64px] left-0 right-0 z-50 bg-white shadow-md border-t border-gray-200">
+    <div id="mobile-menu" class="md:hidden mobile-menu-closed fixed top-[56px] sm:top-[64px] left-0 right-0 z-50 bg-white shadow-md border-t border-gray-200">
         <?php if (isset($_SESSION['user_id'])): ?>
             <div class="py-3 text-center text-sm font-medium bg-green-50 text-green-600 border-l-2 border-green-500 border-b border-green-100">
                 Welcome, <?php echo htmlspecialchars($_SESSION['username'] ?? 'User'); ?>!
@@ -140,38 +161,53 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-i
         document.addEventListener('DOMContentLoaded', function() {
             const mobileMenuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
+            const menuOverlay = document.getElementById('menu-overlay');
             const menuIcon = mobileMenuButton.querySelector('svg');
 
             if (mobileMenuButton && mobileMenu) {
                 mobileMenuButton.addEventListener('click', function() {
                     // Toggle classes for animation
                     if (mobileMenu.classList.contains('mobile-menu-closed')) {
+                        // Open menu
                         mobileMenu.classList.remove('mobile-menu-closed');
                         mobileMenu.classList.add('mobile-menu-open');
+                        menuOverlay.classList.add('active');
                         menuIcon.innerHTML = `
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         `;
+                        document.body.style.overflow = 'hidden'; // Prevent body scrolling
                     } else {
-                        mobileMenu.classList.remove('mobile-menu-open');
-                        mobileMenu.classList.add('mobile-menu-closed');
-                        menuIcon.innerHTML = `
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        `;
+                        // Close menu
+                        closeMenu();
                     }
+                });
+
+                // Close menu when clicking on overlay
+                menuOverlay.addEventListener('click', function() {
+                    closeMenu();
                 });
 
                 // Close mobile menu when clicking outside
                 document.addEventListener('click', function(event) {
-                    const isClickInside = mobileMenuButton.contains(event.target) || mobileMenu.contains(event.target);
+                    const isClickInside = mobileMenuButton.contains(event.target) ||
+                        mobileMenu.contains(event.target) ||
+                        menuOverlay.contains(event.target);
 
                     if (!isClickInside && mobileMenu.classList.contains('mobile-menu-open')) {
-                        mobileMenu.classList.remove('mobile-menu-open');
-                        mobileMenu.classList.add('mobile-menu-closed');
-                        menuIcon.innerHTML = `
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        `;
+                        closeMenu();
                     }
                 });
+
+                // Function to close the menu
+                function closeMenu() {
+                    mobileMenu.classList.remove('mobile-menu-open');
+                    mobileMenu.classList.add('mobile-menu-closed');
+                    menuOverlay.classList.remove('active');
+                    menuIcon.innerHTML = `
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    `;
+                    document.body.style.overflow = ''; // Restore body scrolling
+                }
             }
         });
     </script>
