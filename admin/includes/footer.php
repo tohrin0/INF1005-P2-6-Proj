@@ -8,7 +8,7 @@
     <div class="footer-content">
         <div class="footer-company">
             <h3>Flight Booking Admin</h3>
-            <p>&copy; <?php echo date("Y"); ?> Flight Booking Website. All rights reserved.</p>
+            <p>&copy; <?php echo date("Y"); ?> Sky International Travels. All rights reserved.</p>
         </div>
         <div class="footer-links">
             <div class="footer-links-column">
@@ -32,7 +32,7 @@
         </div>
     </div>
     <div class="footer-bottom">
-        <p>Powered by Flight Booking System | <a href="../terms.php">Terms & Conditions</a></p>
+        <p>Powered by SIT Systems | <a href="../terms.php">Terms & Conditions</a></p>
     </div>
 </footer>
 
