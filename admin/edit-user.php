@@ -250,12 +250,8 @@ include 'includes/header.php';
                                 Send 2FA Reset Link
                             </button>
                         </form>
+                        <br>
                         
-                        <a href="view-bookings.php?user_id=<?php echo $userId; ?>" 
-                            class="w-full text-left px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors flex items-center block">
-                            <span class="mr-2 text-gray-600 inline-block w-5 h-5">📅</span>
-                            View All Bookings
-                        </a>
                         
                         <form action="" method="POST" 
                             onsubmit="return confirm('Are you sure you want to delete this user? This action cannot be undone.');">
@@ -265,6 +261,13 @@ include 'includes/header.php';
                                 Delete User
                             </button>
                         </form>
+                        <br>
+                        <!-- View All Bookings Link -->
+                        <a href="view-bookings.php?user_id=<?php echo $userId; ?>" 
+                            class="w-full text-left px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors flex items-center block">
+                            <span class="mr-2 text-gray-600 inline-block w-5 h-5">📅</span>
+                            View All Bookings
+                        </a>
                     </div>
                 </div>
             </div>
