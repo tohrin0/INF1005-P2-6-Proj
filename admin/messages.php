@@ -210,11 +210,11 @@ include 'includes/header.php';
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         
-                                        <?php if ($message['is_read']): ?>
+                                        <?php if ($message['status'] === 'read'): ?>
                                             <form method="POST" class="inline">
                                                 <input type="hidden" name="message_id" value="<?php echo $message['id']; ?>">
                                                 <input type="hidden" name="action" value="mark_unread">
-                                                <button type="submit" class="admin-action-btn admin-action-edit" title="Mark as Unread">
+                                                <button type="submit" class="admin-action-edit" title="Mark as Unread">
                                                     <i class="fas fa-envelope"></i>
                                                 </button>
                                             </form>
@@ -222,16 +222,15 @@ include 'includes/header.php';
                                             <form method="POST" class="inline">
                                                 <input type="hidden" name="message_id" value="<?php echo $message['id']; ?>">
                                                 <input type="hidden" name="action" value="mark_read">
-                                                <button type="submit" class="admin-action-btn admin-action-edit" title="Mark as Read">
+                                                <button type="submit" class="admin-action-edit" title="Mark as Read">
                                                     <i class="fas fa-envelope-open"></i>
                                                 </button>
                                             </form>
                                         <?php endif; ?>
-                                        
                                         <form method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this message?');">
                                             <input type="hidden" name="message_id" value="<?php echo $message['id']; ?>">
                                             <input type="hidden" name="action" value="delete">
-                                            <button type="submit" class="admin-action-btn admin-action-delete" title="Delete">
+                                            <button type="submit" class="admin-action-delete" title="Delete">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>

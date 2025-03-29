@@ -56,8 +56,8 @@ include 'includes/header.php';
             <p class="text-gray-600">All bookings for <?php echo htmlspecialchars($user['username']); ?> (<?php echo htmlspecialchars($user['email']); ?>)</p>
         </div>
         <div>
-            <a href="edit-user.php?id=<?php echo $userId; ?>" class="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md transition-colors">
-                <i class="fas fa-arrow-left mr-1"></i> Back to User
+            <a href="edit-user.php?id=<?php echo $userId; ?>" class="admin-btn admin-btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to User
             </a>
         </div>
     </div>
@@ -158,13 +158,15 @@ include 'includes/header.php';
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     <?php echo date('M j, Y', strtotime($booking['booking_date'])); ?>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <a href="view-booking.php?id=<?php echo $booking['id']; ?>" class="text-indigo-600 hover:text-indigo-900 mr-3">
-                                        <i class="fas fa-eye"></i> View
-                                    </a>
-                                    <a href="edit-booking.php?id=<?php echo $booking['id']; ?>" class="text-blue-600 hover:text-blue-900">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </a>
+                                <td class="text-right">
+                                    <div class="flex justify-end space-x-2">
+                                        <a href="view-booking.php?id=<?php echo $booking['id']; ?>" class="admin-action-view" title="View Booking">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="edit-booking.php?id=<?php echo $booking['id']; ?>" class="admin-action-edit" title="Edit Booking">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

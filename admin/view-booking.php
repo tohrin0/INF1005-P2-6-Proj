@@ -59,11 +59,11 @@ include 'includes/header.php';
             <p class="text-gray-600">View detailed information about this booking</p>
         </div>
         <div class="flex space-x-2">
-            <a href="bookings.php" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors flex items-center">
-                <i class="fas fa-arrow-left mr-1"></i> Back to Bookings
+            <a href="bookings.php" class="admin-btn admin-btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Bookings
             </a>
-            <a href="edit-booking.php?id=<?= htmlspecialchars($bookingId) ?>" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center">
-                <i class="fas fa-edit mr-1"></i> Edit Booking
+            <a href="edit-booking.php?id=<?= htmlspecialchars($bookingId) ?>" class="admin-btn admin-btn-primary">
+                <i class="fas fa-edit"></i> Edit Booking
             </a>
         </div>
     </div>
@@ -302,8 +302,8 @@ include 'includes/header.php';
         <form method="POST" action="bookings.php" onsubmit="return confirm('Are you sure you want to delete this booking? This action cannot be undone.');">
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="booking_id" value="<?= htmlspecialchars($booking['id']) ?>">
-            <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center">
-                <i class="fas fa-trash mr-1"></i> Delete Booking
+            <button type="submit" class="admin-btn admin-btn-danger">
+                <i class="fas fa-trash"></i> Delete Booking
             </button>
         </form>
     </div>

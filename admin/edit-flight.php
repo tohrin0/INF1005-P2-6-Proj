@@ -93,8 +93,8 @@ include 'includes/header.php';
             <p class="text-gray-600">Update flight information</p>
         </div>
         <div>
-            <a href="flights.php" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors flex items-center">
-                <i class="fas fa-arrow-left mr-1"></i> Back to Flights
+            <a href="flights.php" class="admin-btn admin-btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Flights
             </a>
         </div>
     </div>
@@ -344,8 +344,14 @@ include 'includes/header.php';
                                     $<?= number_format($booking['total_price'], 2) ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <a href="view-booking.php?id=<?= $booking['id'] ?>" class="text-blue-600 hover:text-blue-900 mr-3">View</a>
-                                    <a href="edit-booking.php?id=<?= $booking['id'] ?>" class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                                    <div class="flex justify-end space-x-2">
+                                        <a href="view-booking.php?id=<?= $booking['id'] ?>" class="admin-action-view" title="View Booking">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="edit-booking.php?id=<?= $booking['id'] ?>" class="admin-action-edit" title="Edit Booking">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

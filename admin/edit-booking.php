@@ -99,11 +99,11 @@ include 'includes/header.php';
             <p class="text-gray-600">Update booking information</p>
         </div>
         <div class="flex space-x-2">
-            <a href="bookings.php" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors flex items-center">
-                <i class="fas fa-arrow-left mr-1"></i> Back to Bookings
+            <a href="bookings.php" class="admin-btn admin-btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Bookings
             </a>
-            <a href="view-booking.php?id=<?= htmlspecialchars($bookingId) ?>" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center">
-                <i class="fas fa-eye mr-1"></i> View Full Details
+            <a href="view-booking.php?id=<?= htmlspecialchars($bookingId) ?>" class="admin-btn admin-btn-primary">
+                <i class="fas fa-eye"></i> View Full Details
             </a>
         </div>
     </div>
