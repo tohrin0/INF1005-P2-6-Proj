@@ -79,23 +79,41 @@ include 'templates/header.php';
         <?php if (empty($transactions)) : ?>
             <p class="text-center">No transactions found.</p>
         <?php else : ?>
-            <div class="overflow-x-auto">
+            <div class="space-y-4">
+				<?php foreach ($transactions as $transaction) : ?>
+					<div class="border border-gray-300 p-4 rounded-lg shadow md:hidden">
+						<p><strong>Airline:</strong> <?php echo htmlspecialchars($transaction['airline']); ?></p>
+						<p><strong>Flight #:</strong> <?php echo htmlspecialchars($transaction['flight_number']); ?></p>
+						<p><strong>Departure:</strong> <?php echo htmlspecialchars($transaction['departure']); ?></p>
+						<p><strong>Arrival:</strong> <?php echo htmlspecialchars($transaction['arrival']); ?></p>
+						<p><strong>Miles Earned:</strong> <?php echo number_format($transaction['miles']); ?></p>
+						<p><strong>Booking Date:</strong> <?php echo date("M d, Y", strtotime($transaction['booking_date'])); ?></p>
+					</div>
+				<?php endforeach; ?>
+			</div>
+
+			<!-- Normal Table for Larger Screens -->
+			<div class="overflow-x-auto hidden md:block">
 				<table class="w-full border-collapse border border-gray-300 text-sm">
 					<thead>
 						<tr class="bg-gray-200 text-xs md:text-base">
-							<th class="border border-gray-300 p-2 w-32">Airline</th>
-							<th class="border border-gray-300 p-2 w-24">Flight #</th>
-							<th class="border border-gray-300 p-2 w-16">Miles</th>
-							<th class="border border-gray-300 p-2 w-28">Booking Date</th>
+							<th class="border border-gray-300 p-2">Airline</th>
+							<th class="border border-gray-300 p-2">Flight Number</th>
+							<th class="border border-gray-300 p-2">Departure</th>
+							<th class="border border-gray-300 p-2">Arrival</th>
+							<th class="border border-gray-300 p-2">Miles</th>
+							<th class="border border-gray-300 p-2">Booking Date</th>
 						</tr>
 					</thead>
 					<tbody>
 						<?php foreach ($transactions as $transaction) : ?>
 							<tr class="border border-gray-300 text-center">
-								<td class="border border-gray-300 p-2 truncate"><?php echo htmlspecialchars($transaction['airline']); ?></td>
-								<td class="border border-gray-300 p-2 truncate"><?php echo htmlspecialchars($transaction['flight_number']); ?></td>
+								<td class="border border-gray-300 p-2"><?php echo htmlspecialchars($transaction['airline']); ?></td>
+								<td class="border border-gray-300 p-2"><?php echo htmlspecialchars($transaction['flight_number']); ?></td>
+								<td class="border border-gray-300 p-2"><?php echo htmlspecialchars($transaction['departure']); ?></td>
+								<td class="border border-gray-300 p-2"><?php echo htmlspecialchars($transaction['arrival']); ?></td>
 								<td class="border border-gray-300 p-2"><?php echo number_format($transaction['miles']); ?></td>
-								<td class="border border-gray-300 p-2 whitespace-nowrap"><?php echo date("M d, Y", strtotime($transaction['booking_date'])); ?></td>
+								<td class="border border-gray-300 p-2"><?php echo date("M d, Y", strtotime($transaction['booking_date'])); ?></td>
 							</tr>
 						<?php endforeach; ?>
 					</tbody>
