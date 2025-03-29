@@ -28,7 +28,7 @@ define('FLIGHT_API_KEYS', json_encode([
     '16cebcc9041492c90f3eb7ff50e66d94'
 ]));
 define('OPENROUTER_API_KEYS', json_encode([
-    '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' // Primary key
+    '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' // Primary key
     // You can add backup keys here if needed
 ]));
 // For backward compatibility

@@ -40,7 +40,7 @@ try {
     // Set up the OpenRouter API request
     $api_url = 'https://openrouter.ai/api/v1/chat/completions';
     $request_body = json_encode([
-        'model' => 'mistralai/mistral-7b-instruct:free', // Using a free tier model
+        'model' => 'openai/gpt-3.5-turbo', // Changed to a model that's definitely available
         'messages' => $request_data['messages'],
         'max_tokens' => 250, // Limiting response length for chat
         'temperature' => 0.7 // Balanced between creative and consistent
@@ -58,15 +58,21 @@ try {
         'X-Title: SkyBooker Chat Assistant'
     ]);
     
+    // Add additional debug logging
+    error_log('Sending request to OpenRouter: ' . $request_body);
+    
     // Execute the request
     $response = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curl_error = curl_error($ch);
     curl_close($ch);
     
+    // Log the response for debugging
+    error_log('OpenRouter response code: ' . $http_code . ', Response: ' . substr($response, 0, 200) . '...');
+    
     // Handle errors
     if ($http_code !== 200 || !$response) {
-        throw new Exception('OpenRouter API Error: ' . $curl_error . ' HTTP Code: ' . $http_code);
+        throw new Exception('OpenRouter API Error: ' . $curl_error . ' HTTP Code: ' . $http_code . ' Response: ' . $response);
     }
     
     // Return the API response
@@ -74,7 +80,7 @@ try {
     echo $response;
 
 } catch (Exception $e) {
-    // Log the error
+    // Log the error with more details
     error_log('Chat API Error: ' . $e->getMessage());
     
     // Return a properly formatted JSON error response
