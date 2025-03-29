@@ -8,8 +8,8 @@ require_once 'inc/session.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Terms and Conditions</title>
-    <link rel="stylesheet" href="assets/css/main.css">
-    <link rel="stylesheet" href="assets/css/responsive.css">
+    
+    
 </head>
 
 <body>
