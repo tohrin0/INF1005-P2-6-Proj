@@ -173,42 +173,6 @@
         </div> <!-- This single closing div is correct to match the content-wrapper -->
     </div> <!-- This single closing div is correct to match the admin-wrapper -->
     
-    <script>
-        // Sidebar toggle functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const sidebarToggle = document.getElementById('sidebar-toggle');
-            const adminWrapper = document.querySelector('.admin-wrapper');
-            const sidebarOverlay = document.getElementById('sidebar-overlay');
-            
-            function toggleSidebar() {
-                adminWrapper.classList.toggle('sidebar-open');
-            }
-            
-            if (sidebarToggle) {
-                sidebarToggle.addEventListener('click', toggleSidebar);
-            }
-            
-            if (sidebarOverlay) {
-                sidebarOverlay.addEventListener('click', toggleSidebar);
-            }
-            
-            // Responsive behavior - auto-close sidebar on small screens when clicking a link
-            const menuItems = document.querySelectorAll('.menu-item');
-            if (window.innerWidth <= 992) {
-                menuItems.forEach(item => {
-                    item.addEventListener('click', function() {
-                        if (adminWrapper.classList.contains('sidebar-open')) {
-                            adminWrapper.classList.remove('sidebar-open');
-                        }
-                    });
-                });
-            }
-        });
-    </script>
     
-    <script src="../assets/js/main.js"></script>
-    <script src="../assets/js/api-client.js"></script>
-    <script src="../assets/js/booking-form.js"></script>
-    <script src="../assets/js/payment.js"></script>
 </body>
 </html>

@@ -72,9 +72,7 @@
         <div class="content-wrapper">
             <div class="admin-topbar">
                 <div class="topbar-left">
-                    <button id="sidebar-toggle">
-                        <i class="fas fa-bars"></i>
-                    </button>
+                    
                     <h1 class="page-title">
                         <?php
                         $current_page = basename($_SERVER['PHP_SELF']);
