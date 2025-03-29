@@ -445,6 +445,7 @@ function getAirports() {
 }
 
 // Function to render flight card
+// Function to render flight card
 function renderFlightCard($flight, $departDate = null) {
     // Extract all variables first
     $flightId = $flight['id'] ?? '';
