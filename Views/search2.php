@@ -479,56 +479,58 @@ function renderFlightCard($flight, $departDate = null) {
     
     // Now build the HTML with interpolated variables
     return <<<HTML
-    <div class="bg-white rounded-lg shadow-md p-5 mb-4 hover:shadow-lg transition-all">
+    <div class="bg-white rounded-lg shadow-md p-6 mb-5 hover:shadow-lg transition-all border-l-4 border-blue-600">
         <div class="flex flex-col md:flex-row md:items-center justify-between">
-            <div class="flex flex-col md:flex-row md:items-center gap-4 mb-4 md:mb-0">
+            <!-- Airline Details Section -->
+            <div class="flex flex-col md:flex-row md:items-center gap-5 mb-4 md:mb-0">
                 <div class="flex-shrink-0">
-                    <div class="w-12 h-12 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center">
-                        <span class="font-bold text-sm">{$airlineInitial}</span>
+                    <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-lg flex items-center justify-center shadow-md">
+                        <span class="font-bold text-xl">{$airlineInitial}</span>
                     </div>
                 </div>
                 
                 <div>
-                    <div class="text-gray-900 font-medium">{$airline}</div>
-                    <div class="text-xs text-gray-500">Flight {$flightNumber}</div>
-                    <!-- Add the date display here -->
-                    <div class="text-xs text-blue-600 font-semibold mt-1">{$formattedDate}</div>
+                    <div class="text-gray-900 font-bold text-lg">{$airline}</div>
+                    <div class="text-sm text-gray-600">Flight {$flightNumber}</div>
+                    <div class="text-sm text-blue-600 font-semibold mt-1">{$formattedDate}</div>
                 </div>
                 
-                <div class="flex items-center gap-3 mt-2 md:mt-0 md:ml-4">
-                    <div class="text-center">
-                        <div class="text-lg font-bold">{$departureTime}</div>
-                        <div class="text-sm font-medium">{$departureAirport}</div>
+                <!-- Flight Route Info -->
+                <div class="flex items-center gap-4 mt-3 md:mt-0 md:ml-8 bg-gray-50 p-4 rounded-lg">
+                    <!-- Departure -->
+                    <div class="text-center md:text-left">
+                        <div class="text-xl font-bold">{$departureTime}</div>
+                        <div class="text-sm font-semibold">{$departureAirport}</div>
                     </div>
                     
-                    <div class="flex flex-col items-center px-2">
-                        <div class="text-xs text-gray-500">{$duration}</div>
-                        <div class="w-20 md:w-32 h-px bg-gray-300 my-1 relative">
-                            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-gray-500 rounded-full"></div>
+                    <!-- Flight Path Visualization -->
+                    <div class="flex flex-col items-center px-3">
+                        <div class="text-sm font-medium text-gray-600">{$duration}</div>
+                        <div class="relative flex items-center my-2">
+                            <div class="w-3 h-3 bg-blue-600 rounded-full"></div>
+                            <div class="w-16 md:w-28 border-t-2 border-dashed border-blue-400 mx-1"></div>
+                            <div class="w-3 h-3 bg-blue-600 rounded-full"></div>
                         </div>
-                        <div class="text-xs {$stopsClass} px-2 py-0.5 rounded-full">{$stopsText}</div>
+                        <div class="text-xs {$stopsClass} px-3 py-1 rounded-full font-medium">{$stopsText}</div>
                     </div>
                     
-                    <div class="text-center">
-                        <div class="text-lg font-bold">{$arrivalTime}</div>
-                        <div class="text-sm font-medium">{$arrivalAirport}</div>
+                    <!-- Arrival -->
+                    <div class="text-center md:text-right">
+                        <div class="text-xl font-bold">{$arrivalTime}</div>
+                        <div class="text-sm font-semibold">{$arrivalAirport}</div>
                     </div>
                 </div>
             </div>
             
-            <div class="flex flex-col items-end">
-                <div class="text-2xl font-bold text-blue-600">\${$price}</div>
-                <div class="text-sm text-gray-500 mb-2">per person</div>
+            <!-- Price and Booking Section -->
+            <div class="flex flex-col items-end bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg">
+                <div class="text-3xl font-bold text-blue-700">\${$price}</div>
+                <div class="text-sm text-gray-600 mb-4">per person</div>
                 <form action="booking.php" method="POST">
                     <input type="hidden" name="select_flight" value="1">
-                    
-                    <!-- The API flight ID always comes from the API source -->
                     <input type="hidden" name="flight_api" value="{$flightId}">
-                    
-                    <!-- For flights from our DB, pass the database ID directly -->
                     <input type="hidden" name="flight_id" value="{$flightId}">
                     <input type="hidden" name="price" value="{$price}">
-                    <!-- Add all required fields for booking -->
                     <input type="hidden" name="flight_number" value="{$flightNumber}">
                     <input type="hidden" name="departure" value="{$departureAirport}">
                     <input type="hidden" name="arrival" value="{$arrivalAirport}">
@@ -537,12 +539,10 @@ function renderFlightCard($flight, $departDate = null) {
                     <input type="hidden" name="airline" value="{$airline}">
                     <input type="hidden" name="duration" value="{$duration}">
                     <input type="hidden" name="stops" value="{$stops}">
-                    
-                    <!-- Make sure date always has a value -->
                     <input type="hidden" name="date" value="{$departDate}">
                     
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">
-                        Select
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-sm font-bold transition-colors shadow-md">
+                        Select Flight &#10148;
                     </button>
                 </form>
             </div>

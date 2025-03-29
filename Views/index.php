@@ -370,246 +370,572 @@ include 'templates/footer.php';
         }
     });
 </script>
-<div id="simple-chat" style="position:fixed; bottom:20px; right:20px; z-index:9999;">
-    <button id="simple-chat-button" style="background-color:#2563EB; color:white; width:60px; height:60px; border-radius:50%; border:none; box-shadow:0 4px 6px rgba(0,0,0,0.1); cursor:pointer; display:flex; align-items:center; justify-content:center;">
-        <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+<!-- Beautified SkyBooker Chatbot -->
+<div id="skyBooker-chat" class="sk-chat-container">
+  <!-- Chat Button -->
+  <button id="sk-chat-button" class="sk-chat-button" aria-label="Open chat">
+    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+    </svg>
+  </button>
+
+  <!-- Chat Window -->
+  <div id="sk-chat-window" class="sk-chat-window">
+    <!-- Chat Header -->
+    <div class="sk-chat-header">
+      <div class="sk-chat-header-left">
+        <div class="sk-chat-avatar">
+          <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292V13a1 1 0 011 1v2a1 1 0 01-1 1v2a2 2 0 002 2h.5a2 2 0 002-2v-2a2 2 0 00-2-2H14v-1a2 2 0 012-2h1a2 2 0 012 2v1a1 1 0 01-1 1v2a2 2 0 002 2h.5a2 2 0 002-2v-2a1 1 0 00-1-1h-1a1 1 0 01-1-1v-1a2 2 0 00-2-2h-1a1 1 0 01-1-1V9.354A4 4 0 0112 4.354z"></path>
+          </svg>
+        </div>
+        <div class="sk-chat-header-info">
+          <span class="sk-chat-header-title">SkyBooker Assistant</span>
+          <span class="sk-chat-header-status">Online</span>
+        </div>
+      </div>
+      <button id="sk-chat-close" class="sk-chat-close" aria-label="Close chat">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
-    </button>
-
-    <div id="simple-chat-window" style="display:none; position:absolute; bottom:70px; right:0; width:300px; height:400px; background:white; border-radius:10px; box-shadow:0 4px 15px rgba(0,0,0,0.15); overflow:hidden;">
-        <div style="background-color:#2563EB; color:white; padding:15px; display:flex; justify-content:space-between;">
-            <span>SkyBooker Assistant</span>
-            <button id="simple-close-chat" style="background:none; border:none; color:white; cursor:pointer;">✕</button>
-        </div>
-
-        <div id="simple-messages" style="height:290px; overflow-y:auto; padding:15px;">
-            <div style="background-color:#EFF6FF; padding:10px; border-radius:8px; margin-bottom:10px; max-width:80%;">
-                <p style="margin:0; font-size:14px;">👋 Hi there! I'm your SkyBooker assistant. How can I help with your travel plans today?</p>
-            </div>
-        </div>
-
-        <div style="border-top:1px solid #eee; padding:10px;">
-            <form id="simple-chat-form" style="display:flex;">
-                <input id="simple-user-input" type="text" placeholder="Type your message..." style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px 0 0 4px;">
-                <button type="submit" style="background-color:#2563EB; color:white; border:none; padding:8px 15px; border-radius:0 4px 4px 0;">Send</button>
-            </form>
-        </div>
+      </button>
     </div>
+
+    <!-- Chat Messages Area -->
+    <div id="sk-chat-messages" class="sk-chat-messages">
+      <div class="sk-message sk-message-assistant">
+        <div class="sk-message-bubble">
+          <p>👋 Hi there! I'm your SkyBooker assistant. How can I help with your travel plans today?</p>
+        </div>
+        <div class="sk-message-time">Just now</div>
+      </div>
+    </div>
+
+    <!-- Chat Input Area -->
+    <div class="sk-chat-input-container">
+      <form id="sk-chat-form" class="sk-chat-form">
+        <input 
+          id="sk-user-input" 
+          type="text" 
+          placeholder="Type your message..." 
+          class="sk-chat-input"
+          autocomplete="off"
+        >
+        <button type="submit" class="sk-chat-send">
+          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+          </svg>
+        </button>
+      </form>
+      <div class="sk-chat-footer">
+        <span>Powered by OpenRouter AI</span>
+      </div>
+    </div>
+  </div>
 </div>
 
 <style>
-    .typing-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        margin: 0 3px;
-        display: inline-block;
-        animation: typing 1.4s infinite both;
+  /* SkyBooker Chat Styles */
+  .sk-chat-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  }
+
+  /* Chat Button */
+  .sk-chat-button {
+    background-color: #2563EB;
+    color: white;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+
+  .sk-chat-button:hover {
+    background-color: #1D4ED8;
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Chat Window */
+  .sk-chat-window {
+    display: none;
+    position: absolute;
+    bottom: 80px;
+    right: 0;
+    width: 350px;
+    height: 500px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    flex-direction: column;
+    animation: sk-slide-up 0.3s ease;
+  }
+
+  @keyframes sk-slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
     }
-
-    .typing-dot:nth-child(2) {
-        animation-delay: 0.2s;
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
+  }
 
-    .typing-dot:nth-child(3) {
-        animation-delay: 0.4s;
+  /* Chat Header */
+  .sk-chat-header {
+    background: linear-gradient(to right, #2563EB, #3B82F6);
+    color: white;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .sk-chat-header-left {
+    display: flex;
+    align-items: center;
+  }
+
+  .sk-chat-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+  }
+
+  .sk-chat-header-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sk-chat-header-title {
+    font-weight: 600;
+    font-size: 16px;
+  }
+
+  .sk-chat-header-status {
+    font-size: 12px;
+    opacity: 0.8;
+  }
+
+  .sk-chat-close {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+  }
+
+  .sk-chat-close:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+
+  /* Messages Area */
+  .sk-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: calc(100% - 160px);
+    background-color: #F9FAFB;
+  }
+
+  .sk-message {
+    display: flex;
+    flex-direction: column;
+    max-width: 80%;
+  }
+
+  .sk-message-user {
+    align-self: flex-end;
+  }
+
+  .sk-message-assistant {
+    align-self: flex-start;
+  }
+
+  .sk-message-bubble {
+    padding: 12px 16px;
+    border-radius: 18px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    animation: sk-fade-in 0.3s ease;
+  }
+
+  @keyframes sk-fade-in {
+    from {
+      opacity: 0;
     }
-
-    @keyframes typing {
-
-        0%,
-        100% {
-            transform: scale(0.7);
-            opacity: 0.5;
-        }
-
-        50% {
-            transform: scale(1);
-            opacity: 1;
-        }
+    to {
+      opacity: 1;
     }
+  }
+
+  .sk-message-user .sk-message-bubble {
+    background-color: #2563EB;
+    color: white;
+    border-bottom-right-radius: 4px;
+  }
+
+  .sk-message-assistant .sk-message-bubble {
+    background-color: white;
+    color: #1F2937;
+    border-bottom-left-radius: 4px;
+  }
+
+  .sk-message-bubble p {
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .sk-message-bubble a {
+    color: #2563EB;
+    text-decoration: underline;
+    font-weight: 500;
+  }
+
+  .sk-message-user .sk-message-bubble a {
+    color: white;
+  }
+
+  .sk-message-time {
+    font-size: 11px;
+    margin-top: 4px;
+    opacity: 0.6;
+    margin-left: 4px;
+    margin-right: 4px;
+  }
+
+  /* Typing Indicator */
+  .sk-typing-indicator {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 12px 16px;
+    background-color: white;
+    border-radius: 18px;
+    max-width: fit-content;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    animation: sk-fade-in 0.3s ease;
+  }
+
+  .sk-typing-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin: 0 2px;
+    background-color: #CBD5E1;
+    display: inline-block;
+    animation: sk-typing 1.4s infinite both;
+  }
+
+  .sk-typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  .sk-typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+
+  @keyframes sk-typing {
+    0%, 100% {
+      transform: scale(0.7);
+      opacity: 0.5;
+    }
+    50% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  /* Input Area */
+  .sk-chat-input-container {
+    border-top: 1px solid #E5E7EB;
+    padding: 12px 16px;
+    background-color: white;
+  }
+
+  .sk-chat-form {
+    display: flex;
+    gap: 8px;
+  }
+
+  .sk-chat-input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1px solid #E5E7EB;
+    border-radius: 24px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .sk-chat-input:focus {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+  }
+
+  .sk-chat-send {
+    background-color: #2563EB;
+    color: white;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .sk-chat-send:hover {
+    background-color: #1D4ED8;
+  }
+
+  .sk-chat-footer {
+    text-align: center;
+    font-size: 11px;
+    color: #9CA3AF;
+    margin-top: 8px;
+  }
+
+  /* Scrollbar Styling */
+  .sk-chat-messages::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .sk-chat-messages::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .sk-chat-messages::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+  }
+
+  /* Mobile Responsive */
+  @media (max-width: 768px) {
+    .sk-chat-window {
+      width: calc(100vw - 40px);
+      height: 60vh;
+      right: 20px;
+      bottom: 80px;
+    }
+  }
 </style>
 
 <script>
-    console.log("Debug: Chat script loading");
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log("Debug: DOM loaded");
-        const button = document.getElementById('simple-chat-button');
-        const window = document.getElementById('simple-chat-window');
-        const closeBtn = document.getElementById('simple-close-chat');
-        const form = document.getElementById('simple-chat-form');
-        const input = document.getElementById('simple-user-input');
-        const messages = document.getElementById('simple-messages');
+  document.addEventListener('DOMContentLoaded', function() {
+    // DOM Elements
+    const chatButton = document.getElementById('sk-chat-button');
+    const chatWindow = document.getElementById('sk-chat-window');
+    const closeButton = document.getElementById('sk-chat-close');
+    const chatForm = document.getElementById('sk-chat-form');
+    const userInput = document.getElementById('sk-user-input');
+    const messagesContainer = document.getElementById('sk-chat-messages');
 
-        if (!button || !window) console.log("Debug: Elements not found");
+    // Chat history for context
+    let chatHistory = [
+      { 
+        role: "system", 
+        content: "You are a helpful assistant for SkyBooker, a flight booking website. Provide concise, helpful responses about flights, bookings, destinations, and travel. If users ask about specific pages, provide links to them. Available pages include: search2.php (flight search), account.php (user account), login.php, register.php, contact.php, faq.php, globe.php (world map), and terms.php. Keep responses friendly, brief, and travel-focused." 
+      },
+      { 
+        role: "assistant", 
+        content: "👋 Hi there! I'm your SkyBooker assistant. How can I help with your travel plans today?" 
+      }
+    ];
 
-        button.addEventListener('click', function() {
-            console.log("Debug: Button clicked");
-            window.style.display = window.style.display === 'none' ? 'block' : 'none';
-            if (window.style.display === 'block') {
-                setTimeout(() => input.focus(), 300);
-            }
-        });
+    // Log initialization
+    console.log("SkyBooker Chat initialized");
 
-        closeBtn.addEventListener('click', function() {
-            window.style.display = 'none';
-        });
-
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const message = input.value.trim();
-            if (!message) return;
-
-            // Add user message
-            addMessage(message, true);
-            input.value = '';
-
-            // Get bot response
-            getBotResponse(message);
-        });
-
-        function addMessage(text, isUser) {
-            const div = document.createElement('div');
-            div.style.backgroundColor = isUser ? '#2563EB' : '#EFF6FF';
-            div.style.color = isUser ? 'white' : 'black';
-            div.style.padding = '10px';
-            div.style.borderRadius = '8px';
-            div.style.marginBottom = '10px';
-            div.style.maxWidth = '80%';
-            div.style.marginLeft = isUser ? 'auto' : '0';
-
-            // Use innerHTML instead of textContent to render HTML links
-            const p = document.createElement('p');
-            p.style.margin = '0';
-            p.style.fontSize = '14px';
-            p.innerHTML = text; // Changed from textContent to innerHTML
-
-            div.appendChild(p);
-            messages.appendChild(div);
-            messages.scrollTop = messages.scrollHeight;
-        }
-
-        async function getBotResponse(message) {
-            // Show typing indicator
-            const typingDiv = document.createElement('div');
-            typingDiv.style.backgroundColor = '#EFF6FF';
-            typingDiv.style.padding = '10px';
-            typingDiv.style.borderRadius = '8px';
-            typingDiv.style.marginBottom = '10px';
-            typingDiv.style.maxWidth = '80%';
-            typingDiv.innerHTML = `
-        <div style="display:flex;">
-            <span class="typing-dot" style="background-color:#888"></span>
-            <span class="typing-dot" style="background-color:#888"></span>
-            <span class="typing-dot" style="background-color:#888"></span>
-        </div>
-    `;
-            messages.appendChild(typingDiv);
-            messages.scrollTop = messages.scrollHeight;
-
-            try {
-                const botResponse = await simulateAIResponse(message);
-                messages.removeChild(typingDiv);
-                addMessage(botResponse, false);
-            } catch (error) {
-                console.error('Error getting bot response:', error);
-                messages.removeChild(typingDiv);
-                addMessage("I'm sorry, I couldn't process your request. Please try again later.", false);
-            }
-        }
-
-        async function simulateAIResponse(message) {
-            // Simple delay to simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            const lowerMessage = message.toLowerCase();
-
-            // Page redirection handling
-            if (lowerMessage.includes('account') || lowerMessage.includes('profile') || lowerMessage.includes('my info')) {
-                return "You can access your account settings here: <a href='account.php' class='text-blue-600 underline'>Account Page</a>";
-            }
-
-            if (lowerMessage.includes('book') || lowerMessage.includes('reservation') || lowerMessage.includes('ticket')) {
-                return "Start booking your flight here: <a href='search2.php' class='text-blue-600 underline'>Search Flights</a>";
-            }
-
-            if (lowerMessage.includes('contact') || lowerMessage.includes('support') || lowerMessage.includes('help desk')) {
-                return "Need assistance? Visit our <a href='contact.php' class='text-blue-600 underline'>Contact Page</a>";
-            }
-
-            if (lowerMessage.includes('faq') || lowerMessage.includes('questions') || lowerMessage.includes('answers')) {
-                return "Find answers to common questions on our <a href='faq.php' class='text-blue-600 underline'>FAQ Page</a>";
-            }
-
-            if (lowerMessage.includes('globe') || lowerMessage.includes('map') || lowerMessage.includes('world')) {
-                return "Explore destinations on our interactive <a href='globe.php' class='text-blue-600 underline'>Globe View</a>";
-            }
-
-            if (lowerMessage.includes('search') || lowerMessage.includes('find flights')) {
-                return "Search for available flights here: <a href='search2.php' class='text-blue-600 underline'>Flight Search</a>";
-            }
-
-            if (lowerMessage.includes('terms') || lowerMessage.includes('conditions') || lowerMessage.includes('policy')) {
-                return "Review our terms and policies: <a href='terms.php' class='text-blue-600 underline'>Terms and Conditions</a>";
-            }
-
-            if (lowerMessage.includes('register') || lowerMessage.includes('sign up') || lowerMessage.includes('create account')) {
-                return "Create a new account here: <a href='register.php' class='text-blue-600 underline'>Register</a>";
-            }
-
-            if (lowerMessage.includes('login') || lowerMessage.includes('sign in')) {
-                return "Sign in to your account: <a href='login.php' class='text-blue-600 underline'>Login</a>";
-            }
-
-            // Existing responses remain the same
-            if (lowerMessage.includes('price') || lowerMessage.includes('cost') || lowerMessage.includes('how much')) {
-                return "Flight prices vary based on destination, dates, and availability. You can check specific prices by searching for your route using our search form. We always show transparent pricing with no hidden fees!";
-            }
-
-            if (lowerMessage.includes('destination') || lowerMessage.includes('where') || lowerMessage.includes('travel to')) {
-                return "We offer flights to hundreds of destinations worldwide! Popular destinations include New York, London, Tokyo, Dubai, and Sydney. You can explore our featured destinations section below.";
-            }
-
-            if (lowerMessage.includes('cancel') || lowerMessage.includes('refund')) {
-                return "You can cancel or request a refund for your booking through your account dashboard. Our flexible booking options allow changes on many flights. Check the specific fare rules for your booking for details.";
-            }
-
-            if (lowerMessage.includes('covid') || lowerMessage.includes('pandemic') || lowerMessage.includes('restriction')) {
-                return "Travel restrictions vary by country and are subject to change. We recommend checking the latest COVID-19 guidelines for your destination before booking. Our flexible booking options can help if your plans need to change.";
-            }
-
-            if (lowerMessage.includes('help') || lowerMessage.includes('assistance')) {
-                return "I'm here to help! You can ask me about booking flights, destinations, prices, or navigate to specific pages. Try asking for 'account', 'search', 'contact', 'FAQ', etc.";
-            }
-
-            if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
-                return "Hello there! How can I assist with your travel plans today?";
-            }
-
-            // Default response
-            return "Thanks for your message! I can help with flight bookings, provide links to specific pages, or answer questions. What would you like to do?";
-        }
+    // Toggle chat window
+    chatButton.addEventListener('click', function() {
+      chatWindow.style.display = chatWindow.style.display === 'none' || chatWindow.style.display === '' ? 'flex' : 'none';
+      if (chatWindow.style.display === 'flex') {
+        setTimeout(() => userInput.focus(), 300);
+      }
     });
 
-    // Enable HTML rendering in chat messages
-    function addMessage(text, isUser) {
-        const div = document.createElement('div');
-        div.style.backgroundColor = isUser ? '#2563EB' : '#EFF6FF';
-        div.style.color = isUser ? 'white' : 'black';
-        div.style.padding = '10px';
-        div.style.borderRadius = '8px';
-        div.style.marginBottom = '10px';
-        div.style.maxWidth = '80%';
-        div.style.marginLeft = isUser ? 'auto' : '0';
+    // Close chat window
+    closeButton.addEventListener('click', function() {
+      chatWindow.style.display = 'none';
+    });
 
-        // Use innerHTML instead of textContent to render HTML links
-        div.innerHTML = text;
+    // Handle form submission
+    chatForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const message = userInput.value.trim();
+      if (!message) return;
 
-        messages.appendChild(div);
-        messages.scrollTop = messages.scrollHeight;
+      // Add user message to UI
+      addMessage(message, 'user');
+      userInput.value = '';
+
+      // Update chat history
+      chatHistory.push({ role: "user", content: message });
+
+      // Get AI response
+      getAIResponse();
+    });
+
+    // Format current time for message timestamp
+    function formatTime() {
+      const now = new Date();
+      return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
+
+    // Add message to UI
+    function addMessage(text, role) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `sk-message sk-message-${role}`;
+
+      const bubbleDiv = document.createElement('div');
+      bubbleDiv.className = 'sk-message-bubble';
+      
+      // Use innerHTML to support links
+      const p = document.createElement('p');
+      p.innerHTML = text;
+      bubbleDiv.appendChild(p);
+
+      const timeDiv = document.createElement('div');
+      timeDiv.className = 'sk-message-time';
+      timeDiv.textContent = formatTime();
+
+      messageDiv.appendChild(bubbleDiv);
+      messageDiv.appendChild(timeDiv);
+
+      messagesContainer.appendChild(messageDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // Show typing indicator
+    function showTypingIndicator() {
+      const typingDiv = document.createElement('div');
+      typingDiv.className = 'sk-typing-indicator';
+      typingDiv.id = 'sk-typing';
+      
+      for (let i = 0; i < 3; i++) {
+        const dot = document.createElement('span');
+        dot.className = 'sk-typing-dot';
+        typingDiv.appendChild(dot);
+      }
+      
+      messagesContainer.appendChild(typingDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // Remove typing indicator
+    function removeTypingIndicator() {
+      const typingIndicator = document.getElementById('sk-typing');
+      if (typingIndicator) {
+        messagesContainer.removeChild(typingIndicator);
+      }
+    }
+
+    // Get AI response
+    async function getAIResponse() {
+      showTypingIndicator();
+      
+      try {
+        const response = await callChatAPI();
+        removeTypingIndicator();
+        
+        // Process links in the response
+        const processedResponse = processLinksInResponse(response);
+        addMessage(processedResponse, 'assistant');
+        
+        // Update chat history
+        chatHistory.push({ role: "assistant", content: response });
+        
+        // Limit history to prevent token limit issues
+        if (chatHistory.length > 12) {
+          const systemMessage = chatHistory[0];
+          chatHistory = [systemMessage, ...chatHistory.slice(3)];
+        }
+      } catch (error) {
+        console.error('Error getting AI response:', error);
+        removeTypingIndicator();
+        addMessage("I'm sorry, I couldn't process your request right now. Please try again later.", 'assistant');
+      }
+    }
+
+    // Call the chat API
+    async function callChatAPI() {
+      try {
+        // Call the PHP endpoint
+        const response = await fetch('views/chat-api.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            messages: chatHistory
+          })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('API error response:', errorText);
+          throw new Error(`API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.choices[0].message.content;
+      } catch (error) {
+        console.error('Chat API error:', error);
+        throw error;
+      }
+    }
+
+    // Process links in response text
+    function processLinksInResponse(text) {
+      // Page mapping
+      const pageMapping = {
+        'search2.php': 'Search Flights',
+        'account.php': 'Account Page',
+        'login.php': 'Login',
+        'register.php': 'Register',
+        'contact.php': 'Contact Page',
+        'faq.php': 'FAQ Page',
+        'globe.php': 'Globe View',
+        'terms.php': 'Terms and Conditions'
+      };
+      
+      // Replace page mentions with links
+      let processedText = text;
+      Object.entries(pageMapping).forEach(([page, title]) => {
+        const pattern = new RegExp(`(${page})`, 'gi');
+        processedText = processedText.replace(pattern, `<a href='${page}' class='text-blue-600 underline'>${title}</a>`);
+      });
+      
+      return processedText;
+    }
+  });
 </script>
 </body>
-
 </html>
