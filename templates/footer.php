@@ -23,13 +23,13 @@ function getCurrentYear()
                     <img src="assets/images/horizontal.svg" alt="Sky International Travels Logo" class="h-auto sm:h-auto w-auto max-w-[200px] sm:max-w-[240px]" />
                 </div>
                 <div class="flex gap-4 pt-2">
-                    <a href="#" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
+                    <a href="#" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-sky-100 hover:text-sky-600 transition-colors" aria-label="Twitter">
                         <i class="fab fa-twitter"></i>
                     </a>
-                    <a href="#" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
+                    <a href="#" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-sky-100 hover:text-sky-600 transition-colors" aria-label="Facebook">
                         <i class="fab fa-facebook-f"></i>
                     </a>
-                    <a href="#" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
+                    <a href="#" class="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-sky-100 hover:text-sky-600 transition-colors" aria-label="Instagram">
                         <i class="fab fa-instagram"></i>
                     </a>
                 </div>
