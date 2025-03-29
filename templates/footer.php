@@ -107,7 +107,6 @@ function getCurrentYear()
                 </ul>
             </div>
 
-<<<<<<< Updated upstream
             <!-- Column 4 - UTC Clock -->
             <div class="mt-8 sm:mt-0 sm:col-span-2 md:col-span-1 flex flex-col items-center md:items-start space-y-4">
                 <h3 class="text-lg font-medium text-gray-900 text-center md:text-left">Current UTC Time</h3>
@@ -129,25 +128,6 @@ function getCurrentYear()
         <!-- Footer Bottom -->
         <div class="py-5 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
             <p class="text-gray-600 text-sm text-center sm:text-left">
-=======
-            <!-- Column 4 - Newsletter -->
-            
-
-        <div class="py-6 border-t border-gray-200 text-center">
-            <!-- UTC Clock with light box -->
-            <div class="mb-3">
-                <div class="inline-block bg-gray-100 px-4 py-2 rounded-md shadow-sm border border-gray-200">
-                    <p class="text-gray-800 text-sm font-medium">
-                        <i class="fa fa-clock-o text-sky-600 mr-1"></i>
-                        <span id="utc-clock" class="font-mono text-gray-900 font-bold"></span> UTC
-                    </p>
-                </div>
-                <p class="text-gray-500 text-xs mt-1 italic">
-                    All flight times displayed across the website are in UTC timezone
-                </p>
-            </div>
-            <p class="text-gray-600 text-sm">
->>>>>>> Stashed changes
                 &copy; <?php echo getCurrentYear(); ?> Sky International Travels. All rights reserved.
             </p>
             <div class="flex flex-wrap justify-center gap-4 sm:gap-x-4 text-xs text-gray-500 px-4 sm:px-0">
@@ -171,11 +151,7 @@ function getCurrentYear()
 
     // Update immediately on page load
     updateUTCClock();
-<<<<<<< Updated upstream
 
-=======
-    
->>>>>>> Stashed changes
     // Then update every second
     setInterval(updateUTCClock, 1000);
 </script>

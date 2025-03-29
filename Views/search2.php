@@ -48,7 +48,7 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' |
         $result = $apiClient->searchFlightsEnhanced($from, $to, $departDate, $offset);
         $flights = $result['flights'];
         $pagination = $result['pagination'] ?? null;
-        
+
         // Make sure pagination is properly set
         if ($pagination) {
             // Calculate total pages based on API's total count
@@ -56,7 +56,7 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' |
             $pagination['total_pages'] = $totalPages;
             $pagination['current_page'] = $page;
         }
-        
+
         if (empty($flights)) {
             $error = "No flights found matching your criteria. Please try different search parameters.";
             // Try to get flights from database as fallback
@@ -79,14 +79,14 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' |
     try {
         $apiClient = new ApiClient();
         $result = $apiClient->getAvailableFlights();
-        
+
         if (is_array($result) && isset($result['flights'])) {
             $flights = $result['flights'];
             $pagination = $result['pagination'] ?? ['total_pages' => 5, 'current_page' => 1];
         } else {
             $flights = $result; // In case it directly returns an array of flights
         }
-        
+
         if (empty($flights)) {
             $flights = getFeaturedFlightsFromDatabase();
         }
@@ -103,11 +103,17 @@ $availableArrivalTimeRanges = extractArrivalTimeRanges($flights);
 $priceRange = extractPriceRange($flights);
 
 // Apply filters if selected
-if (!empty($flights) && (!empty($minPrice) || !empty($maxPrice) || 
-                          !empty($selectedAirlines) || !empty($selectedDepartureTimes) || 
-                          !empty($selectedArrivalTimes))) {
-    $flights = applyFilters($flights, $minPrice, $maxPrice, $selectedAirlines, 
-                           $selectedDepartureTimes, $selectedArrivalTimes);
+if (!empty($flights) && (!empty($minPrice) || !empty($maxPrice) ||
+    !empty($selectedAirlines) || !empty($selectedDepartureTimes) ||
+    !empty($selectedArrivalTimes))) {
+    $flights = applyFilters(
+        $flights,
+        $minPrice,
+        $maxPrice,
+        $selectedAirlines,
+        $selectedDepartureTimes,
+        $selectedArrivalTimes
+    );
 }
 
 // Apply sorting
@@ -116,9 +122,10 @@ if (!empty($flights)) {
 }
 
 // Database search fallback function
-function searchFlightsFromDatabase($from, $to, $date) {
+function searchFlightsFromDatabase($from, $to, $date)
+{
     global $pdo;
-    
+
     try {
         // Search for flights in the local database
         $stmt = $pdo->prepare(
@@ -126,11 +133,11 @@ function searchFlightsFromDatabase($from, $to, $date) {
              WHERE departure LIKE ? AND arrival LIKE ? AND date = ?
              ORDER BY time ASC LIMIT 100"
         );
-        
+
         // Use wildcards for partial matching on departure/arrival
         $stmt->execute(["%$from%", "%$to%", date('Y-m-d', strtotime($date))]);
         $dbFlights = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
+
         // Format database flights to match API format
         $formattedFlights = [];
         foreach ($dbFlights as $flight) {
@@ -156,9 +163,10 @@ function searchFlightsFromDatabase($from, $to, $date) {
     }
 }
 
-function getFeaturedFlightsFromDatabase() {
+function getFeaturedFlightsFromDatabase()
+{
     global $pdo;
-    
+
     try {
         // Get upcoming flights from database
         $stmt = $pdo->query(
@@ -168,7 +176,7 @@ function getFeaturedFlightsFromDatabase() {
              LIMIT 100"
         );
         $dbFlights = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
+
         // Format the flights 
         $formattedFlights = [];
         foreach ($dbFlights as $flight) {
@@ -186,7 +194,7 @@ function getFeaturedFlightsFromDatabase() {
                 'source' => 'database'
             ];
         }
-        
+
         return $formattedFlights;
     } catch (Exception $e) {
         error_log("Error getting featured flights: " . $e->getMessage());
@@ -195,9 +203,10 @@ function getFeaturedFlightsFromDatabase() {
 }
 
 // Extract unique airlines from flights
-function extractUniqueAirlines($flights) {
+function extractUniqueAirlines($flights)
+{
     $airlineCounts = [];
-    
+
     foreach ($flights as $flight) {
         $airline = $flight['airline'] ?? 'Unknown Airline';
         if (!isset($airlineCounts[$airline])) {
@@ -205,25 +214,26 @@ function extractUniqueAirlines($flights) {
         }
         $airlineCounts[$airline]++;
     }
-    
+
     // Sort by airline name
     ksort($airlineCounts);
     return $airlineCounts;
 }
 
 // Extract departure time ranges from flights
-function extractDepartureTimeRanges($flights) {
+function extractDepartureTimeRanges($flights)
+{
     $timeRanges = [
         'Morning (6AM - 12PM)' => 0,
         'Afternoon (12PM - 6PM)' => 0,
         'Evening (6PM - 12AM)' => 0,
         'Night (12AM - 6AM)' => 0
     ];
-    
+
     foreach ($flights as $flight) {
         $time = $flight['departureTime'] ?? '00:00';
         $hour = (int)substr($time, 0, 2);
-        
+
         if ($hour >= 6 && $hour < 12) {
             $timeRanges['Morning (6AM - 12PM)']++;
         } else if ($hour >= 12 && $hour < 18) {
@@ -234,26 +244,27 @@ function extractDepartureTimeRanges($flights) {
             $timeRanges['Night (12AM - 6AM)']++;
         }
     }
-    
+
     // Only return time ranges that have flights
-    return array_filter($timeRanges, function($count) {
+    return array_filter($timeRanges, function ($count) {
         return $count > 0;
     });
 }
 
 // Extract arrival time ranges from flights
-function extractArrivalTimeRanges($flights) {
+function extractArrivalTimeRanges($flights)
+{
     $timeRanges = [
         'Morning (6AM - 12PM)' => 0,
         'Afternoon (12PM - 6PM)' => 0,
         'Evening (6PM - 12AM)' => 0,
         'Night (12AM - 6AM)' => 0
     ];
-    
+
     foreach ($flights as $flight) {
         $time = $flight['arrivalTime'] ?? '00:00';
         $hour = (int)substr($time, 0, 2);
-        
+
         if ($hour >= 6 && $hour < 12) {
             $timeRanges['Morning (6AM - 12PM)']++;
         } else if ($hour >= 12 && $hour < 18) {
@@ -264,23 +275,24 @@ function extractArrivalTimeRanges($flights) {
             $timeRanges['Night (12AM - 6AM)']++;
         }
     }
-    
+
     // Only return time ranges that have flights
-    return array_filter($timeRanges, function($count) {
+    return array_filter($timeRanges, function ($count) {
         return $count > 0;
     });
 }
 
 // Extract price range from flights
-function extractPriceRange($flights) {
+function extractPriceRange($flights)
+{
     if (empty($flights)) {
         return ['min' => 0, 'max' => 1000];
     }
-    
-    $prices = array_map(function($flight) {
+
+    $prices = array_map(function ($flight) {
         return floatval($flight['price'] ?? 0);
     }, $flights);
-    
+
     return [
         'min' => min($prices),
         'max' => max($prices)
@@ -288,27 +300,28 @@ function extractPriceRange($flights) {
 }
 
 // Apply filters to flight results
-function applyFilters($flights, $minPrice, $maxPrice, $selectedAirlines, $selectedDepartureTimes, $selectedArrivalTimes) {
-    $filtered = array_filter($flights, function($flight) use ($minPrice, $maxPrice, $selectedAirlines, $selectedDepartureTimes, $selectedArrivalTimes) {
+function applyFilters($flights, $minPrice, $maxPrice, $selectedAirlines, $selectedDepartureTimes, $selectedArrivalTimes)
+{
+    $filtered = array_filter($flights, function ($flight) use ($minPrice, $maxPrice, $selectedAirlines, $selectedDepartureTimes, $selectedArrivalTimes) {
         // Price filter
         if (!empty($minPrice) && floatval($flight['price']) < floatval($minPrice)) {
             return false;
         }
-        
+
         if (!empty($maxPrice) && floatval($flight['price']) > floatval($maxPrice)) {
             return false;
         }
-        
+
         // Airline filter
         if (!empty($selectedAirlines) && !in_array($flight['airline'] ?? 'Unknown Airline', $selectedAirlines)) {
             return false;
         }
-        
+
         // Departure time filter
         if (!empty($selectedDepartureTimes)) {
             $departureHour = (int)substr($flight['departureTime'] ?? '00:00', 0, 2);
             $departureTimeCategory = '';
-            
+
             if ($departureHour >= 6 && $departureHour < 12) {
                 $departureTimeCategory = 'Morning (6AM - 12PM)';
             } else if ($departureHour >= 12 && $departureHour < 18) {
@@ -318,17 +331,17 @@ function applyFilters($flights, $minPrice, $maxPrice, $selectedAirlines, $select
             } else {
                 $departureTimeCategory = 'Night (12AM - 6AM)';
             }
-            
+
             if (!in_array($departureTimeCategory, $selectedDepartureTimes)) {
                 return false;
             }
         }
-        
+
         // Arrival time filter
         if (!empty($selectedArrivalTimes)) {
             $arrivalHour = (int)substr($flight['arrivalTime'] ?? '00:00', 0, 2);
             $arrivalTimeCategory = '';
-            
+
             if ($arrivalHour >= 6 && $arrivalHour < 12) {
                 $arrivalTimeCategory = 'Morning (6AM - 12PM)';
             } else if ($arrivalHour >= 12 && $arrivalHour < 18) {
@@ -338,29 +351,30 @@ function applyFilters($flights, $minPrice, $maxPrice, $selectedAirlines, $select
             } else {
                 $arrivalTimeCategory = 'Night (12AM - 6AM)';
             }
-            
+
             if (!in_array($arrivalTimeCategory, $selectedArrivalTimes)) {
                 return false;
             }
         }
-        
+
         return true;
     });
-    
+
     return array_values($filtered); // Reset array keys
 }
 
 // Apply sorting to flight results
-function applySorting($flights, $sortBy, $sortOrder) {
+function applySorting($flights, $sortBy, $sortOrder)
+{
     $sortField = $sortBy;
     $direction = $sortOrder === 'asc' ? 1 : -1;
-    
+
     if ($sortBy === 'price-desc') {
         $sortField = 'price';
         $direction = -1;
     }
-    
-    usort($flights, function($a, $b) use ($sortField, $direction) {
+
+    usort($flights, function ($a, $b) use ($sortField, $direction) {
         switch ($sortField) {
             case 'price':
                 return $direction * (floatval($a['price'] ?? 0) <=> floatval($b['price'] ?? 0));
@@ -380,11 +394,12 @@ function applySorting($flights, $sortBy, $sortOrder) {
                 return 0;
         }
     });
-    
+
     return $flights;
 }
 
-function convertDurationToMinutes($duration) {
+function convertDurationToMinutes($duration)
+{
     preg_match('/(\d+)h\s*(\d*)m?/', $duration, $matches);
     $hours = isset($matches[1]) ? (int)$matches[1] : 0;
     $minutes = isset($matches[2]) ? (int)$matches[2] : 0;
@@ -392,13 +407,15 @@ function convertDurationToMinutes($duration) {
 }
 
 
-function convertTimeToMinutes($time) {
+function convertTimeToMinutes($time)
+{
     $parts = explode(':', $time);
     return (int)$parts[0] * 60 + (isset($parts[1]) ? (int)$parts[1] : 0);
 }
 
 // Helper functions for formatting
-function calculateArrivalTime($departureTime, $durationMinutes) {
+function calculateArrivalTime($departureTime, $durationMinutes)
+{
     $departure = new DateTime($departureTime);
     $departure->add(new DateInterval('PT' . $durationMinutes . 'M'));
     return $departure->format('H:i');
@@ -408,7 +425,8 @@ function calculateArrivalTime($departureTime, $durationMinutes) {
  * Get a list of major airports worldwide sorted alphabetically
  * @return array Array of airports with name and IATA code
  */
-function getAirports() {
+function getAirports()
+{
     return [
         ['name' => 'Amsterdam Airport Schiphol', 'code' => 'AMS'],
         ['name' => 'Athens International Airport', 'code' => 'ATH'],
@@ -445,8 +463,8 @@ function getAirports() {
 }
 
 // Function to render flight card
-// Function to render flight card
-function renderFlightCard($flight, $departDate = null) {
+function renderFlightCard($flight, $departDate = null)
+{
     // Extract all variables first
     $flightId = $flight['id'] ?? '';
     $airline = $flight['airline'] ?? 'Unknown Airline';
@@ -455,83 +473,81 @@ function renderFlightCard($flight, $departDate = null) {
     $departureTime = $flight['departureTime'] ?? $flight['departure_time'] ?? $flight['time'] ?? '00:00';
     $arrivalAirport = $flight['arrivalAirport'] ?? $flight['arrival_airport'] ?? $flight['arrival'] ?? 'N/A';
     $arrivalTime = $flight['arrivalTime'] ?? $flight['arrival_time'] ?? '00:00';
-    
+
     // Format duration properly from minutes if needed
     $duration = $flight['duration'] ?? 'N/A';
     if (is_numeric($duration)) {
         $duration = formatDuration($duration);
     }
-    
+
     $stops = $flight['stops'] ?? 0;
     $price = $flight['price'] ?? 0;
-    
+
     $stopsText = $stops === 0 ? 'Non-stop' : ($stops === 1 ? '1 Stop' : $stops . ' Stops');
     $stopsClass = $stops === 0 ? 'bg-green-100 text-green-800' : ($stops === 1 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800');
-    
+
     // Get first letter of airline name for the airline logo placeholder
     $airlineInitial = substr($airline, 0, 1);
     if (empty($airlineInitial)) $airlineInitial = 'U';
-    
+
     // Format the date for display if available
     $formattedDate = !empty($departDate) ? date('D, M j, Y', strtotime($departDate)) : 'N/A';
-    
+
     // First ensure all variables have valid defaults before the heredoc
     $departDate = !empty($departDate) ? $departDate : date('Y-m-d');
-    
+
     // Now build the HTML with interpolated variables
     return <<<HTML
-    <div class="bg-white rounded-lg shadow-md p-6 mb-5 hover:shadow-lg transition-all border-l-4 border-blue-600">
+    <div class="bg-white rounded-lg shadow-md p-5 mb-4 hover:shadow-lg transition-all">
         <div class="flex flex-col md:flex-row md:items-center justify-between">
-            <!-- Airline Details Section -->
-            <div class="flex flex-col md:flex-row md:items-center gap-5 mb-4 md:mb-0">
+            <div class="flex flex-col md:flex-row md:items-center gap-4 mb-4 md:mb-0">
                 <div class="flex-shrink-0">
-                    <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-lg flex items-center justify-center shadow-md">
-                        <span class="font-bold text-xl">{$airlineInitial}</span>
+                    <div class="w-12 h-12 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center">
+                        <span class="font-bold text-sm">{$airlineInitial}</span>
                     </div>
                 </div>
                 
                 <div>
-                    <div class="text-gray-900 font-bold text-lg">{$airline}</div>
-                    <div class="text-sm text-gray-600">Flight {$flightNumber}</div>
-                    <div class="text-sm text-blue-600 font-semibold mt-1">{$formattedDate}</div>
+                    <div class="text-gray-900 font-medium">{$airline}</div>
+                    <div class="text-xs text-gray-500">Flight {$flightNumber}</div>
+                    <!-- Add the date display here -->
+                    <div class="text-xs text-blue-600 font-semibold mt-1">{$formattedDate}</div>
                 </div>
                 
-                <!-- Flight Route Info -->
-                <div class="flex items-center gap-4 mt-3 md:mt-0 md:ml-8 bg-gray-50 p-4 rounded-lg">
-                    <!-- Departure -->
-                    <div class="text-center md:text-left">
-                        <div class="text-xl font-bold">{$departureTime}</div>
-                        <div class="text-sm font-semibold">{$departureAirport}</div>
+                <div class="flex items-center gap-3 mt-2 md:mt-0 md:ml-4">
+                    <div class="text-center">
+                        <div class="text-lg font-bold">{$departureTime}</div>
+                        <div class="text-sm font-medium">{$departureAirport}</div>
                     </div>
                     
-                    <!-- Flight Path Visualization -->
-                    <div class="flex flex-col items-center px-3">
-                        <div class="text-sm font-medium text-gray-600">{$duration}</div>
-                        <div class="relative flex items-center my-2">
-                            <div class="w-3 h-3 bg-blue-600 rounded-full"></div>
-                            <div class="w-16 md:w-28 border-t-2 border-dashed border-blue-400 mx-1"></div>
-                            <div class="w-3 h-3 bg-blue-600 rounded-full"></div>
+                    <div class="flex flex-col items-center px-2">
+                        <div class="text-xs text-gray-500">{$duration}</div>
+                        <div class="w-20 md:w-32 h-px bg-gray-300 my-1 relative">
+                            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-gray-500 rounded-full"></div>
                         </div>
-                        <div class="text-xs {$stopsClass} px-3 py-1 rounded-full font-medium">{$stopsText}</div>
+                        <div class="text-xs {$stopsClass} px-2 py-0.5 rounded-full">{$stopsText}</div>
                     </div>
                     
-                    <!-- Arrival -->
-                    <div class="text-center md:text-right">
-                        <div class="text-xl font-bold">{$arrivalTime}</div>
-                        <div class="text-sm font-semibold">{$arrivalAirport}</div>
+                    <div class="text-center">
+                        <div class="text-lg font-bold">{$arrivalTime}</div>
+                        <div class="text-sm font-medium">{$arrivalAirport}</div>
                     </div>
                 </div>
             </div>
             
-            <!-- Price and Booking Section -->
-            <div class="flex flex-col items-end bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg">
-                <div class="text-3xl font-bold text-blue-700">\${$price}</div>
-                <div class="text-sm text-gray-600 mb-4">per person</div>
+            <div class="flex flex-col items-end">
+                <div class="text-2xl font-bold text-blue-600">\${$price}</div>
+                <div class="text-sm text-gray-500 mb-2">per person</div>
                 <form action="booking.php" method="POST">
                     <input type="hidden" name="select_flight" value="1">
+                    
+                    <!-- The API flight ID always comes from the API source -->
                     <input type="hidden" name="flight_api" value="{$flightId}">
+                    
+                    <!-- For flights from our DB, pass the database ID directly -->
                     <input type="hidden" name="flight_id" value="{$flightId}">
                     <input type="hidden" name="price" value="{$price}">
+                    <!-- Add all required fields for booking -->
                     <input type="hidden" name="flight_number" value="{$flightNumber}">
                     <input type="hidden" name="departure" value="{$departureAirport}">
                     <input type="hidden" name="arrival" value="{$arrivalAirport}">
@@ -540,10 +556,12 @@ function renderFlightCard($flight, $departDate = null) {
                     <input type="hidden" name="airline" value="{$airline}">
                     <input type="hidden" name="duration" value="{$duration}">
                     <input type="hidden" name="stops" value="{$stops}">
+                    
+                    <!-- Make sure date always has a value -->
                     <input type="hidden" name="date" value="{$departDate}">
                     
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-sm font-bold transition-colors shadow-md">
-                        Select Flight &#10148;
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">
+                        Select
                     </button>
                 </form>
             </div>
@@ -573,7 +591,7 @@ include 'templates/header.php';
                     <?php endforeach; ?>
                 </select>
             </div>
-            
+
             <div>
                 <label for="to" class="block text-sm font-medium text-gray-700 mb-1">To</label>
                 <select id="to" name="to" class="w-full p-2 border border-gray-300 rounded-md">
@@ -585,17 +603,17 @@ include 'templates/header.php';
                     <?php endforeach; ?>
                 </select>
             </div>
-            
+
             <div>
                 <label for="departDate" class="block text-sm font-medium text-gray-700 mb-1">Departure Date</label>
                 <input type="date" id="departDate" name="departDate" value="<?= htmlspecialchars($departDate) ?>" min="<?= date('Y-m-d') ?>" class="w-full p-2 border border-gray-300 rounded-md">
             </div>
-            
+
             <div>
                 <label for="returnDate" class="block text-sm font-medium text-gray-700 mb-1">Return Date (Optional)</label>
                 <input type="date" id="returnDate" name="returnDate" value="<?= htmlspecialchars($returnDate) ?>" min="<?= date('Y-m-d') ?>" class="w-full p-2 border border-gray-300 rounded-md">
             </div>
-            
+
             <div>
                 <label for="cabinClass" class="block text-sm font-medium text-gray-700 mb-1">Cabin Class</label>
                 <select id="cabinClass" name="cabinClass" class="w-full p-2 border border-gray-300 rounded-md">
@@ -605,7 +623,7 @@ include 'templates/header.php';
                     <option value="first" <?= $cabinClass === 'first' ? 'selected' : '' ?>>First Class</option>
                 </select>
             </div>
-            
+
             <div class="flex items-end">
                 <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md w-full flex justify-center items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -656,9 +674,9 @@ include 'templates/header.php';
                         </div>
 
                         <!-- Airlines - Dynamically generated from available flights -->
-                        <?php 
+                        <?php
                         // Update this line where you call extractUniqueAirlines
-                        $airlineCounts = extractUniqueAirlines($flights); 
+                        $airlineCounts = extractUniqueAirlines($flights);
                         ?>
 
                         <?php foreach ($airlineCounts as $airline => $count): ?>
@@ -677,46 +695,46 @@ include 'templates/header.php';
 
                         <!-- Departure Time - Dynamically generated -->
                         <?php if (!empty($availableDepartureTimeRanges)): ?>
-                        <div>
-                            <label class="text-sm font-medium mb-2 block">Departure Time</label>
-                            <div class="space-y-2">
-                                <?php foreach (array_keys($availableDepartureTimeRanges) as $timeRange): ?>
-                                    <div class="flex">
-                                        <div class="w-5 flex justify-center mt-0.5">
-                                            <input type="checkbox" id="departure-<?= md5($timeRange) ?>" name="departureTimes[]"
-                                                value="<?= htmlspecialchars($timeRange) ?>"
-                                                <?= in_array($timeRange, (array)$selectedDepartureTimes) ? 'checked' : '' ?>>
+                            <div>
+                                <label class="text-sm font-medium mb-2 block">Departure Time</label>
+                                <div class="space-y-2">
+                                    <?php foreach (array_keys($availableDepartureTimeRanges) as $timeRange): ?>
+                                        <div class="flex">
+                                            <div class="w-5 flex justify-center mt-0.5">
+                                                <input type="checkbox" id="departure-<?= md5($timeRange) ?>" name="departureTimes[]"
+                                                    value="<?= htmlspecialchars($timeRange) ?>"
+                                                    <?= in_array($timeRange, (array)$selectedDepartureTimes) ? 'checked' : '' ?>>
+                                            </div>
+                                            <label for="departure-<?= md5($timeRange) ?>" class="text-sm ml-2">
+                                                <?= htmlspecialchars($timeRange) ?>
+                                                <span class="text-xs text-gray-500">(<?= $availableDepartureTimeRanges[$timeRange] ?>)</span>
+                                            </label>
                                         </div>
-                                        <label for="departure-<?= md5($timeRange) ?>" class="text-sm ml-2">
-                                            <?= htmlspecialchars($timeRange) ?> 
-                                            <span class="text-xs text-gray-500">(<?= $availableDepartureTimeRanges[$timeRange] ?>)</span>
-                                        </label>
-                                    </div>
-                                <?php endforeach; ?>
+                                    <?php endforeach; ?>
+                                </div>
                             </div>
-                        </div>
                         <?php endif; ?>
-                        
+
                         <!-- Arrival Time - Dynamically generated -->
                         <?php if (!empty($availableArrivalTimeRanges)): ?>
-                        <div>
-                            <label class="text-sm font-medium mb-2 block">Arrival Time</label>
-                            <div class="space-y-2">
-                                <?php foreach (array_keys($availableArrivalTimeRanges) as $timeRange): ?>
-                                    <div class="flex">
-                                        <div class="w-5 flex justify-center mt-0.5">
-                                            <input type="checkbox" id="arrival-<?= md5($timeRange) ?>" name="arrivalTimes[]"
-                                                value="<?= htmlspecialchars($timeRange) ?>"
-                                                <?= in_array($timeRange, (array)$selectedArrivalTimes) ? 'checked' : '' ?>>
+                            <div>
+                                <label class="text-sm font-medium mb-2 block">Arrival Time</label>
+                                <div class="space-y-2">
+                                    <?php foreach (array_keys($availableArrivalTimeRanges) as $timeRange): ?>
+                                        <div class="flex">
+                                            <div class="w-5 flex justify-center mt-0.5">
+                                                <input type="checkbox" id="arrival-<?= md5($timeRange) ?>" name="arrivalTimes[]"
+                                                    value="<?= htmlspecialchars($timeRange) ?>"
+                                                    <?= in_array($timeRange, (array)$selectedArrivalTimes) ? 'checked' : '' ?>>
+                                            </div>
+                                            <label for="arrival-<?= md5($timeRange) ?>" class="text-sm ml-2">
+                                                <?= htmlspecialchars($timeRange) ?>
+                                                <span class="text-xs text-gray-500">(<?= $availableArrivalTimeRanges[$timeRange] ?>)</span>
+                                            </label>
                                         </div>
-                                        <label for="arrival-<?= md5($timeRange) ?>" class="text-sm ml-2">
-                                            <?= htmlspecialchars($timeRange) ?>
-                                            <span class="text-xs text-gray-500">(<?= $availableArrivalTimeRanges[$timeRange] ?>)</span>
-                                        </label>
-                                    </div>
-                                <?php endforeach; ?>
+                                    <?php endforeach; ?>
+                                </div>
                             </div>
-                        </div>
                         <?php endif; ?>
 
                         <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition-colors flex items-center justify-center">
@@ -755,23 +773,23 @@ include 'templates/header.php';
                                 <input type="hidden" name="children" value="<?= htmlspecialchars($children) ?>">
                                 <input type="hidden" name="infants" value="<?= htmlspecialchars($infants) ?>">
                                 <input type="hidden" name="tripType" value="<?= htmlspecialchars($tripType) ?>">
-                                
+
                                 <?php foreach ((array)$selectedAirlines as $airline): ?>
                                     <input type="hidden" name="airlines[]" value="<?= htmlspecialchars($airline) ?>">
                                 <?php endforeach; ?>
-                                
+
                                 <?php foreach ((array)$selectedDepartureTimes as $time): ?>
                                     <input type="hidden" name="departureTimes[]" value="<?= htmlspecialchars($time) ?>">
                                 <?php endforeach; ?>
-                                
+
                                 <?php foreach ((array)$selectedArrivalTimes as $time): ?>
                                     <input type="hidden" name="arrivalTimes[]" value="<?= htmlspecialchars($time) ?>">
                                 <?php endforeach; ?>
-                                
+
                                 <?php if (!empty($minPrice)): ?>
                                     <input type="hidden" name="minPrice" value="<?= htmlspecialchars($minPrice) ?>">
                                 <?php endif; ?>
-                                
+
                                 <?php if (!empty($maxPrice)): ?>
                                     <input type="hidden" name="maxPrice" value="<?= htmlspecialchars($maxPrice) ?>">
                                 <?php endif; ?>
@@ -802,7 +820,7 @@ include 'templates/header.php';
                 </div>
             </div>
 
-            
+
 
             <!-- Add this below the search summary div -->
             <?php if (isset($pagination) && $pagination['total'] > 0): ?>
@@ -844,73 +862,73 @@ include 'templates/header.php';
 
             <!-- Pagination -->
             <?php if (!empty($flights) && isset($pagination) && isset($pagination['total']) && $pagination['total'] > 0): ?>
-            <div class="flex justify-center mt-8">
-                <div class="flex space-x-2">
-                    <?php if ($page > 1): ?>
-                        <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>" 
-                           class="px-4 py-2 bg-white text-blue-600 border border-gray-300 rounded-md hover:bg-gray-50">
-                            Previous
-                        </a>
-                    <?php endif; ?>
+                <div class="flex justify-center mt-8">
+                    <div class="flex space-x-2">
+                        <?php if ($page > 1): ?>
+                            <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>"
+                                class="px-4 py-2 bg-white text-blue-600 border border-gray-300 rounded-md hover:bg-gray-50">
+                                Previous
+                            </a>
+                        <?php endif; ?>
 
-                    <?php 
-                    // Calculate total pages based on API's total count and our per-page limit
-                    $totalPages = ceil($pagination['total'] / $perPage);
-                    
-                    // Display a reasonable number of page links
-                    $startPage = max(1, min($page - 2, $totalPages - 4));
-                    $endPage = min($totalPages, $startPage + 4);
-                    
-                    for ($i = $startPage; $i <= $endPage; $i++): 
-                    ?>
-                        <a href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>"
-                           class="px-4 py-2 border <?= $i == $page ? 'bg-blue-600 text-white' : 'bg-white text-blue-600' ?> rounded-md">
-                            <?= $i ?>
-                        </a>
-                    <?php endfor; ?>
+                        <?php
+                        // Calculate total pages based on API's total count and our per-page limit
+                        $totalPages = ceil($pagination['total'] / $perPage);
 
-                    <?php if ($page < $totalPages): ?>
-                        <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>"
-                           class="px-4 py-2 bg-white text-blue-600 border border-gray-300 rounded-md hover:bg-gray-50">
-                            Next
-                        </a>
-                    <?php endif; ?>
+                        // Display a reasonable number of page links
+                        $startPage = max(1, min($page - 2, $totalPages - 4));
+                        $endPage = min($totalPages, $startPage + 4);
+
+                        for ($i = $startPage; $i <= $endPage; $i++):
+                        ?>
+                            <a href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>"
+                                class="px-4 py-2 border <?= $i == $page ? 'bg-blue-600 text-white' : 'bg-white text-blue-600' ?> rounded-md">
+                                <?= $i ?>
+                            </a>
+                        <?php endfor; ?>
+
+                        <?php if ($page < $totalPages): ?>
+                            <a href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>"
+                                class="px-4 py-2 bg-white text-blue-600 border border-gray-300 rounded-md hover:bg-gray-50">
+                                Next
+                            </a>
+                        <?php endif; ?>
+                    </div>
                 </div>
-            </div>
             <?php endif; ?>
         </div>
     </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Date inputs handling
-    const departDateInput = document.getElementById('departDate');
-    const returnDateInput = document.getElementById('returnDate');
-    
-    departDateInput.addEventListener('change', function() {
-        // Set minimum return date to be the departure date
-        returnDateInput.min = this.value;
-        
-        // If return date is earlier than departure date, update it
-        if (returnDateInput.value && returnDateInput.value < this.value) {
-            returnDateInput.value = this.value;
-        }
+    document.addEventListener('DOMContentLoaded', function() {
+        // Date inputs handling
+        const departDateInput = document.getElementById('departDate');
+        const returnDateInput = document.getElementById('returnDate');
+
+        departDateInput.addEventListener('change', function() {
+            // Set minimum return date to be the departure date
+            returnDateInput.min = this.value;
+
+            // If return date is earlier than departure date, update it
+            if (returnDateInput.value && returnDateInput.value < this.value) {
+                returnDateInput.value = this.value;
+            }
+        });
+
+        // Form submission validation
+        const searchForm = document.querySelector('form[action="search2.php"]');
+        searchForm.addEventListener('submit', function(e) {
+            const from = document.getElementById('from').value;
+            const to = document.getElementById('to').value;
+            const departDate = document.getElementById('departDate').value;
+
+            if (!from || !to || !departDate) {
+                e.preventDefault();
+                alert('Please fill in departure airport, arrival airport, and departure date.');
+            }
+        });
     });
-    
-    // Form submission validation
-    const searchForm = document.querySelector('form[action="search2.php"]');
-    searchForm.addEventListener('submit', function(e) {
-        const from = document.getElementById('from').value;
-        const to = document.getElementById('to').value;
-        const departDate = document.getElementById('departDate').value;
-        
-        if (!from || !to || !departDate) {
-            e.preventDefault();
-            alert('Please fill in departure airport, arrival airport, and departure date.');
-        }
-    });
-});
 </script>
 
 <?php include 'templates/footer.php'; ?>
