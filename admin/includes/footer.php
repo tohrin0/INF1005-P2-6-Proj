@@ -2,6 +2,8 @@
 // Footer section for the admin pages
 ?>
 
+</main>
+
 <footer class="admin-footer">
     <div class="footer-content">
         <div class="footer-company">
@@ -168,9 +170,8 @@
     }
 </style>
 
-</main>
-        </div>
-    </div>
+        </div> <!-- This single closing div is correct to match the content-wrapper -->
+    </div> <!-- This single closing div is correct to match the admin-wrapper -->
     
     <script>
         // Sidebar toggle functionality

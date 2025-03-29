@@ -13,9 +13,12 @@ body {
 .admin-sidebar {
   width: 250px;
   background-color: #343a40;
-  color: white;
   position: fixed;
   height: 100%;
+  left: 0;
+  top: 0;
+  z-index: 100;
+  overflow-y: auto;
   padding-top: 20px;
 }
 
@@ -62,4 +65,54 @@ body {
 
 .admin-button:hover {
   background-color: #218838;
+}
+
+/* Add these styles to your admin.css file - they will override any conflicting styles */
+
+.admin-wrapper {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+}
+
+.admin-topbar {
+  background-color: white;
+  height: 60px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 99;
+}
+
+.content-wrapper {
+  flex: 1;
+  margin-left: 250px;
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-main {
+  flex: 1;
+  padding: 20px;
+  margin-top: 0;
+  min-height: calc(100vh - 60px);
+  overflow: auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 992px) {
+  .content-wrapper {
+    margin-left: 0;
+  }
+  
+  .sidebar-open .content-wrapper {
+    margin-left: 250px;
+  }
 }
